@@ -1,0 +1,13 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net11.0</TargetFramework>
+    <Nullable>disable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="Microsoft.NET.HostModel">
+      <HintPath>/usr/local/share/dotnet/sdk/11.0.100/Microsoft.NET.HostModel.dll</HintPath>
+    </Reference>
+  </ItemGroup>
+</Project>

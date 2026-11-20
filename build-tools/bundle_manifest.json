@@ -1,0 +1,1444 @@
+[
+ {
+  "offset": 11976960,
+  "size": 3559936,
+  "comp": 0,
+  "type": 1,
+  "path": "LongshotLauncher.dll"
+ },
+ {
+  "offset": 15536896,
+  "size": 542,
+  "comp": 0,
+  "type": 4,
+  "path": "LongshotLauncher.runtimeconfig.json"
+ },
+ {
+  "offset": 15537472,
+  "size": 796496,
+  "comp": 0,
+  "type": 1,
+  "path": "Microsoft.CSharp.dll"
+ },
+ {
+  "offset": 16334016,
+  "size": 1166120,
+  "comp": 0,
+  "type": 1,
+  "path": "Microsoft.VisualBasic.Core.dll"
+ },
+ {
+  "offset": 17500160,
+  "size": 17232,
+  "comp": 0,
+  "type": 1,
+  "path": "Microsoft.VisualBasic.dll"
+ },
+ {
+  "offset": 17517440,
+  "size": 15656,
+  "comp": 0,
+  "type": 1,
+  "path": "Microsoft.Win32.Primitives.dll"
+ },
+ {
+  "offset": 17533120,
+  "size": 34600,
+  "comp": 0,
+  "type": 1,
+  "path": "Microsoft.Win32.Registry.dll"
+ },
+ {
+  "offset": 17567744,
+  "size": 15144,
+  "comp": 0,
+  "type": 1,
+  "path": "System.AppContext.dll"
+ },
+ {
+  "offset": 17582912,
+  "size": 15184,
+  "comp": 0,
+  "type": 1,
+  "path": "System.Buffers.dll"
+ },
+ {
+  "offset": 17598144,
+  "size": 228176,
+  "comp": 0,
+  "type": 1,
+  "path": "System.Collections.Concurrent.dll"
+ },
+ {
+  "offset": 17826368,
+  "size": 984360,
+  "comp": 0,
+  "type": 1,
+  "path": "System.Collections.Immutable.dll"
+ },
+ {
+  "offset": 18810752,
+  "size": 92968,
+  "comp": 0,
+  "type": 1,
+  "path": "System.Collections.NonGeneric.dll"
+ },
+ {
+  "offset": 18903744,
+  "size": 92968,
+  "comp": 0,
+  "type": 1,
+  "path": "System.Collections.Specialized.dll"
+ },
+ {
+  "offset": 18996736,
+  "size": 289064,
+  "comp": 0,
+  "type": 1,
+  "path": "System.Collections.dll"
+ },
+ {
+  "offset": 19285824,
+  "size": 191272,
+  "comp": 0,
+  "type": 1,
+  "path": "System.ComponentModel.Annotations.dll"
+ },
+ {
+  "offset": 19477120,
+  "size": 16680,
+  "comp": 0,
+  "type": 1,
+  "path": "System.ComponentModel.DataAnnotations.dll"
+ },
+ {
+  "offset": 19493824,
+  "size": 36176,
+  "comp": 0,
+  "type": 1,
+  "path": "System.ComponentModel.EventBasedAsync.dll"
+ },
+ {
+  "offset": 19530048,
+  "size": 70992,
+  "comp": 0,
+  "type": 1,
+  "path": "System.ComponentModel.Primitives.dll"
+ },
+ {
+  "offset": 19601088,
+  "size": 760104,
+  "comp": 0,
+  "type": 1,
+  "path": "System.ComponentModel.TypeConverter.dll"
+ },
+ {
+  "offset": 20361216,
+  "size": 17232,
+  "comp": 0,
+  "type": 1,
+  "path": "System.ComponentModel.dll"
+ },
+ {
+  "offset": 20378496,
+  "size": 19280,
+  "comp": 0,
+  "type": 1,
+  "path": "System.Configuration.dll"
+ },
+ {
+  "offset": 20397824,
+  "size": 198992,
+  "comp": 0,
+  "type": 1,
+  "path": "System.Console.dll"
+ },
+ {
+  "offset": 20596864,
+  "size": 23336,
+  "comp": 0,
+  "type": 1,
+  "path": "System.Core.dll"
+ },
+ {
+  "offset": 20620224,
+  "size": 2802984,
+  "comp": 0,
+  "type": 1,
+  "path": "System.Data.Common.dll"
+ },
+ {
+  "offset": 23423232,
+  "size": 15696,
+  "comp": 0,
+  "type": 1,
+  "path": "System.Data.DataSetExtensions.dll"
+ },
+ {
+  "offset": 23438976,
+  "size": 25424,
+  "comp": 0,
+  "type": 1,
+  "path": "System.Data.dll"
+ },
+ {
+  "offset": 23464448,
+  "size": 16208,
+  "comp": 0,
+  "type": 1,
+  "path": "System.Diagnostics.Contracts.dll"
+ },
+ {
+  "offset": 23480704,
+  "size": 15656,
+  "comp": 0,
+  "type": 1,
+  "path": "System.Diagnostics.Debug.dll"
+ },
+ {
+  "offset": 23496384,
+  "size": 497960,
+  "comp": 0,
+  "type": 1,
+  "path": "System.Diagnostics.DiagnosticSource.dll"
+ },
+ {
+  "offset": 23994368,
+  "size": 43304,
+  "comp": 0,
+  "type": 1,
+  "path": "System.Diagnostics.FileVersionInfo.dll"
+ },
+ {
+  "offset": 24037696,
+  "size": 275240,
+  "comp": 0,
+  "type": 1,
+  "path": "System.Diagnostics.Process.dll"
+ },
+ {
+  "offset": 24312960,
+  "size": 35112,
+  "comp": 0,
+  "type": 1,
+  "path": "System.Diagnostics.StackTrace.dll"
+ },
+ {
+  "offset": 24348096,
+  "size": 59176,
+  "comp": 0,
+  "type": 1,
+  "path": "System.Diagnostics.TextWriterTraceListener.dll"
+ },
+ {
+  "offset": 24407296,
+  "size": 15144,
+  "comp": 0,
+  "type": 1,
+  "path": "System.Diagnostics.Tools.dll"
+ },
+ {
+  "offset": 24422464,
+  "size": 131408,
+  "comp": 0,
+  "type": 1,
+  "path": "System.Diagnostics.TraceSource.dll"
+ },
+ {
+  "offset": 24553920,
+  "size": 16168,
+  "comp": 0,
+  "type": 1,
+  "path": "System.Diagnostics.Tracing.dll"
+ },
+ {
+  "offset": 24570112,
+  "size": 123688,
+  "comp": 0,
+  "type": 1,
+  "path": "System.Drawing.Primitives.dll"
+ },
+ {
+  "offset": 24693824,
+  "size": 20304,
+  "comp": 0,
+  "type": 1,
+  "path": "System.Drawing.dll"
+ },
+ {
+  "offset": 24714176,
+  "size": 16208,
+  "comp": 0,
+  "type": 1,
+  "path": "System.Dynamic.Runtime.dll"
+ },
+ {
+  "offset": 24730432,
+  "size": 224552,
+  "comp": 0,
+  "type": 1,
+  "path": "System.Formats.Asn1.dll"
+ },
+ {
+  "offset": 24955008,
+  "size": 293672,
+  "comp": 0,
+  "type": 1,
+  "path": "System.Formats.Tar.dll"
+ },
+ {
+  "offset": 25248704,
+  "size": 15656,
+  "comp": 0,
+  "type": 1,
+  "path": "System.Globalization.Calendars.dll"
+ },
+ {
+  "offset": 25264384,
+  "size": 15144,
+  "comp": 0,
+  "type": 1,
+  "path": "System.Globalization.Extensions.dll"
+ },
+ {
+  "offset": 25279552,
+  "size": 15656,
+  "comp": 0,
+  "type": 1,
+  "path": "System.Globalization.dll"
+ },
+ {
+  "offset": 25295232,
+  "size": 73552,
+  "comp": 0,
+  "type": 1,
+  "path": "System.IO.Compression.Brotli.dll"
+ },
+ {
+  "offset": 25368832,
+  "size": 15144,
+  "comp": 0,
+  "type": 1,
+  "path": "System.IO.Compression.FileSystem.dll"
+ },
+ {
+  "offset": 25384000,
+  "size": 98640,
+  "comp": 0,
+  "type": 1,
+  "path": "System.IO.Compression.ZipFile.dll"
+ },
+ {
+  "offset": 25482688,
+  "size": 416552,
+  "comp": 0,
+  "type": 1,
+  "path": "System.IO.Compression.dll"
+ },
+ {
+  "offset": 25899264,
+  "size": 33576,
+  "comp": 0,
+  "type": 1,
+  "path": "System.IO.FileSystem.AccessControl.dll"
+ },
+ {
+  "offset": 25932864,
+  "size": 86312,
+  "comp": 0,
+  "type": 1,
+  "path": "System.IO.FileSystem.DriveInfo.dll"
+ },
+ {
+  "offset": 26019200,
+  "size": 15144,
+  "comp": 0,
+  "type": 1,
+  "path": "System.IO.FileSystem.Primitives.dll"
+ },
+ {
+  "offset": 26034368,
+  "size": 101200,
+  "comp": 0,
+  "type": 1,
+  "path": "System.IO.FileSystem.Watcher.dll"
+ },
+ {
+  "offset": 26135616,
+  "size": 15656,
+  "comp": 0,
+  "type": 1,
+  "path": "System.IO.FileSystem.dll"
+ },
+ {
+  "offset": 26151296,
+  "size": 76584,
+  "comp": 0,
+  "type": 1,
+  "path": "System.IO.IsolatedStorage.dll"
+ },
+ {
+  "offset": 26227904,
+  "size": 84264,
+  "comp": 0,
+  "type": 1,
+  "path": "System.IO.MemoryMappedFiles.dll"
+ },
+ {
+  "offset": 26312192,
+  "size": 181072,
+  "comp": 0,
+  "type": 1,
+  "path": "System.IO.Pipelines.dll"
+ },
+ {
+  "offset": 26493312,
+  "size": 24872,
+  "comp": 0,
+  "type": 1,
+  "path": "System.IO.Pipes.AccessControl.dll"
+ },
+ {
+  "offset": 26518208,
+  "size": 127272,
+  "comp": 0,
+  "type": 1,
+  "path": "System.IO.Pipes.dll"
+ },
+ {
+  "offset": 26645504,
+  "size": 15696,
+  "comp": 0,
+  "type": 1,
+  "path": "System.IO.UnmanagedMemoryStream.dll"
+ },
+ {
+  "offset": 26661248,
+  "size": 15656,
+  "comp": 0,
+  "type": 1,
+  "path": "System.IO.dll"
+ },
+ {
+  "offset": 26676928,
+  "size": 1328936,
+  "comp": 0,
+  "type": 1,
+  "path": "System.Linq.AsyncEnumerable.dll"
+ },
+ {
+  "offset": 28005888,
+  "size": 3724072,
+  "comp": 0,
+  "type": 1,
+  "path": "System.Linq.Expressions.dll"
+ },
+ {
+  "offset": 31729984,
+  "size": 775976,
+  "comp": 0,
+  "type": 1,
+  "path": "System.Linq.Parallel.dll"
+ },
+ {
+  "offset": 32505984,
+  "size": 179024,
+  "comp": 0,
+  "type": 1,
+  "path": "System.Linq.Queryable.dll"
+ },
+ {
+  "offset": 32685056,
+  "size": 696656,
+  "comp": 0,
+  "type": 1,
+  "path": "System.Linq.dll"
+ },
+ {
+  "offset": 33381760,
+  "size": 152360,
+  "comp": 0,
+  "type": 1,
+  "path": "System.Memory.dll"
+ },
+ {
+  "offset": 33534144,
+  "size": 120144,
+  "comp": 0,
+  "type": 1,
+  "path": "System.Net.Http.Json.dll"
+ },
+ {
+  "offset": 33654336,
+  "size": 1726760,
+  "comp": 0,
+  "type": 1,
+  "path": "System.Net.Http.dll"
+ },
+ {
+  "offset": 35381120,
+  "size": 293672,
+  "comp": 0,
+  "type": 1,
+  "path": "System.Net.HttpListener.dll"
+ },
+ {
+  "offset": 35674816,
+  "size": 481616,
+  "comp": 0,
+  "type": 1,
+  "path": "System.Net.Mail.dll"
+ },
+ {
+  "offset": 36156480,
+  "size": 97576,
+  "comp": 0,
+  "type": 1,
+  "path": "System.Net.NameResolution.dll"
+ },
+ {
+  "offset": 36254080,
+  "size": 172328,
+  "comp": 0,
+  "type": 1,
+  "path": "System.Net.NetworkInformation.dll"
+ },
+ {
+  "offset": 36426432,
+  "size": 105256,
+  "comp": 0,
+  "type": 1,
+  "path": "System.Net.Ping.dll"
+ },
+ {
+  "offset": 36531712,
+  "size": 214824,
+  "comp": 0,
+  "type": 1,
+  "path": "System.Net.Primitives.dll"
+ },
+ {
+  "offset": 36746560,
+  "size": 354088,
+  "comp": 0,
+  "type": 1,
+  "path": "System.Net.Quic.dll"
+ },
+ {
+  "offset": 37100672,
+  "size": 367912,
+  "comp": 0,
+  "type": 1,
+  "path": "System.Net.Requests.dll"
+ },
+ {
+  "offset": 37468608,
+  "size": 828712,
+  "comp": 0,
+  "type": 1,
+  "path": "System.Net.Security.dll"
+ },
+ {
+  "offset": 38297344,
+  "size": 71976,
+  "comp": 0,
+  "type": 1,
+  "path": "System.Net.ServerSentEvents.dll"
+ },
+ {
+  "offset": 38369344,
+  "size": 15144,
+  "comp": 0,
+  "type": 1,
+  "path": "System.Net.ServicePoint.dll"
+ },
+ {
+  "offset": 38384512,
+  "size": 603944,
+  "comp": 0,
+  "type": 1,
+  "path": "System.Net.Sockets.dll"
+ },
+ {
+  "offset": 38988480,
+  "size": 157008,
+  "comp": 0,
+  "type": 1,
+  "path": "System.Net.WebClient.dll"
+ },
+ {
+  "offset": 39145536,
+  "size": 55120,
+  "comp": 0,
+  "type": 1,
+  "path": "System.Net.WebHeaderCollection.dll"
+ },
+ {
+  "offset": 39200704,
+  "size": 33104,
+  "comp": 0,
+  "type": 1,
+  "path": "System.Net.WebProxy.dll"
+ },
+ {
+  "offset": 39233856,
+  "size": 90920,
+  "comp": 0,
+  "type": 1,
+  "path": "System.Net.WebSockets.Client.dll"
+ },
+ {
+  "offset": 39324800,
+  "size": 237352,
+  "comp": 0,
+  "type": 1,
+  "path": "System.Net.WebSockets.dll"
+ },
+ {
+  "offset": 39562176,
+  "size": 17192,
+  "comp": 0,
+  "type": 1,
+  "path": "System.Net.dll"
+ },
+ {
+  "offset": 39579392,
+  "size": 15656,
+  "comp": 0,
+  "type": 1,
+  "path": "System.Numerics.Vectors.dll"
+ },
+ {
+  "offset": 39595072,
+  "size": 15144,
+  "comp": 0,
+  "type": 1,
+  "path": "System.Numerics.dll"
+ },
+ {
+  "offset": 39610240,
+  "size": 69456,
+  "comp": 0,
+  "type": 1,
+  "path": "System.ObjectModel.dll"
+ },
+ {
+  "offset": 39679744,
+  "size": 15577896,
+  "comp": 0,
+  "type": 1,
+  "path": "System.Private.CoreLib.dll"
+ },
+ {
+  "offset": 55257664,
+  "size": 2071336,
+  "comp": 0,
+  "type": 1,
+  "path": "System.Private.DataContractSerialization.dll"
+ },
+ {
+  "offset": 57329024,
+  "size": 245544,
+  "comp": 0,
+  "type": 1,
+  "path": "System.Private.Uri.dll"
+ },
+ {
+  "offset": 57574592,
+  "size": 388944,
+  "comp": 0,
+  "type": 1,
+  "path": "System.Private.Xml.Linq.dll"
+ },
+ {
+  "offset": 57963584,
+  "size": 7904592,
+  "comp": 0,
+  "type": 1,
+  "path": "System.Private.Xml.dll"
+ },
+ {
+  "offset": 65868224,
+  "size": 67368,
+  "comp": 0,
+  "type": 1,
+  "path": "System.Reflection.DispatchProxy.dll"
+ },
+ {
+  "offset": 65935616,
+  "size": 15656,
+  "comp": 0,
+  "type": 1,
+  "path": "System.Reflection.Emit.ILGeneration.dll"
+ },
+ {
+  "offset": 65951296,
+  "size": 15696,
+  "comp": 0,
+  "type": 1,
+  "path": "System.Reflection.Emit.Lightweight.dll"
+ },
+ {
+  "offset": 65967040,
+  "size": 302888,
+  "comp": 0,
+  "type": 1,
+  "path": "System.Reflection.Emit.dll"
+ },
+ {
+  "offset": 66269952,
+  "size": 15184,
+  "comp": 0,
+  "type": 1,
+  "path": "System.Reflection.Extensions.dll"
+ },
+ {
+  "offset": 66285184,
+  "size": 1148200,
+  "comp": 0,
+  "type": 1,
+  "path": "System.Reflection.Metadata.dll"
+ },
+ {
+  "offset": 67433408,
+  "size": 15696,
+  "comp": 0,
+  "type": 1,
+  "path": "System.Reflection.Primitives.dll"
+ },
+ {
+  "offset": 67449152,
+  "size": 32552,
+  "comp": 0,
+  "type": 1,
+  "path": "System.Reflection.TypeExtensions.dll"
+ },
+ {
+  "offset": 67481728,
+  "size": 16208,
+  "comp": 0,
+  "type": 1,
+  "path": "System.Reflection.dll"
+ },
+ {
+  "offset": 67497984,
+  "size": 15144,
+  "comp": 0,
+  "type": 1,
+  "path": "System.Resources.Reader.dll"
+ },
+ {
+  "offset": 67513152,
+  "size": 15656,
+  "comp": 0,
+  "type": 1,
+  "path": "System.Resources.ResourceManager.dll"
+ },
+ {
+  "offset": 67528832,
+  "size": 42280,
+  "comp": 0,
+  "type": 1,
+  "path": "System.Resources.Writer.dll"
+ },
+ {
+  "offset": 67571136,
+  "size": 15184,
+  "comp": 0,
+  "type": 1,
+  "path": "System.Runtime.CompilerServices.Unsafe.dll"
+ },
+ {
+  "offset": 67586368,
+  "size": 18728,
+  "comp": 0,
+  "type": 1,
+  "path": "System.Runtime.CompilerServices.VisualC.dll"
+ },
+ {
+  "offset": 67605120,
+  "size": 17704,
+  "comp": 0,
+  "type": 1,
+  "path": "System.Runtime.Extensions.dll"
+ },
+ {
+  "offset": 67622848,
+  "size": 15656,
+  "comp": 0,
+  "type": 1,
+  "path": "System.Runtime.Handles.dll"
+ },
+ {
+  "offset": 67638528,
+  "size": 39720,
+  "comp": 0,
+  "type": 1,
+  "path": "System.Runtime.InteropServices.JavaScript.dll"
+ },
+ {
+  "offset": 67678272,
+  "size": 15656,
+  "comp": 0,
+  "type": 1,
+  "path": "System.Runtime.InteropServices.RuntimeInformation.dll"
+ },
+ {
+  "offset": 67693952,
+  "size": 102736,
+  "comp": 0,
+  "type": 1,
+  "path": "System.Runtime.InteropServices.dll"
+ },
+ {
+  "offset": 67796736,
+  "size": 17192,
+  "comp": 0,
+  "type": 1,
+  "path": "System.Runtime.Intrinsics.dll"
+ },
+ {
+  "offset": 67813952,
+  "size": 15656,
+  "comp": 0,
+  "type": 1,
+  "path": "System.Runtime.Loader.dll"
+ },
+ {
+  "offset": 67829632,
+  "size": 343336,
+  "comp": 0,
+  "type": 1,
+  "path": "System.Runtime.Numerics.dll"
+ },
+ {
+  "offset": 68172992,
+  "size": 116008,
+  "comp": 0,
+  "type": 1,
+  "path": "System.Runtime.Serialization.Formatters.dll"
+ },
+ {
+  "offset": 68289024,
+  "size": 15656,
+  "comp": 0,
+  "type": 1,
+  "path": "System.Runtime.Serialization.Json.dll"
+ },
+ {
+  "offset": 68304704,
+  "size": 28968,
+  "comp": 0,
+  "type": 1,
+  "path": "System.Runtime.Serialization.Primitives.dll"
+ },
+ {
+  "offset": 68333696,
+  "size": 16720,
+  "comp": 0,
+  "type": 1,
+  "path": "System.Runtime.Serialization.Xml.dll"
+ },
+ {
+  "offset": 68350464,
+  "size": 16680,
+  "comp": 0,
+  "type": 1,
+  "path": "System.Runtime.Serialization.dll"
+ },
+ {
+  "offset": 68367168,
+  "size": 44840,
+  "comp": 0,
+  "type": 1,
+  "path": "System.Runtime.dll"
+ },
+ {
+  "offset": 68412032,
+  "size": 59688,
+  "comp": 0,
+  "type": 1,
+  "path": "System.Security.AccessControl.dll"
+ },
+ {
+  "offset": 68471744,
+  "size": 92968,
+  "comp": 0,
+  "type": 1,
+  "path": "System.Security.Claims.dll"
+ },
+ {
+  "offset": 68564736,
+  "size": 17232,
+  "comp": 0,
+  "type": 1,
+  "path": "System.Security.Cryptography.Algorithms.dll"
+ },
+ {
+  "offset": 68582016,
+  "size": 16168,
+  "comp": 0,
+  "type": 1,
+  "path": "System.Security.Cryptography.Cng.dll"
+ },
+ {
+  "offset": 68598208,
+  "size": 16208,
+  "comp": 0,
+  "type": 1,
+  "path": "System.Security.Cryptography.Csp.dll"
+ },
+ {
+  "offset": 68614464,
+  "size": 15696,
+  "comp": 0,
+  "type": 1,
+  "path": "System.Security.Cryptography.Encoding.dll"
+ },
+ {
+  "offset": 68630208,
+  "size": 15696,
+  "comp": 0,
+  "type": 1,
+  "path": "System.Security.Cryptography.OpenSsl.dll"
+ },
+ {
+  "offset": 68645952,
+  "size": 15696,
+  "comp": 0,
+  "type": 1,
+  "path": "System.Security.Cryptography.Primitives.dll"
+ },
+ {
+  "offset": 68661696,
+  "size": 16680,
+  "comp": 0,
+  "type": 1,
+  "path": "System.Security.Cryptography.X509Certificates.dll"
+ },
+ {
+  "offset": 68678400,
+  "size": 2653992,
+  "comp": 0,
+  "type": 1,
+  "path": "System.Security.Cryptography.dll"
+ },
+ {
+  "offset": 71332416,
+  "size": 39208,
+  "comp": 0,
+  "type": 1,
+  "path": "System.Security.Principal.Windows.dll"
+ },
+ {
+  "offset": 71371648,
+  "size": 15144,
+  "comp": 0,
+  "type": 1,
+  "path": "System.Security.Principal.dll"
+ },
+ {
+  "offset": 71386816,
+  "size": 15656,
+  "comp": 0,
+  "type": 1,
+  "path": "System.Security.SecureString.dll"
+ },
+ {
+  "offset": 71402496,
+  "size": 18216,
+  "comp": 0,
+  "type": 1,
+  "path": "System.Security.dll"
+ },
+ {
+  "offset": 71420736,
+  "size": 16720,
+  "comp": 0,
+  "type": 1,
+  "path": "System.ServiceModel.Web.dll"
+ },
+ {
+  "offset": 71437504,
+  "size": 15656,
+  "comp": 0,
+  "type": 1,
+  "path": "System.ServiceProcess.dll"
+ },
+ {
+  "offset": 71453184,
+  "size": 852264,
+  "comp": 0,
+  "type": 1,
+  "path": "System.Text.Encoding.CodePages.dll"
+ },
+ {
+  "offset": 72305472,
+  "size": 15656,
+  "comp": 0,
+  "type": 1,
+  "path": "System.Text.Encoding.Extensions.dll"
+ },
+ {
+  "offset": 72321152,
+  "size": 15656,
+  "comp": 0,
+  "type": 1,
+  "path": "System.Text.Encoding.dll"
+ },
+ {
+  "offset": 72336832,
+  "size": 113960,
+  "comp": 0,
+  "type": 1,
+  "path": "System.Text.Encodings.Web.dll"
+ },
+ {
+  "offset": 72450816,
+  "size": 1882920,
+  "comp": 0,
+  "type": 1,
+  "path": "System.Text.Json.dll"
+ },
+ {
+  "offset": 74333760,
+  "size": 1036584,
+  "comp": 0,
+  "type": 1,
+  "path": "System.Text.RegularExpressions.dll"
+ },
+ {
+  "offset": 75370368,
+  "size": 34600,
+  "comp": 0,
+  "type": 1,
+  "path": "System.Threading.AccessControl.dll"
+ },
+ {
+  "offset": 75404992,
+  "size": 149288,
+  "comp": 0,
+  "type": 1,
+  "path": "System.Threading.Channels.dll"
+ },
+ {
+  "offset": 75554304,
+  "size": 15656,
+  "comp": 0,
+  "type": 1,
+  "path": "System.Threading.Overlapped.dll"
+ },
+ {
+  "offset": 75569984,
+  "size": 471336,
+  "comp": 0,
+  "type": 1,
+  "path": "System.Threading.Tasks.Dataflow.dll"
+ },
+ {
+  "offset": 76041344,
+  "size": 15696,
+  "comp": 0,
+  "type": 1,
+  "path": "System.Threading.Tasks.Extensions.dll"
+ },
+ {
+  "offset": 76057088,
+  "size": 121640,
+  "comp": 0,
+  "type": 1,
+  "path": "System.Threading.Tasks.Parallel.dll"
+ },
+ {
+  "offset": 76178752,
+  "size": 16680,
+  "comp": 0,
+  "type": 1,
+  "path": "System.Threading.Tasks.dll"
+ },
+ {
+  "offset": 76195456,
+  "size": 15656,
+  "comp": 0,
+  "type": 1,
+  "path": "System.Threading.Thread.dll"
+ },
+ {
+  "offset": 76211136,
+  "size": 15696,
+  "comp": 0,
+  "type": 1,
+  "path": "System.Threading.ThreadPool.dll"
+ },
+ {
+  "offset": 76226880,
+  "size": 15144,
+  "comp": 0,
+  "type": 1,
+  "path": "System.Threading.Timer.dll"
+ },
+ {
+  "offset": 76242048,
+  "size": 74024,
+  "comp": 0,
+  "type": 1,
+  "path": "System.Threading.dll"
+ },
+ {
+  "offset": 76316096,
+  "size": 357200,
+  "comp": 0,
+  "type": 1,
+  "path": "System.Transactions.Local.dll"
+ },
+ {
+  "offset": 76673344,
+  "size": 16680,
+  "comp": 0,
+  "type": 1,
+  "path": "System.Transactions.dll"
+ },
+ {
+  "offset": 76690048,
+  "size": 15656,
+  "comp": 0,
+  "type": 1,
+  "path": "System.ValueTuple.dll"
+ },
+ {
+  "offset": 76705728,
+  "size": 52560,
+  "comp": 0,
+  "type": 1,
+  "path": "System.Web.HttpUtility.dll"
+ },
+ {
+  "offset": 76758336,
+  "size": 15144,
+  "comp": 0,
+  "type": 1,
+  "path": "System.Web.dll"
+ },
+ {
+  "offset": 76773504,
+  "size": 15696,
+  "comp": 0,
+  "type": 1,
+  "path": "System.Windows.dll"
+ },
+ {
+  "offset": 76789248,
+  "size": 15656,
+  "comp": 0,
+  "type": 1,
+  "path": "System.Xml.Linq.dll"
+ },
+ {
+  "offset": 76804928,
+  "size": 21800,
+  "comp": 0,
+  "type": 1,
+  "path": "System.Xml.ReaderWriter.dll"
+ },
+ {
+  "offset": 76826752,
+  "size": 16168,
+  "comp": 0,
+  "type": 1,
+  "path": "System.Xml.Serialization.dll"
+ },
+ {
+  "offset": 76842944,
+  "size": 15656,
+  "comp": 0,
+  "type": 1,
+  "path": "System.Xml.XDocument.dll"
+ },
+ {
+  "offset": 76858624,
+  "size": 17192,
+  "comp": 0,
+  "type": 1,
+  "path": "System.Xml.XPath.XDocument.dll"
+ },
+ {
+  "offset": 76875840,
+  "size": 15656,
+  "comp": 0,
+  "type": 1,
+  "path": "System.Xml.XPath.dll"
+ },
+ {
+  "offset": 76891520,
+  "size": 15656,
+  "comp": 0,
+  "type": 1,
+  "path": "System.Xml.XmlDocument.dll"
+ },
+ {
+  "offset": 76907200,
+  "size": 17704,
+  "comp": 0,
+  "type": 1,
+  "path": "System.Xml.XmlSerializer.dll"
+ },
+ {
+  "offset": 76924928,
+  "size": 23336,
+  "comp": 0,
+  "type": 1,
+  "path": "System.Xml.dll"
+ },
+ {
+  "offset": 76948288,
+  "size": 50472,
+  "comp": 0,
+  "type": 1,
+  "path": "System.dll"
+ },
+ {
+  "offset": 76998784,
+  "size": 16168,
+  "comp": 0,
+  "type": 1,
+  "path": "WindowsBase.dll"
+ },
+ {
+  "offset": 77014976,
+  "size": 59688,
+  "comp": 0,
+  "type": 1,
+  "path": "mscorlib.dll"
+ },
+ {
+  "offset": 77074688,
+  "size": 100648,
+  "comp": 0,
+  "type": 1,
+  "path": "netstandard.dll"
+ },
+ {
+  "offset": 77175360,
+  "size": 2364416,
+  "comp": 0,
+  "type": 1,
+  "path": "Avalonia.Base.dll"
+ },
+ {
+  "offset": 79539776,
+  "size": 1363456,
+  "comp": 0,
+  "type": 1,
+  "path": "Avalonia.Controls.dll"
+ },
+ {
+  "offset": 80903232,
+  "size": 214528,
+  "comp": 0,
+  "type": 1,
+  "path": "Avalonia.DesignerSupport.dll"
+ },
+ {
+  "offset": 81117760,
+  "size": 242688,
+  "comp": 0,
+  "type": 1,
+  "path": "Avalonia.Dialogs.dll"
+ },
+ {
+  "offset": 81360448,
+  "size": 75264,
+  "comp": 0,
+  "type": 1,
+  "path": "Avalonia.Markup.Xaml.dll"
+ },
+ {
+  "offset": 81435712,
+  "size": 45568,
+  "comp": 0,
+  "type": 1,
+  "path": "Avalonia.Markup.dll"
+ },
+ {
+  "offset": 81481280,
+  "size": 15360,
+  "comp": 0,
+  "type": 1,
+  "path": "Avalonia.Metal.dll"
+ },
+ {
+  "offset": 81496640,
+  "size": 15360,
+  "comp": 0,
+  "type": 1,
+  "path": "Avalonia.MicroCom.dll"
+ },
+ {
+  "offset": 81512000,
+  "size": 128512,
+  "comp": 0,
+  "type": 1,
+  "path": "Avalonia.OpenGL.dll"
+ },
+ {
+  "offset": 81640512,
+  "size": 191488,
+  "comp": 0,
+  "type": 1,
+  "path": "Avalonia.Vulkan.dll"
+ },
+ {
+  "offset": 81832000,
+  "size": 4096,
+  "comp": 0,
+  "type": 1,
+  "path": "Avalonia.dll"
+ },
+ {
+  "offset": 81836096,
+  "size": 15360,
+  "comp": 0,
+  "type": 1,
+  "path": "Avalonia.Desktop.dll"
+ },
+ {
+  "offset": 81851456,
+  "size": 257024,
+  "comp": 0,
+  "type": 1,
+  "path": "Avalonia.FreeDesktop.dll"
+ },
+ {
+  "offset": 82108480,
+  "size": 564736,
+  "comp": 0,
+  "type": 1,
+  "path": "Avalonia.FreeDesktop.AtSpi.dll"
+ },
+ {
+  "offset": 82673216,
+  "size": 22016,
+  "comp": 0,
+  "type": 1,
+  "path": "Avalonia.HarfBuzz.dll"
+ },
+ {
+  "offset": 82695232,
+  "size": 351232,
+  "comp": 0,
+  "type": 1,
+  "path": "Avalonia.Native.dll"
+ },
+ {
+  "offset": 83046464,
+  "size": 75776,
+  "comp": 0,
+  "type": 1,
+  "path": "Avalonia.Remote.Protocol.dll"
+ },
+ {
+  "offset": 83122240,
+  "size": 125952,
+  "comp": 0,
+  "type": 1,
+  "path": "Avalonia.Skia.dll"
+ },
+ {
+  "offset": 83248192,
+  "size": 733696,
+  "comp": 0,
+  "type": 1,
+  "path": "Avalonia.Themes.Fluent.dll"
+ },
+ {
+  "offset": 83981888,
+  "size": 238080,
+  "comp": 0,
+  "type": 1,
+  "path": "Avalonia.Wayland.dll"
+ },
+ {
+  "offset": 84219968,
+  "size": 124928,
+  "comp": 0,
+  "type": 1,
+  "path": "Avalonia.Win32.Automation.dll"
+ },
+ {
+  "offset": 84344896,
+  "size": 968704,
+  "comp": 0,
+  "type": 1,
+  "path": "Avalonia.Win32.dll"
+ },
+ {
+  "offset": 85313600,
+  "size": 410624,
+  "comp": 0,
+  "type": 1,
+  "path": "Avalonia.X11.dll"
+ },
+ {
+  "offset": 85724224,
+  "size": 122400,
+  "comp": 0,
+  "type": 1,
+  "path": "HarfBuzzSharp.dll"
+ },
+ {
+  "offset": 85846656,
+  "size": 15360,
+  "comp": 0,
+  "type": 1,
+  "path": "MicroCom.Runtime.dll"
+ },
+ {
+  "offset": 85862016,
+  "size": 640000,
+  "comp": 0,
+  "type": 1,
+  "path": "NWayland.dll"
+ },
+ {
+  "offset": 86502016,
+  "size": 489824,
+  "comp": 0,
+  "type": 1,
+  "path": "SkiaSharp.dll"
+ },
+ {
+  "offset": 86991872,
+  "size": 232960,
+  "comp": 0,
+  "type": 1,
+  "path": "Tmds.DBus.Protocol.dll"
+ },
+ {
+  "offset": 87224832,
+  "size": 2808040,
+  "comp": 0,
+  "type": 2,
+  "path": "libHarfBuzzSharp.so"
+ },
+ {
+  "offset": 90032872,
+  "size": 11170296,
+  "comp": 0,
+  "type": 2,
+  "path": "libSkiaSharp.so"
+ },
+ {
+  "offset": 101203200,
+  "size": 1735680,
+  "comp": 0,
+  "type": 1,
+  "path": "LongshotLauncher.Core.dll"
+ },
+ {
+  "offset": 102938880,
+  "size": 40029,
+  "comp": 0,
+  "type": 3,
+  "path": "LongshotLauncher.deps.json"
+ }
+]
