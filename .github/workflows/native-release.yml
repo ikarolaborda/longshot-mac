@@ -12,7 +12,7 @@ jobs:
       - name: Build and verify the Apple silicon installer
         run: |
           native/scripts/mac/build_release_installer.sh HEAD:native Longshot-Mac-Installer
-          lipo -verify_arch arm64 Longshot-Mac-Installer
+          lipo Longshot-Mac-Installer -verify_arch arm64
           codesign --verify --strict Longshot-Mac-Installer
           if [ "$(uname -m)" = arm64 ]; then ./Longshot-Mac-Installer --help; fi
           ditto -c -k --keepParent Longshot-Mac-Installer Longshot-Mac-Installer.zip
