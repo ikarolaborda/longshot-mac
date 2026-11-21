@@ -1,0 +1,25 @@
+name: Release the Mac installer
+on:
+  push:
+    tags: ['v3.*-mac.*']
+permissions:
+  contents: write
+jobs:
+  release:
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build and verify the Apple silicon installer
+        run: |
+          native/scripts/mac/build_release_installer.sh HEAD:native Longshot-Mac-Installer
+          lipo -verify_arch arm64 Longshot-Mac-Installer
+          codesign --verify --strict Longshot-Mac-Installer
+          if [ "$(uname -m)" = arm64 ]; then ./Longshot-Mac-Installer --help; fi
+          ditto -c -k --keepParent Longshot-Mac-Installer Longshot-Mac-Installer.zip
+          shasum -a 256 Longshot-Mac-Installer.zip > SHA256SUMS
+      - name: Publish the signed installer
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "$GITHUB_REF_NAME" Longshot-Mac-Installer.zip SHA256SUMS \
+            --prerelease --verify-tag --title "Longshot for macOS $GITHUB_REF_NAME" --notes-file native/docs/mac-release.md

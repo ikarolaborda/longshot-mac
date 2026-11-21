@@ -41,6 +41,18 @@ int main(int argc, const char **argv) {
             fputs("This folder does not contain an updatable game build.\n", stderr);
             return 2;
         }
+        for (NSString *path in @[@"metal/build/shader-service/totk_xlate", @"metal/build/shader-service/oot_write_proof.dylib"]) {
+            if (![fm fileExistsAtPath:[game stringByAppendingPathComponent:path]]) {
+                fprintf(stderr, "The selected game needs its Ocarina of Time Metal resources (%s).\n", path.UTF8String);
+                if (argc == 1) {
+                    NSAlert *notice = [[NSAlert alloc] init];
+                    notice.messageText = @"Choose a prepared Metal game folder";
+                    notice.informativeText = [@"Missing " stringByAppendingString:path];
+                    [notice runModal];
+                }
+                return 2;
+            }
+        }
         NSString *work = [NSTemporaryDirectory() stringByAppendingPathComponent:NSUUID.UUID.UUIDString];
         if (![fm createDirectoryAtPath:work withIntermediateDirectories:NO attributes:@{NSFilePosixPermissions:@0700} error:nil]) return 1;
         NSURL *dir = [NSURL fileURLWithPath:work];

@@ -1,10 +1,15 @@
-# Longshot Launcher for macOS
+# Longshot for macOS
 
-A reverse-engineered macOS (Apple Silicon) port of the **Longshot Launcher**
-(the launcher for MagicBeanDev's *Longshot* — the Ocarina of Time PC port),
-originally published only as a Linux x86_64 AppImage / Windows exe.
+The native Apple silicon game and its Metal renderer are in the [native source tree](native).
+The original launcher and its build tools are also available.
 
-## Download
+## Native game
+
+Download the Mac installer and checksum from [Releases](../../releases), unzip the installer, and open it. Choose your existing macOS Longshot game build when prompted. The installer rebuilds the game from your files and installs `/Applications/Longshot.app`. Keep the original build folder for future updates.
+
+The build needs Xcode command-line tools, a Python environment that can run the original builder, and the libraries used by your macOS build, including Homebrew Mesa and vulkan-loader. Native Metal uses the Ocarina of Time shader service and shader data from your prepared game folder.
+
+## Original launcher
 
 Grab `LongshotLauncher-macOS-arm64.app.zip` from the
 [Releases](../../releases) page, unzip, and drop `LongshotLauncher.app`

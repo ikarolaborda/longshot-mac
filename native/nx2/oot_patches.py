@@ -273,12 +273,14 @@ MENU_FOCUS_HEAD = "void f_802ed660(Ctx *__restrict A64_NOESC c) {\n"
 # The actor, shop, reward and event queries also call the pouch getter. They do
 # not enter a loan scope. Explicit wrappers restore nesting on every early return.
 LOAN_UI = (
+    0x833dc100,  # health meter's frame update reads current and maximum life into its own layout
     0x802ebd20, 0x802ed660, 0x80590c50, 0x80a87790, 0x80a8d9c0,
     0x80a8e0d0, 0x80a8ef20, 0x80a90240, 0x80a913b0, 0x80a92790, 0x80a92b70,
     0x80a94910, 0x80a94ea0, 0x80a95770, 0x83416ee0, 0x83417070, 0x83417fd0,
     0x804b9c30, 0x804c60d0, 0x804c7470, 0x80a614e0, 0x80c225d0,
 )
-LOAN_GET = {0x8019b3b0: "hos_oot_loan_member(c, 1)", 0x80199f70: "hos_oot_loan_member(c, 0)",
+LOAN_GET = {0x80857070: "hos_oot_loan_flag(c, 1)", 0x80183d20: "hos_oot_loan_flag(c, 1)",
+            0x8019b3b0: "hos_oot_loan_member(c, 1)", 0x80199f70: "hos_oot_loan_member(c, 0)",
             0x805b63e0: "hos_oot_loan_count(c)",
             0x8022d9c0: "hos_oot_loan_flag(c, 0)", 0x83766540: "hos_oot_loan_flag(c, 1)"}
 

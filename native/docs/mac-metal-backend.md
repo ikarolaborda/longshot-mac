@@ -11,7 +11,7 @@ The native renderer replaces that layer with a direct NVN-to-Metal implementatio
 
 ## Source
 
-The NVN-to-Metal layer of MacNativeGames, `d2r_gfx` (MIT; `nvn_tex.c` adapts deko3d, zlib-style), copied with its notices into `third_party/d2r_gfx`. MacNativeGames runs OoT 131072 on it into Kokiri Forest and the village. Shaders are translated ahead of time from the game's own data (Ryujinx's shader translator emits Metal source) and compiled into Metal libraries at build time, so nothing is compiled while the game runs.
+The NVN-to-Metal layer of MacNativeGames, `d2r_gfx` (MIT; `nvn_tex.c` adapts deko3d, zlib-style), copied with its notices into `third_party/d2r_gfx`. MacNativeGames runs OoT 131072 on it into Kokiri Forest and the village. The game loads Metal libraries prepared from its shader data. A pipeline missing from the archive can still compile during play. One first-visit frame on an M5 Max took 15.4 seconds, including 15.3 seconds in shader and pipeline preparation.
 
 ## How it fits
 

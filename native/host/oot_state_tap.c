@@ -165,6 +165,11 @@ int hos_oot_gamedata_int(uint32_t hash, int64_t *v) {
     return mgr && state_number(mgr, KIND_INT, hash, v);
 }
 
+int hos_oot_gamedata_bool(uint32_t hash, int64_t *v) {
+    const uint64_t mgr = state_u64(state_u64(STATE_GAMEDATA_SLOT));
+    return mgr && state_number(mgr, KIND_BOOL, hash, v);
+}
+
 /* (host/oot_heart_containers.c, on Link's update as above: the boss heart containers taken) a Bool64bitKey flag of the
    game data, the kind named by an actor's 64-bit placement id: 1 set, 0 not, -1 not known. Their container is at
    GameDataMgr + 0xc58 (the game's f_80e1f1c0 hands that to its loader, f_805ce6b0): the count (u32) at +0, the entries at +8,

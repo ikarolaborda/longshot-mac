@@ -82,10 +82,28 @@ int hos_oot_loan_count(Ctx *c) {
 
 
 static int loan_scalar(Ctx *c, uint32_t key, int integer) {
-    if (integer && key == 0x04735978u && hos_trainer_enabled(OOT_TRAINER_SKULLTULAS) && loan_view(c)) {
-        recomp_store32(c, c->x[1], 100); c->x[0] = 1; return 1;
+    if (integer && loan_depth) {
+        static const struct { uint32_t key; int amount; enum OotTrainerOption option; } values[] = {
+            {0x31ab5580u, 80, OOT_TRAINER_HEALTH}, {0xfbe01da1u, 80, OOT_TRAINER_HEALTH},
+            {0x76b18200u, 480, OOT_TRAINER_MAGIC}, {0x12d63a97u, 480, OOT_TRAINER_MAGIC},
+            {0xe0010a50u, 1000, OOT_TRAINER_MAX_RUPEES},
+            {0x457616b0u, 30, OOT_TRAINER_MAX_AMMO}, {0x735b00f7u, 40, OOT_TRAINER_MAX_AMMO},
+            {0xe753508bu, 40, OOT_TRAINER_MAX_AMMO}, {0xae8cc742u, 50, OOT_TRAINER_MAX_AMMO},
+            {0x418db791u, 50, OOT_TRAINER_MAX_AMMO}, {0x04735978u, 100, OOT_TRAINER_SKULLTULAS},
+        };
+        for (size_t i = 0; i < sizeof values / sizeof *values; ++i) {
+            if (key != values[i].key || !hos_trainer_enabled(values[i].option) || !loan_view(c)) continue;
+            recomp_store32(c, c->x[1], values[i].amount);
+            c->x[0] = 1;
+            return 1;
+        }
     }
     if (!hos_trainer_enabled(OOT_TRAINER_EQUIPMENT)) return 0;
+    if (!integer && key == 0x1106b082u && loan_view(c)) {  /* IsGet.Item_Bottle */
+        recomp_store8(c, c->x[1], 1);
+        c->x[0] = 1;
+        return 1;
+    }
     for (size_t i = 0; i < sizeof loans / sizeof *loans; ++i) {
         if (key != (integer ? loans[i].stock : loans[i].acquired)) continue;
         trace_read(c, key, loans[i].name);

@@ -1270,6 +1270,7 @@ static int oot_flags = -1;   /* (1 an event playing, 2 a map loading, 4 the chil
 /* (with the map, for the Discord status: Link's life and its most in quarter hearts, his rupees, his Gold Skulltula
    tokens, his pieces of heart; -1 not known) */
 static int oot_stats[5] = {-1, -1, -1, -1, -1};
+int hos_oot_gamedata_bool(uint32_t hash, int64_t *v);
 int hos_oot_gamedata_int(uint32_t hash, int64_t *v);   /* (host/oot_state_tap.c) */
 static void oot_map_refresh(Ctx *c, int64_t now) {
     static int64_t next;
@@ -1545,8 +1546,6 @@ static int oot_trainer_int(Ctx *c, uint32_t hash, int32_t target) {
     return 0;
 }
 
-typedef struct { uint32_t stock, acquired; } OotPouchItem;
-
 /* Ammunition kept topped up: each consumable's count may not fall below the most it held while the row was on (so the game's own
    capacity, the bag or quiver Link has, is never exceeded) */
 static const char *const oot_trainer_ammo[] = {"Item_DekuStick", "Item_DekuNut", "Item_Bomb", "Item_Bombchu", "Item_DekuSeed",
@@ -1577,7 +1576,7 @@ static void oot_trainer_tick(Ctx *c, uint64_t components, int64_t now) {
     next = now + 100000000LL;   /* (ten times a second: a hit's damage is undone before the next frames show it for long) */
     const int max_health = hos_trainer_enabled(OOT_TRAINER_HEALTH);
     const int health = max_health || rx_option(HOS_OPT_TRAINER_HEALTH, 0) > 0;
-    const int max_hearts = max_health ? 20 : rx_option(HOS_OPT_TRAINER_MAX_HEARTS, 0);
+    const int max_hearts = rx_option(HOS_OPT_TRAINER_MAX_HEARTS, 0);
     const int magic = hos_trainer_enabled(OOT_TRAINER_MAGIC);
     const int max_rupees = hos_trainer_enabled(OOT_TRAINER_MAX_RUPEES);
     const int max_ammo = hos_trainer_enabled(OOT_TRAINER_MAX_AMMO);
@@ -1620,23 +1619,9 @@ static void oot_trainer_tick(Ctx *c, uint64_t components, int64_t now) {
     }
     if (magic) {
         /* The two fairy blessings specify 24 and 48 units. The player stores tenths. */
-        oot_trainer_int(c, 0x12d63a97, 480);
-        int32_t capacity, remaining;
-        if (oot_gamedata_int(c, 0x12d63a97u, &capacity) && capacity > 0 &&  /* PlayerStatus.MPMax */
-            oot_gamedata_int(c, 0x76b18200u, &remaining) && remaining < capacity) {
-            /* OneShotPlayerHealMPMax queues a refill on Link's active magic meter. */
-            const uint64_t player = recomp_load64(c, components + 0x358);
-            A64Fn refill = a64_lookup(0x82ea0f80ULL);
-            if (player && refill) {
-                const Ctx saved = *c;
-                c->x[0] = player;
-                refill(c);
-                *c = saved;
-            }
-        }
+        oot_trainer_int(c, 0x76b18200u, 480);  /* Refill current MP. The fairy owns the saved maximum. */
     }
     if (max_rupees) {
-        oot_trainer_int(c, 0xe0010a50, 1000);  /* ExpansionMaxNumActor's Rupee entry */
         oot_trainer_int(c, OOT_GD_PLAYER_RUPEES, 1000);
     } else if (rupees) {
         int32_t have = 0;
@@ -1646,22 +1631,18 @@ static void oot_trainer_tick(Ctx *c, uint64_t components, int64_t now) {
         }
     }
     if (max_ammo) {
-        /* Largest bags and capacities from the game's ExpansionMaxNumActor assets. */
-        static const struct { OotPouchItem bag, ammo; uint32_t capacity; int max; } supplies[] = {
-            {{0x48e53698,0xa10f2dcf},{0xb9494411,0xc4e21ac2},0x457616b0,30}, /* sticks */
-            {{0xd60e4b23,0x9a5db0b6},{0xf30d9f54,0x00c2ee37},0x735b00f7,40}, /* nuts */
-            {{0xbd3ca2c6,0x968a5a79},{0xdb1bcd4f,0x2bb00768},0xe753508b,40}, /* bombs */
-            {{0x7b9673f5,0xb669f025},{0x5fadf7fc,0x29888e1e},0xae8cc742,50}, /* slingshot seeds */
-            {{0xd331c7da,0x21985b09},{0x518ec74b,0x572701ea},0x418db791,50}  /* arrows */
+        /* Refill an earned consumable even when its count reaches zero. Bag upgrades
+           and their saved capacities still belong to the original reward events. */
+        static const struct { uint32_t stock, acquired; int maximum; } supplies[] = {
+            {0xb9494411u, 0xc4e21ac2u, 30}, {0xf30d9f54u, 0x00c2ee37u, 40},
+            {0xdb1bcd4fu, 0x2bb00768u, 40}, {0x5fadf7fcu, 0x29888e1eu, 50},
+            {0x518ec74bu, 0x572701eau, 50}, {0xdf7c517au, 0x5ab49c8eu, 40},
         };
         for (unsigned i = 0; i < sizeof supplies / sizeof supplies[0]; ++i) {
-            oot_trainer_int(c, supplies[i].capacity, supplies[i].max);
-            int32_t owned;
-            if (oot_gamedata_int(c, supplies[i].ammo.stock, &owned) && owned > 0)
-                oot_trainer_int(c, supplies[i].ammo.stock, supplies[i].max);
+            int64_t earned;
+            if (hos_oot_gamedata_bool(supplies[i].acquired, &earned) && earned)
+                oot_trainer_int(c, supplies[i].stock, supplies[i].maximum);
         }
-        int32_t bombchu;
-        if (oot_gamedata_int(c, 0xdf7c517a, &bombchu) && bombchu > 0) oot_trainer_int(c, 0xdf7c517a, 40);
     } else if (ammo) {
         for (int i = 0; i < OOT_TRAINER_AMMO; i++) {
             const int have = oot_pouch_count(c, oot_trainer_ammo[i]);
