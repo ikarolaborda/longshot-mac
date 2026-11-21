@@ -1,6 +1,6 @@
 This preview updates an existing Longshot game build for Apple silicon. Unzip the installer, open it, and choose the folder containing your game files. It installs Longshot in Applications. The executable has a local ad hoc signature. Finder may require approval in Privacy & Security.
 
-The About window credits Nintendo, the Longshot and Hookshot teams, and the Metal renderer contributors. It links to the [Mac repository](https://github.com/ikarolaborda/longshot-mac) and [GitHub Sponsors](https://github.com/sponsors/ikarolaborda).
+The game displays the Longshot grappling hook icon in Finder, the Dock, and the About window. The About window credits Nintendo, the Longshot and Hookshot teams, and the Metal renderer contributors. It links to the [Mac repository](https://github.com/ikarolaborda/longshot-mac) and [GitHub Sponsors](https://github.com/sponsors/ikarolaborda).
 
 Space jumps, Q and P send L and R, and the number-row 1 and minus send ZL and ZR. F and left click attack (Y). M opens the map (Minus). The arrow keys send the matching D-pad directions. Hold right click to send ZL for targeting. Keypad 5 opens the cheat menu.
 

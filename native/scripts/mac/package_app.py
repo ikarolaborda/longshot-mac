@@ -27,6 +27,21 @@ def clone(source, dest):
     run("/bin/cp", "-cRLp", source, dest)
 
 
+def make_app_icon(resources):
+    source = Path(__file__).resolve().parents[2] / "assets/longshot.png"
+    icon = resources / "Longshot.icns"
+    with tempfile.TemporaryDirectory() as folder:
+        iconset = Path(folder) / "Longshot.iconset"
+        iconset.mkdir()
+        for points in (16, 32, 128, 256, 512):
+            for scale, suffix in ((1, ""), (2, "@2x")):
+                pixels = str(points * scale)
+                png = iconset / f"icon_{points}x{points}{suffix}.png"
+                run("/usr/bin/sips", "-z", pixels, pixels, source, "--out", png)
+        run("/usr/bin/iconutil", "-c", "icns", "-o", icon, iconset)
+    return icon.name
+
+
 def dependencies(path):
     lines = run("otool", "-arch", "arm64", "-L", path).splitlines()[1:]
     return [line.strip().split(" (", 1)[0] for line in lines]
@@ -83,6 +98,8 @@ def libraries(exe, game, contents):
 
 
 def install_app(staged, output):
+    # Finder uses the bundle's modification time to refresh its cached icon.
+    os.utime(staged, None)
     if not output.exists():
         staged.rename(output)
         return
@@ -127,6 +144,7 @@ def main():
         exe = contents / "MacOS/longshot"
         exe.parent.mkdir(parents=True)
         (contents / "Resources").mkdir()
+        icon_name = make_app_icon(contents / "Resources")
         clone(Path(__file__).with_name("resources") / "Credits.rtf", contents / "Resources/Credits.rtf")
         assets = Path(data_stage) / "Game"
         assets.mkdir()
@@ -151,6 +169,7 @@ def main():
                     clone(part, target / part.name)
         libraries(exe, game, contents)
         info = dict(CFBundleIdentifier=APP_ID, CFBundleExecutable=exe.name, CFBundleName="Longshot",
+                    CFBundleIconFile=icon_name,
                     CFBundleDisplayName="Longshot", CFBundlePackageType="APPL", CFBundleVersion=version,
                     CFBundleShortVersionString=version, NSHighResolutionCapable=True, LongshotDataDirectory=data_name,
                     LSApplicationCategoryType="public.app-category.adventure-games",
