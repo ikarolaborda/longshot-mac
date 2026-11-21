@@ -66,13 +66,17 @@ points dyld at `/usr/local/lib` and `/opt/homebrew/lib`.)
 The tooling used is in [`build-tools/`](build-tools/) (`ilpatch/` = Cecil
 patcher, `bundler/` = Microsoft.NET.HostModel bundler).
 
-[Sponsor Ikaro Laborda on GitHub](https://github.com/sponsors/ikarolaborda)
-
 ## Credits
 
-- **Longshot** and the Longshot Launcher — [MagicBeanDev](https://github.com/MagicBeanDev/Longshot)
-- Avalonia, .NET, MoltenVK — their respective projects
-- Port packaging and IL surgery — Ikaro Laborda
+- Nintendo created the original game.
+- MagicBeanDev and contributors maintain Longshot. [Longshot project](https://git.magicbean.dev/MagicBeanDev/Longshot)
+- NotRexed and contributors created Hookshot, the predecessor to Longshot.
+- jhaizhou and MacNativeGames contributors developed the Metal renderer.
+- Avalonia, .NET, and MoltenVK are credited to their respective projects.
+
+**MacOS version By Ikaro Laborda**
+
+[GitHub repository](https://github.com/ikarolaborda/longshot-mac) · [Sponsor Ikaro Laborda](https://github.com/sponsors/ikarolaborda)
 
 *Longshot Launcher is © its authors; this repository only distributes the
 macOS repackaging and patch tooling.*
