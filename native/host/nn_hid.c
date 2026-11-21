@@ -4,8 +4,8 @@
    (longshot) What presses each button, on a gamepad and on the keyboard, is the player's: the Insert menu's Controls
    page (gpu/vk/vk_menu.cpp) changes it, kept in longshot_options.ini (binds_load). The defaults:
    On macOS: WASD moves, IJKL turns, Space jumps, Ctrl interacts and confirms,
-   Shift cancels, left click attacks, Q/P are the shoulders and 1/minus are the triggers.
-   E or Enter pauses. F or M opens the map. Arrows select equipment and Caps Lock walks.
+   Shift cancels, F or left click attacks, Q/P are the shoulders and 1/minus are the triggers.
+   E or Enter pauses. M opens the map. Arrows select equipment and Caps Lock walks.
    Mouse (after a click in the window, display.c; Esc releases): its motion is the right stick (mouse panning,
    mouse_stick), or with the Insert menu's "Mouse camera" set to Native (HOS_MOUSE_NATIVE=1 or 0 overrides it) turns
    the camera itself (mouse_native.c). keypad minus and = change its sensitivity (x0.8 /
@@ -543,8 +543,8 @@ static int is_mouse_vk(int vk) { return vk == VK_LBUTTON || vk == VK_RBUTTON || 
                                         vk == VK_XBUTTON1 || vk == VK_XBUTTON2; }
 static const unsigned char key_default[HOS_KEY_N][2] = {
 #ifdef __APPLE__
-    {VK_CONTROL}, {VK_SHIFT}, {VK_SPACE}, {VK_LBUTTON}, {'V'}, {'C'}, {'Q', VK_XBUTTON1}, {'P', VK_XBUTTON2},
-    {'1', VK_RBUTTON}, {VK_OEM_MINUS, 'X'}, {'E', VK_RETURN}, {'F', 'M'}, {VK_LEFT},
+    {VK_CONTROL}, {VK_SHIFT}, {VK_SPACE}, {'F', VK_LBUTTON}, {'V'}, {'C'}, {'Q', VK_XBUTTON1}, {'P', VK_XBUTTON2},
+    {'1', VK_RBUTTON}, {VK_OEM_MINUS, 'X'}, {'E', VK_RETURN}, {'M'}, {VK_LEFT},
 #else
     {VK_SPACE}, {VK_SHIFT}, {VK_CONTROL}, {VK_LBUTTON}, {'V'}, {'C'}, {'Q', VK_XBUTTON1}, {'R', VK_XBUTTON2},
     {'Z', VK_MBUTTON}, {VK_RBUTTON, 'X'}, {'E', VK_RETURN}, {'F', 'M'}, {VK_LEFT, '1'},
@@ -597,6 +597,9 @@ static void binds_load(void) {
     if (f) {
         char line[80];
         int version = 0, had_keys = 0, walk_named = 0;   /* (options_version: 3 since the mouse's buttons are bindings) */
+#ifdef __APPLE__
+        int attack_named = 0, map_named = 0;
+#endif
         while (fgets(line, sizeof line, f)) {
             char *eq = strchr(line, '=');
             if (!eq) continue;
@@ -609,6 +612,10 @@ static void binds_load(void) {
                 changed++;
                 const char *comma = strchr(eq + 1, ',');
                 walk_named |= keys && i == HOS_KEY_WALK;
+#ifdef __APPLE__
+                attack_named |= keys && i == HOS_SW_Y;
+                map_named |= keys && i == HOS_SW_MINUS;
+#endif
                 if (pad) {
                     pad_bind[i][0] = pad_code(eq + 1);
                     pad_bind[i][1] = comma ? pad_code(comma + 1) : -1;
@@ -632,6 +639,28 @@ static void binds_load(void) {
             }
         }
 #ifdef __APPLE__
+        /* M already opened the map in the old Mac layout. Move F to attack when
+           these two rows still have their defaults, including in partial files. */
+        if (version < 8 && had_keys) {
+            if (!attack_named) {
+                key_bind[HOS_SW_Y][0] = VK_LBUTTON;
+                key_bind[HOS_SW_Y][1] = 0;
+            }
+            if (!map_named) {
+                key_bind[HOS_SW_MINUS][0] = 'F';
+                key_bind[HOS_SW_MINUS][1] = 'M';
+            }
+            int other_f = 0;
+            for (int i = 0; i < HOS_KEY_N; ++i)
+                if (i != HOS_SW_MINUS && i != HOS_SW_Y) other_f |= key_bind[i][0] == 'F' || key_bind[i][1] == 'F';
+            if (!other_f && key_bind[HOS_SW_Y][0] == VK_LBUTTON && !key_bind[HOS_SW_Y][1] &&
+                key_bind[HOS_SW_MINUS][0] == 'F' && key_bind[HOS_SW_MINUS][1] == 'M') {
+                key_bind[HOS_SW_Y][0] = 'F';
+                key_bind[HOS_SW_Y][1] = VK_LBUTTON;
+                key_bind[HOS_SW_MINUS][0] = 'M';
+                key_bind[HOS_SW_MINUS][1] = 0;
+            }
+        }
         /* Version 6 of the Mac defaults used the middle button here. Keep user assignments. */
         if (version <= 6 && key_bind[HOS_SW_ZL][0] == '1' && key_bind[HOS_SW_ZL][1] == VK_MBUTTON) {
             int right_assigned = 0;

@@ -885,18 +885,17 @@ Click the game window to capture the mouse. Move the mouse to look around. Press
 | --- | --- |
 | W, A, S, D | Move forward, left, back, and right. Hold Caps Lock to walk. |
 | Arrow keys | Select equipment with the corresponding D-pad direction. |
-| Left mouse | Attack. Hold to charge the attack. |
+| Left mouse, or F on macOS | Attack (Y). Hold to charge the attack. |
 | Right mouse (macOS) | Hold for ZL to target a nearby enemy. Number-row 1 also sends ZL. |
-| 1 or middle mouse (macOS) | ZL. |
 | Minus on the number row or X (macOS) | ZR. |
 | Space / Ctrl (macOS) | Jump (X) / talk, act or confirm (A). |
 | Q or Mouse 4 / P or Mouse 5 (macOS) | Left / right shoulder button. |
 | Shift | Cancel or put away (B). |
-| E or Enter / F or M | Pause (Plus) / open the map (Minus). |
+| E or Enter / M | Pause (Plus) / open the map (Minus). |
 | I, J, K, L | Turn the camera up, left, down, or right. |
 
 On Windows and Linux, Space talks or confirms, Ctrl jumps, Q and R are the shoulders,
-Z or middle mouse is ZL, and right mouse or X is ZR.
+Z or middle mouse is ZL, right mouse or X is ZR, and F also opens the map.
 
 On macOS, press **keypad 5** to open the cheat menu. Press it again or press Esc to close it.
 Check the cheats you want at the title screen or during play. The game remembers them for the next launch

@@ -2,8 +2,8 @@ This preview updates an existing Longshot game build for Apple silicon. Unzip th
 
 The About window credits Nintendo, the Longshot and Hookshot teams, and the Metal renderer contributors. It links to the [Mac repository](https://github.com/ikarolaborda/longshot-mac) and [GitHub Sponsors](https://github.com/sponsors/ikarolaborda).
 
-Space jumps, Q and P send L and R, and the number-row 1 and minus send ZL and ZR. Left click attacks. Hold right click to send ZL for targeting. Keypad 5 opens the cheat menu.
+Space jumps, Q and P send L and R, and the number-row 1 and minus send ZL and ZR. F and left click attack (Y). M opens the map (Minus). The arrow keys send the matching D-pad directions. Hold right click to send ZL for targeting. Keypad 5 opens the cheat menu.
 
-The native Metal build restores missing text and subtitles with the Ocarina of Time shader service. On an M5 Max, the tested warm crossing into Kakariko took roughly seven to ten seconds. First visits can still stall while Metal compiles a pipeline or uploads textures.
+Metal now checks the textures a draw can use when it can track the shader's input buffers reliably. It keeps full validation for texture handle tables that can share memory through another address. In a 15-second offscreen comparison on an M5 Max at 2048 × 1152, Death Mountain Trail improved from 48 to 58 FPS and Kakariko Village from 33 to 41 FPS. The warm crossing into Kakariko took about 5.8 seconds in both builds. A separate game window was running during the comparison. First visits can still stall while Metal compiles a pipeline or uploads textures. The build uses the Ocarina of Time shader service for game text and subtitles.
 
 The equipment cheat uses temporary inventory reads. On a fresh save, the inventory screen can still omit borrowed gear and bottles, and the HUD can show only earned heart containers. In the Kokiri Sword chest test, the game awarded the sword with every cheat enabled. Earlier versions could write permanent ownership into a save. This release leaves existing saves in place. Keep a backup from before enabling those older cheats.

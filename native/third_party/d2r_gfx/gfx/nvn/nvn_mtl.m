@@ -14091,6 +14091,9 @@ static int pool_uniform_read(void *context,int binding,uint32_t offset,uint32_t 
     if(sh->stage!=1&&sh->stage!=5)return 0;
     const nvn_rbind *b=&sh->rf.b[binding];if(b->kind!=NVN_RB_CBUF||b->reg>=16)return 0;
     const p_bind_buf *u=&S.ubo[sh->stage][b->reg];if(!u->addr||u->size<4||offset>u->size-4)return 0;
+    // A write through another mapping would evade the address-based writer fence.
+    // Returning unknown makes the proof cover every index in the handle table.
+    if(totk_vpool_may_alias(u->addr,u->size))return 0;
     if(sh->pool_capture_mask&(UINT64_C(1)<<binding)){memcpy(value,sh->pool_capture_cpu[binding]+offset,4);return 1;}
     const uint8_t *cpu=NULL;uint64_t gpu=g_nupd?upd_shadow(u->addr,u->size):0;
     if(gpu)cpu=bound_uniform_bytes(gpu,u->size,nil);
@@ -14163,7 +14166,7 @@ static void pool_demand_prepare(NvShader *sh) {
     if(atomic_exchange(&g_pool_wait_dump,0))MLOG("[pool-wait-stats] precise=%d prior=%llu current=%llu wait-ms=%.3f capture-new=%llu",pool_wait_precise_on(),(unsigned long long)g_pool_wait_prior,(unsigned long long)g_pool_wait_current,(double)g_pool_wait_ns/1e6,(unsigned long long)g_pool_input_misses);
     if(!sh->pool_demand)sh->pool_demand=[NSMutableDictionary dictionary];
     [sh->pool_demand removeAllObjects];sh->pool_capture_mask=0;memset(sh->pool_hint,0,sizeof sh->pool_hint);
-    int gate=!pool_demand_on()?1:!usnap_on()?2:totk_vpool_aliases_used()?3:pool_draw_writes(sh)?4:0;
+    int gate=!pool_demand_on()?1:!usnap_on()?2:pool_draw_writes(sh)?4:0;
     if(gate){static unsigned reports[5];g_pool_demand_excluded++;if(reports[gate]++<2)MLOG("[descriptor-demand-excluded] shader=%s stage=%d reason=%d",sh->key,sh->stage,gate);return;}
     int n=S.tex_pool_n-S.tex_base;if(n<=0||n>1048576)return;
     size_t words=((size_t)n+63)/64;
@@ -14175,12 +14178,14 @@ static void pool_demand_prepare(NvShader *sh) {
             if(sb->kind!=NVN_RB_SBUFP||sb->rw||sb->reg>=16){reason=1;valid=0;break;}
             const p_bind_buf *u=&S.ssbo[sh->stage][sb->reg];
             reason=!u->addr||!u->size?2:u->size>(16u<<20)?3:u->size%4?4:!mtl_addr_known(u->addr,u->size)?5:0;
+            // Only the ranges that supply this proof need unambiguous write tracking.
+            if(!reason&&totk_vpool_may_alias(u->addr,u->size))reason=6;
             if(reason){failed_addr=u->addr;failed_size=u->size;valid=0;break;}
             if(pool_input_find(u))continue; // unchanged, already synchronized immutable input
             uint64_t writer=pool_range_write_fence(u);if(writer){pool_wait_trace(sh,u,"storage");wait=MAX(wait,writer);}
         }
         if(!valid){
-            static unsigned reports[6];if(reason<6&&reports[reason]++<4)MLOG("[descriptor-demand-fallback] shader=%s stage=%d pool=%d sources=%llx reason=%d addr=%llx size=%llu",sh->key,sh->stage,b->aid,sources,reason,failed_addr,failed_size);
+            static unsigned reports[7];if(reason<7&&reports[reason]++<4)MLOG("[descriptor-demand-fallback] shader=%s stage=%d pool=%d sources=%llx reason=%d addr=%llx size=%llu",sh->key,sh->stage,b->aid,sources,reason,failed_addr,failed_size);
             g_pool_demand_fallback++;continue;
         }
         if(wait){

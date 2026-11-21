@@ -11,6 +11,7 @@
 #include <mach/mach.h>
 #include "mach_vm_compat.h"
 #include <pthread.h>
+#include <stdatomic.h>
 #include <unistd.h>
 
 #define F_CPU_NO_ACCESS NVN_MEMORY_POOL_FLAGS_CPU_NO_ACCESS
@@ -22,6 +23,29 @@
 static pthread_mutex_t g_map_mu = PTHREAD_MUTEX_INITIALIZER;
 static int g_aliases_used;
 int totk_vpool_aliases_used(void) { return __atomic_load_n(&g_aliases_used, __ATOMIC_ACQUIRE); }
+
+// One bit per MiB, wrapping every 64 GiB. Collisions and reused addresses only
+// select full descriptor validation. Keep bits after a pool is finalized since
+// virtual mappings can outlive its original registration.
+enum { ALIAS_SHIFT = 20, ALIAS_WORDS = 1024 };
+static _Atomic uint64_t alias_pages[ALIAS_WORDS];
+
+static void note_alias_pool(const pool_t *pool) {
+    uintptr_t first = (uintptr_t)pool->mem >> ALIAS_SHIFT;
+    uintptr_t last = ((uintptr_t)pool->mem + pool->size - 1) >> ALIAS_SHIFT;
+    if (last - first >= ALIAS_WORDS * 64) last = first + ALIAS_WORDS * 64 - 1;
+    for (uintptr_t page = first; page <= last; ++page)
+        atomic_fetch_or(&alias_pages[(page / 64) % ALIAS_WORDS], UINT64_C(1) << (page % 64));
+}
+
+int totk_vpool_may_alias(uintptr_t address, uint64_t size) {
+    if (!size || size - 1 > UINTPTR_MAX - address) return 1;
+    uintptr_t first = address >> ALIAS_SHIFT, last = (address + size - 1) >> ALIAS_SHIFT;
+    if (last - first >= ALIAS_WORDS * 64) return 1;
+    for (uintptr_t page = first; page <= last; ++page)
+        if (atomic_load(&alias_pages[(page / 64) % ALIAS_WORDS]) & (UINT64_C(1) << (page % 64))) return 1;
+    return 0;
+}
 
 static uint64_t host_page(void) { return (uint64_t)getpagesize(); }
 static uint64_t round_up(uint64_t v, uint64_t a) { return (v + a - 1) & ~(a - 1); }
@@ -42,12 +66,14 @@ int totk_vpool_init(pool_t *o) {
     if (phys && !o->mem) { LOG("【红】vpool: physical pool without storage"); return 0; }
     if (phys && !(o->flags & F_CPU_NO_ACCESS)) {
         if ((uintptr_t)o->mem % host_page()) { LOG("【红】vpool: CPU-visible physical pool %p not %#llx aligned; cannot alias", (void *)o->mem, host_page()); return 0; }
+        note_alias_pool(o);
         return 1;   // aliases the game storage directly
     }
     o->span = round_up(o->size, host_page());
     o->host = vm_fresh(o->span);
     if (!o->host) return 0;
     o->mem = o->host;
+    note_alias_pool(o);
     return 1;
 }
 
