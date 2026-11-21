@@ -66,6 +66,8 @@ points dyld at `/usr/local/lib` and `/opt/homebrew/lib`.)
 The tooling used is in [`build-tools/`](build-tools/) (`ilpatch/` = Cecil
 patcher, `bundler/` = Microsoft.NET.HostModel bundler).
 
+[Sponsor Ikaro Laborda on GitHub](https://github.com/sponsors/ikarolaborda)
+
 ## Credits
 
 - **Longshot** and the Longshot Launcher — [MagicBeanDev](https://github.com/MagicBeanDev/Longshot)
