@@ -26,6 +26,21 @@ void hos_oot_trainer_clock(Ctx *c) {
     if (hos_trainer_enabled(OOT_TRAINER_CLOCK)) a64_vset64(c->vreg[9], 0);
 }
 
+/* The player's accessory factory resolves the instrument (13) and its holder
+   (16) from PlayerStatus.EquipOcarina. A borrowed item has no saved selection.
+   Supply the model to this call only, including when the player is in a lesson. */
+void hos_oot_trainer_ocarina(Ctx *c) {
+    const unsigned slot = (unsigned)c->x[20];
+    if ((slot != 13 && slot != 16) || !(c->x[0] & 1) ||
+        !hos_trainer_enabled(OOT_TRAINER_EQUIPMENT)) return;
+    const char *equipped = hos_guest_range(c->x[1], 1);
+    if (!equipped || *equipped) return;
+    const uint64_t fairy = 0x83f33e21ULL;  /* Actor-name literal in the supported build. */
+    const char *name = hos_guest_range(fairy, sizeof "Item_Ocarina_Fairy");
+    if (name && !memcmp(name, "Item_Ocarina_Fairy", sizeof "Item_Ocarina_Fairy"))
+        c->x[1] = fairy;
+}
+
 /* The lifter enters these scopes only around the supported build's inventory
    widgets and player equipment methods. A grant is an answer to a read, never
    a write to GameData. Threads running an event or autosave have their own scope. */
