@@ -158,6 +158,45 @@ static int state_number(uint64_t mgr, int kind, uint32_t hash, int64_t *v) {
     return 1;
 }
 
+#ifdef __APPLE__
+/* The HUD reticle enum in the supported game. The slingshot shares Bow.
+   Fishing uses its own controls, and neither fishing nor None is a weapon aim. */
+int hos_oot_weapon_reticle(void) {
+    const uint64_t mgr = state_u64(state_u64(STATE_GAMEDATA_SLOT));
+    int64_t type;
+    if (!mgr || !state_number(mgr, KIND_ENUM, 0x3e89ea29u, &type)) return 0;
+    switch ((uint32_t)type) {
+    case 0x53711589u: /* Bow */
+    case 0xd1b7e25fu: /* Boomerang */
+    case 0xdfa25d8eu: /* HookshotInvalid */
+    case 0x9a28a002u: /* HookshotNormal */
+    case 0xb9144382u: /* HookshotLockOn */
+        return 1;
+    default:
+        return 0;
+    }
+}
+
+int hos_oot_zr_ranged(void) {
+    const uint64_t mgr = state_u64(state_u64(STATE_GAMEDATA_SLOT));
+    int64_t item;
+    if (!mgr || !state_number(mgr, KIND_ENUM, 0xa0029837u, &item)) return 0;
+    switch ((uint32_t)item) {
+    case 0xe59d9053u: /* SlingShot */
+    case 0x53711589u: /* Bow */
+    case 0xd1b7e25fu: /* Boomerang */
+    case 0xb369259bu: /* Hookshot */
+    case 0xde6256fbu: /* Longshot */
+    case 0x85eb6e5au: /* FireArrow */
+    case 0xdeeee4bau: /* IceArrow */
+    case 0x864a10fdu: /* LightArrow */
+        return 1;
+    default:
+        return 0;
+    }
+}
+#endif
+
 /* (host/hos_main.c's oot_map_refresh, on Link's update, as the rest of this file reads the guest: the Discord status's
    hearts and rupees) an Int flag of the game data by its hash into *v; 0 when there is none */
 int hos_oot_gamedata_int(uint32_t hash, int64_t *v) {

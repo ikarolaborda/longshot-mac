@@ -1,5 +1,7 @@
 This preview updates an existing Longshot game build for Apple silicon. Unzip the installer, open it, and choose the folder containing your game files. It installs Longshot in Applications. The executable has a local ad hoc signature. Finder may require approval in Privacy & Security.
 
+Press the mouse wheel once to hold ZR. Press it again to leave aiming and put your ranged weapon away. The minus key still works as a held ZR button. Moving the mouse up raises your aim, even when your controller uses inverted stick controls. The mouse has its own vertical inversion setting.
+
 With “Infinite rupees (1,000)” enabled in the keypad 5 menu, you can pay for items and keep a full wallet throughout the purchase. Turn it off to spend rupees normally.
 
 With All Equipment enabled, child Link can lift and throw Bomb Flowers before Darunia gives him the Goron Bracelet. Adult Link can lift heavy rocks with borrowed gauntlets. The borrowed Gold Scale also lets Link dive deeper. The story still records when Link earns each item.

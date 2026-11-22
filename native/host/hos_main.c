@@ -1272,12 +1272,35 @@ static int oot_flags = -1;   /* (1 an event playing, 2 a map loading, 4 the chil
 static int oot_stats[5] = {-1, -1, -1, -1, -1};
 int hos_oot_gamedata_bool(uint32_t hash, int64_t *v);
 int hos_oot_gamedata_int(uint32_t hash, int64_t *v);   /* (host/oot_state_tap.c) */
+#ifdef __APPLE__
+int hos_oot_weapon_reticle(void);
+int hos_oot_zr_ranged(void);
+static int oot_ranged_zr;
+int hos_oot_ranged_zr_equipped(void) {
+    return __atomic_load_n(&oot_ranged_zr, __ATOMIC_RELAXED);
+}
+static int64_t oot_aim_until;
+int hos_oot_aiming(void) {
+    return hos_now_ns() < __atomic_load_n(&oot_aim_until, __ATOMIC_RELAXED);
+}
+/* Sample the game's stick preference on Link's update, where GameData is live. */
+static int oot_stick_reverse_y;
+int hos_oot_stick_y_reversed(void) {
+    return __atomic_load_n(&oot_stick_reverse_y, __ATOMIC_RELAXED);
+}
+#endif
 static void oot_map_refresh(Ctx *c, int64_t now) {
     static int64_t next;
     if (now < next) return;
     next = now + 250000000LL;
     char map[80];
     if (!oot_gamedata_string(c, 0x1d6189dau, map, sizeof map) || !map[0]) return;   /* Sequence_CurrentBanc */
+#ifdef __APPLE__
+    __atomic_store_n(&oot_ranged_zr, hos_oot_zr_ranged(), __ATOMIC_RELAXED);
+    int64_t reverse_y;
+    if (hos_oot_gamedata_bool(0x520ddc44u, &reverse_y))  /* IsCameraUpDownReverse */
+        __atomic_store_n(&oot_stick_reverse_y, reverse_y != 0, __ATOMIC_RELAXED);
+#endif
     int loading = 0, child = 1;
     oot_gamedata_bool(c, 0xef2b60c2u, &loading);   /* Sequence_IsLoadingBanc */
     oot_gamedata_bool(c, 0xcea220d3u, &child);     /* Sequence_IsChildhood */
@@ -1711,6 +1734,10 @@ static void oot_update_player_cheats(Ctx *c, uint64_t actor, uint64_t components
 
     oot_player_speed(c, components);
     oot_map_refresh(c, now);
+#ifdef __APPLE__
+    /* Link stops updating on pause and load. Expire his last reticle sample there. */
+    __atomic_store_n(&oot_aim_until, hos_oot_weapon_reticle() ? now + 250000000LL : 0, __ATOMIC_RELAXED);
+#endif
     if (action >= OOT_CHEAT_ITEM_ACTION && action < OOT_CHEAT_ITEM_ACTION + 256 * (int)OOT_ITEM_COUNT) {
         oot_inventory_edit(c, action);
     } else if (action == OOT_AGE_ACTION) {

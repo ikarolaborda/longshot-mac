@@ -60,6 +60,11 @@ static int key(int vk) { return !rx_option(1, 0) && (GetAsyncKeyState(vk) & 0x80
 int hos_mouse_take(int32_t *dx, int32_t *dy);   /* display.c */
 int hos_mouse_captured(void);
 int hos_mouse_native_look(void);
+#ifdef __APPLE__
+int hos_oot_stick_y_reversed(void);
+int hos_oot_aiming(void);
+int hos_oot_ranged_zr_equipped(void);
+#endif
 void hos_mouse_native_free(int free);
 
 /* The captured mouse's sensitivity (mouse_stick below): - and = change it, kept in <user>/mouse_sens.txt */
@@ -234,14 +239,16 @@ static void mouse_setup(void) {   /* (once: the sensitivity kept in <user>/mouse
     }
 }
 
-static void mouse_stick(int32_t *rx, int32_t *ry, int active, int pointing) {
+enum MouseStickMode { MOUSE_PANNING, MOUSE_POINTING, MOUSE_ZR_AIM };
+
+static void mouse_stick(int32_t *rx, int32_t *ry, int active, enum MouseStickMode mode) {
     static int64_t next_tick;
     static int32_t shown[2];
-    static int was_pointing;
-    if (!active || pointing != was_pointing) {
+    static enum MouseStickMode previous_mode;
+    if (!active || mode != previous_mode) {
         next_tick = 0;
         look_x = look_y = 0;
-        was_pointing = pointing;
+        previous_mode = mode;
     }
     if (!active) return;
     static int env_invert = -1;   /* (HOS_MOUSE_INVERT_Y, or the menu's Invert mouse vertical, option 8) */
@@ -256,13 +263,21 @@ static void mouse_stick(int32_t *rx, int32_t *ry, int active, int pointing) {
     if (now >= next_tick) {
         int32_t dx, dy;
         if (!hos_mouse_take(&dx, &dy)) look_x = look_y = 0;
-        else if (pointing) {
+        else if (mode == MOUSE_POINTING) {
             const double k = hos_mouse_sens * 0.03;
             look_x += (invert_x ? -dx : dx) * k;
             look_y += (invert ? dy : -dy) * k;
             const double length = sqrt(look_x * look_x + look_y * look_y);
             if (length > 1) look_x /= length, look_y /= length;
-        } else if (dx || dy) mouse_look_move(invert_x ? -dx : dx, invert ? dy : -dy);
+        } else if (dx || dy) {
+            /* Aiming routes mouse motion through the game's stick inversion. Cancel
+               that setting for the mouse so its own inversion preference still wins. */
+            int flip_y = invert;
+#ifdef __APPLE__
+            if (mode == MOUSE_ZR_AIM && hos_oot_stick_y_reversed()) flip_y = !flip_y;
+#endif
+            mouse_look_move(invert_x ? -dx : dx, flip_y ? dy : -dy);
+        }
         /* (the ticks since the last read: the first shows the deflection, the rest only decay it; at most 10, a
            read after a pause starts afresh) */
         const int64_t ticks = next_tick ? (now - next_tick) / MOUSE_TICK_NS + 1 : 1;
@@ -271,7 +286,7 @@ static void mouse_stick(int32_t *rx, int32_t *ry, int active, int pointing) {
         if (shown_length > 1) ox /= shown_length, oy /= shown_length;
         shown[0] = (int32_t)lround(ox * 32767);
         shown[1] = (int32_t)lround(oy * 32767);
-        if (!pointing)
+        if (mode != MOUSE_POINTING)
             for (int64_t i = 0; i < (ticks < 10 ? ticks : 10); i++) mouse_look_tick();
         next_tick = (next_tick && ticks <= 10 ? next_tick + ticks * MOUSE_TICK_NS : now + MOUSE_TICK_NS);
     }
@@ -553,7 +568,16 @@ static const unsigned char key_default[HOS_KEY_N][2] = {
     {'I'}, {'K'}, {'J'}, {'L'}, {0}, {0}, {0}, {0}, {0}, {VK_CAPITAL}};   /* (the five note rows start unset: oc_pad_word) */
 static volatile LONG toggle_reset;
 static HoldToggle toggles;
-void hos_input_clear_toggles(void) { InterlockedExchange(&toggle_reset, 1); }
+#ifdef __APPLE__
+enum { MIDDLE_OFF, MIDDLE_HELD, MIDDLE_RELEASED };
+static volatile LONG middle_mouse_aim;
+#endif
+void hos_input_clear_toggles(void) {
+    InterlockedExchange(&toggle_reset, 1);
+#ifdef __APPLE__
+    InterlockedExchange(&middle_mouse_aim, MIDDLE_OFF);
+#endif
+}
 static SRWLOCK pad_bind_lock = SRWLOCK_INIT;
 static int pad_bind[HOS_KEY_N][2];
 static volatile LONG key_bind[HOS_KEY_N][2];   /* (the menu changes them as the game reads them) */
@@ -899,6 +923,57 @@ static int motion_counts(int front, const char *env, int menu) {
 static int mouse_vk_slot(int vk) {
     return vk == VK_LBUTTON ? 0 : vk == VK_RBUTTON ? 1 : vk == VK_MBUTTON ? 2 : vk == VK_XBUTTON1 ? 3 : vk == VK_XBUTTON2 ? 4 : -1;
 }
+#ifdef __APPLE__
+/* Handle the SDL button-down event so a quick click between HID polls counts once.
+   Leave an explicit middle-button binding to another action in the player's hands. */
+void hos_mac_middle_click(void) {
+    binds_load();
+    for (int i = 0; i < HOS_KEY_N; i++)
+        if (i != B_ZR && (key_bind[i][0] == VK_MBUTTON || key_bind[i][1] == VK_MBUTTON)) return;
+    if (InterlockedCompareExchange(&middle_mouse_aim, MIDDLE_RELEASED, MIDDLE_HELD) != MIDDLE_HELD)
+        InterlockedExchange(&middle_mouse_aim, MIDDLE_HELD);
+}
+
+static void middle_mouse_input(int captured, int weapon_aim, uint64_t held, uint64_t *taps) {
+    static int64_t pressed_at, released_at;
+    static int put_away;
+    static int64_t last_cancel;
+    if (!captured || (held & ((1ULL << B_PLUS) | (1ULL << B_MINUS))))
+        InterlockedExchange(&middle_mouse_aim, MIDDLE_OFF);
+    const LONG state = __atomic_load_n(&middle_mouse_aim, __ATOMIC_RELAXED);
+    const int64_t now = hos_now_ns();
+    if (state == MIDDLE_HELD) {
+        if (!pressed_at) pressed_at = now;
+        *taps |= 1ULL << B_ZR;
+    } else if (state == MIDDLE_OFF) pressed_at = 0;
+    if (state != MIDDLE_RELEASED || (held & (1ULL << B_ZR))) {
+        released_at = 0;
+        put_away = 0;
+        last_cancel = 0;
+        return;
+    }
+
+    if (!released_at) {
+        released_at = now;
+        /* A quick ZR tap readies the selected weapon without showing its reticle. */
+        put_away = pressed_at && now - pressed_at < 750000000LL && hos_oot_ranged_zr_equipped();
+        pressed_at = 0;
+    }
+    if (weapon_aim) put_away = 1;
+    /* ZR release starts the shot animation, which can ignore Put Away or only
+       lower the sights. Give it time to finish, then dismiss the readied weapon. */
+    if (last_cancel && now - last_cancel < 100000000LL) {
+        *taps |= 1ULL << B_B;
+    } else if ((last_cancel && !weapon_aim) || now - released_at >= 2500000000LL) {
+        InterlockedCompareExchange(&middle_mouse_aim, MIDDLE_OFF, MIDDLE_RELEASED);
+        released_at = last_cancel = 0;
+        put_away = 0;
+    } else if (put_away && now - released_at >= 450000000LL && now - last_cancel >= 400000000LL) {
+        *taps |= 1ULL << B_B;
+        last_cancel = now;
+    }
+}
+#endif
 static int mouse_armed[5];
 static void mouse_buttons_arm(int captured, int menu) {   /* (once a read) */
     static const int vks[5] = {VK_LBUTTON, VK_RBUTTON, VK_MBUTTON, VK_XBUTTON1, VK_XBUTTON2};
@@ -910,6 +985,9 @@ static int bound_down(int i, int mouse) {
     for (int k = 0; k < 2; k++) {
         const int vk = (int)key_bind[i][k];
         if (vk <= 0) continue;
+#ifdef __APPLE__
+        if (i == B_ZR && vk == VK_MBUTTON) continue;   /* handled on the press edge */
+#endif
         if (oc_consumed_keys[vk]) continue;   /* (drives an ocarina note this frame, not this control: oc_notes) */
         const int m = mouse_vk_slot(vk);
         if (m >= 0 ? mouse && mouse_armed[m] && key(vk) : kmap_down(key_bind[i][k], key)) return 1;
@@ -1156,18 +1234,27 @@ static void read_input(uint64_t *buttons, uint64_t *taps, int32_t stick[4]) {
         previous = physical;
     }
 
+    int weapon_aim = 0;
+#ifdef __APPLE__
+    weapon_aim = hos_oot_aiming();
+    middle_mouse_input(captured, weapon_aim, *buttons | *taps | toggles.latched, taps);
+#endif
+
     /* Resolve mouse-bound actions before choosing who consumes this poll's motion.
-       RMB aim and the side-button wheels must behave like their keyboard equivalents. */
+       Aiming and the side-button wheels must behave like their keyboard equivalents. */
     const uint64_t held = *buttons | *taps | toggles.latched;
     const uint64_t game_stick = (1ULL << B_ZR) | (1ULL << B_L) | (1ULL << B_R);
     if (mode != 2) {
         mouse_setup();
         mouse_sens_keys();
     }
-    if (mode == 1) hos_mouse_native_free(!(held & game_stick));
+    if (mode == 1) hos_mouse_native_free(!weapon_aim && !(held & game_stick));
     const int as_stick = captured && (mode == 0 || (mode == 1 && !hos_mouse_native_look()));
     int32_t mouse[4] = {0};
-    mouse_stick(&mouse[2], &mouse[3], as_stick, (held & (1ULL << B_L)) != 0);
+    enum MouseStickMode mouse_mode = MOUSE_PANNING;
+    if (held & (1ULL << B_L)) mouse_mode = MOUSE_POINTING;
+    else if (!(held & (1ULL << B_R)) && (weapon_aim || (held & (1ULL << B_ZR)))) mouse_mode = MOUSE_ZR_AIM;
+    mouse_stick(&mouse[2], &mouse[3], as_stick, mouse_mode);
     if (as_stick) stick_max(stick, mouse);
     /* (the left stick's and the camera's keys: WASD and IJKL by default; the movement keys tilt the stick
        less while Link walks: walk_held) */

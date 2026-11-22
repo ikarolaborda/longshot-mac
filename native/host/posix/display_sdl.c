@@ -11,6 +11,9 @@
    the game gets none of it; the capture it had comes back when the menu closes. */
 #include "../hos.h"
 void hos_input_clear_toggles(void);
+#ifdef __APPLE__
+void hos_mac_middle_click(void);
+#endif
 #include "../hos_sdl.h"
 
 /* (the window's app id: an applications menu entry for the game names it as its StartupWMClass) */
@@ -457,7 +460,12 @@ void hos_display_loop(void) {
                     ptr_in = 1;
                     ptr_held |= sdl_button_bit(e.button);
                     if (menu_open) pointer_publish_at(e.x, e.y, sdl_button_bit(e.button), 0);   /* (the menu's click) */
-                    else if (renderer && !mouse_captured) mouse_capture(1);
+                    else {
+                        if (renderer && !mouse_captured) mouse_capture(1);
+#ifdef __APPLE__
+                        if (e.button == 2 && mouse_captured && hos_posix_window[0]) hos_mac_middle_click();
+#endif
+                    }
                     break;
                 case HOS_SDL_EV_MOUSE_UP:
                     ptr_held &= ~sdl_button_bit(e.button);
