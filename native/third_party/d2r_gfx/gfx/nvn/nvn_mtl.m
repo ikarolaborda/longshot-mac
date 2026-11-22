@@ -20514,12 +20514,23 @@ void mtl_read_texels(const tex_t *t, unsigned level, unsigned layer0, const NVNc
 void mtl_write_texels(const tex_t *t, unsigned level, unsigned layer0, const NVNcopyRegion *r, const uint8_t *src, size_t row, size_t img) {
     int bw, bh, bpb = nvn_fmt_bpb(t->d.format, &bw, &bh);
     if (!bpb) die("WriteTexels: unknown format %d", t->d.format);
-    size_t wb = (size_t)((r->width + bw - 1) / bw) * bpb, hb = (r->height + bh - 1) / bh, x0 = (size_t)(r->xoffset / bw) * bpb, y0 = r->yoffset / bh;
     int nz = r->depth ? r->depth : 1, is3d = t->d.target == 2;
     if (!r->width || !r->height || !nz) return;   // empty region writes nothing
     if (r->xoffset < 0 || r->yoffset < 0 || r->zoffset < 0 || r->width < 0 || r->height < 0 || nz < 0 || r->xoffset % bw || r->yoffset % bh) die("WriteTexels: invalid region xyz=%d,%d,%d size=%d,%d,%d fmt=%#x tgt=%d %ux%ux%u", r->xoffset, r->yoffset, r->zoffset, r->width, r->height, r->depth, t->d.format, t->d.target, t->d.width, t->d.height, t->d.depth);
+    if (level >= (unsigned)t->d.levels || level >= 32) {
+        RED_ONCE(211, "WriteTexels: skipped unavailable mip %u on texture %llu", level, (unsigned long long)t->serial);
+        return;
+    }
     uint32_t lw = MAX(t->d.width >> level, 1u), lh = MAX(t->d.height >> level, 1u), lz = is3d ? MAX(t->d.depth >> level, 1u) : 1;
-    if ((uint32_t)(r->xoffset + r->width) > lw || (uint32_t)(r->yoffset + r->height) > lh || (is3d && (uint32_t)(r->zoffset + nz) > lz)) die("WriteTexels: region outside level %u", level);
+    /* The save dialog can resolve a preview to its small fallback texture. Reject the
+       complete upload before touching that shared texture or its backing memory. */
+    if ((uint64_t)r->xoffset + r->width > lw || (uint64_t)r->yoffset + r->height > lh ||
+        (is3d && (uint64_t)r->zoffset + nz > lz)) {
+        RED_ONCE(212, "WriteTexels: skipped %dx%dx%d at (%d,%d,%d) outside mip %u (%ux%ux%u)",
+                 r->width, r->height, nz, r->xoffset, r->yoffset, r->zoffset, level, lw, lh, lz);
+        return;
+    }
+    size_t wb = (((size_t)r->width + bw - 1) / bw) * bpb, hb = ((size_t)r->height + bh - 1) / bh, x0 = (size_t)(r->xoffset / bw) * bpb, y0 = r->yoffset / bh;
     TILELOG(t, "WriteTexels lv%u xy=%d,%d %dx%d owned %d mirrored %d flags=%#x pbh=%d tileH=%u size=%llu", level, r->xoffset, r->yoffset, r->width, r->height, gpu_owned(t->serial), tex_mirrored(t), t->d.flags, t->d.pkg_block_h, t->L.tileH, (unsigned long long)t->L.size);
     if (tex_mirrored(t)) {
         dm_guest_write_prepare(t->mem, t->L.size);

@@ -21,7 +21,8 @@ Each is a runtime switch where it can be, so the game's own path stays reachable
   their returns, 1.0 as shipped. Even the fastest of the game's own camera speeds turned slowly for players.
 - The OptimizeChangeBank thread's allocations tried again when their heap is full (host/oot_heap_retry.c): f_804566e0's two
   calls of f_80522050, its GPU memory (GPU_ALLOC_SITES), and its two tryAllocs of CPU buffers (HEAP_ALLOC_SITES). They went on
-  with a null pointer and crashed writing through it (issue 1697). The supported build only.
+  with a null pointer and crashed writing through it (issue 1697). The save dialog's JPEG preview also retries its GPU
+  allocation when its own heap has too little space. The supported build only.
 - The Voice Language option kept after a restart (host/oot_voice.c): the voice resource's update (f_80a9ca30) asks
   GameDataMgr whether the option was written (f_80a9d1c0) and applies it only then; option.sav's value replaces the
   option without a write, so a saved choice was never applied (issue 430). The call goes through hos_oot_voice_option,
@@ -1346,8 +1347,8 @@ def patch_scene_format(s):
 
 # (from TomShafford/Hookshot 55d68e8cd6 and 65c1998222) f_804566e0's two calls of f_80522050, the GPU memory a model's material
 # block is made with, made through host/oot_heap_retry.c hos_oot_gpu_alloc, which calls the game's own and tries a full heap's
-# failure again in the heap's parents. f_80522050's other callers stay as they are.
-GPU_ALLOC_SITES = (0x80456f1c, 0x80457098)   # (the calls' return addresses)
+# failure again in the heap's parents. The save dialog uses the same allocator for its preview texture.
+GPU_ALLOC_SITES = (0x80456f1c, 0x80457098, 0x809ea620)   # (the calls' return addresses)
 GPU_ALLOC_OLD = "c->x[30] = %#xULL; f_80522050(c);"
 GPU_ALLOC_NEW = "c->x[30] = %#xULL; hos_oot_gpu_alloc(c, f_80522050);   /* (nx2/oot_patches.py: host/oot_heap_retry.c) */"
 GPU_ALLOC_DECL = "void hos_oot_gpu_alloc(Ctx *A64_NOESC c, A64Fn game);\n"
@@ -1363,8 +1364,7 @@ HEAP_ALLOC_DECL = "int hos_oot_heap_refuse(void);\nvoid hos_oot_heap_retry(Ctx *
 
 
 def patch_heap_retry(s):
-    """The four places above in one file's text: (text, [GPU sites, CPU sites] made now or found made). apply() wants
-    [2, 2] over the whole lift and warns otherwise"""
+    """Count the GPU and CPU retry sites found or patched in one file."""
     found = [0, 0]
     decls = []
     for kind, sites, old, new, decl in ((0, GPU_ALLOC_SITES, GPU_ALLOC_OLD, GPU_ALLOC_NEW, GPU_ALLOC_DECL),
@@ -1633,7 +1633,7 @@ def patch_file(s, name, protect_hearts=False):
     counts["heap GPU sites"] += found[0]
     counts["heap CPU sites"] += found[1]
     if heap != out:
-        lines.append("oot_patches: heap-full retries of the OptimizeChangeBank allocations in " + name)
+        lines.append("oot_patches: heap-full allocation retries in " + name)
     out = heap
     voice, found = patch_voice_option(out) if protect_hearts else (out, 0)
     counts["voice option check"] += found
@@ -1739,7 +1739,7 @@ def report(paths, counts, protect_hearts=False):
     camera_speed = total["camera speed"]   # (the turn-speed functions that scale by hos_camera_scale: patch_camera_speed)
     heap_sites = [total["heap GPU sites"], total["heap CPU sites"]]   # (patch_heap_retry, the supported build only)
     if protect_hearts and heap_sites != [len(GPU_ALLOC_SITES), len(HEAP_ALLOC_SITES)]:   # (the supported build's functions)
-        print("oot_patches: WARNING: the OptimizeChangeBank allocations were found %s times, not once each: a full heap is "
+        print("oot_patches: WARNING: the heap retry sites were found %s times, not once each: a full heap is "
               "not tried again" % heap_sites)
     step_sites = total["step sites"]   # (the divides with the hook)
     step_files = [p for p, c in zip(paths, counts) if c["step sites"]]   # (the files that have it)

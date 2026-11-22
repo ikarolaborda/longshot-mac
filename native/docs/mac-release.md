@@ -1,5 +1,7 @@
 This preview updates an existing Longshot game build for Apple silicon. Unzip the installer, open it, and choose the folder containing your game files. It installs Longshot in Applications. The executable has a local ad hoc signature. Finder may require approval in Privacy & Security.
 
+Pressing A on Save in the System menu now opens the confirmation screen and shows a preview of the current scene. You can save from that screen and load your progress after you restart Longshot.
+
 With All Equipment enabled, Link now holds the Fairy Ocarina in Impa’s Zelda’s Lullaby lesson when his equipped ocarina slot is empty. The game keeps any ocarina already equipped. The visual fix only supplies the handheld model and its holder. The game still awards the song through the lesson.
 
 The game displays the Longshot grappling hook icon in Finder, the Dock, and the About window. The About window credits Nintendo, the Longshot and Hookshot teams, and the Metal renderer contributors. It links to the [Mac repository](https://github.com/ikarolaborda/longshot-mac) and [GitHub Sponsors](https://github.com/sponsors/ikarolaborda).

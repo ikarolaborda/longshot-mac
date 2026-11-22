@@ -14,7 +14,11 @@
      (0x80457248), and the block is written to guest address 0 two calls later (TomShafford/Hookshot's crash at
      backflip + attack).
    Each is tried again in the heap's parents up to the root, the first with room (the GPU memory then in the game's
-   default heap). Only these call sites are changed: f_80522050's other callers (some 30) are as shipped.
+   default heap).
+
+   The save dialog also uses this retry for the JPEG preview's destination texture (f_809ea090, call at 0x809ea61c).
+   Its UISystemSaveLoadScreen heap can reject the aligned texture allocation. The caller then resolves its missing
+   texture to a 4x1 fallback before uploading the full preview. The parent StaticScreenHeap can supply the texture.
 
    Freeing: the MatBlock's destructor (f_8093f940) frees +168 and +200 through f_8021dea0, the game's free by address,
    which walks the heap tree for the heap whose range holds the block (read from the lifted code, not traced in a run), so
@@ -122,7 +126,7 @@ static void count_moved(int site, uint64_t bytes, int say) {
 }
 
 /* ---- the GPU memory: f_80522050(x0 the memory block, x1 the request: +0 the count, +8 the heap, +0x20 what it is for; x2
-   the size of one). nx2/oot_patches.py makes f_804566e0's two calls of it call this, with the game's function ---- */
+   the size of one). nx2/oot_patches.py redirects the model and preview call sites here with the game's function. ---- */
 static int gpu_alloc_in(Ctx *c, A64Fn game, uint64_t a0, uint64_t a1, uint64_t a2, uint64_t lr, uint64_t heap,
                         uint64_t in) {
     recomp_store64(c, a1 + 8, in);
