@@ -4,7 +4,7 @@
 enum OotTrainerOption {
     OOT_TRAINER_HEALTH, OOT_TRAINER_MAGIC, OOT_TRAINER_CARROTS, OOT_TRAINER_CLOCK,
     OOT_TRAINER_MAX_RUPEES, OOT_TRAINER_MAX_AMMO, OOT_TRAINER_EQUIPMENT, OOT_TRAINER_SKULLTULAS,
-    OOT_TRAINER_OPTION_COUNT
+    OOT_TRAINER_MAPS, OOT_TRAINER_OPTION_COUNT
 };
 int hos_trainer_enabled(enum OotTrainerOption option);
 void hos_trainer_set(enum OotTrainerOption option, int enabled);

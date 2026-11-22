@@ -41,6 +41,37 @@ void hos_oot_trainer_ocarina(Ctx *c) {
         c->x[1] = fairy;
 }
 
+/* Only map presentation reads are redirected here. The original getter must
+   resolve a real boolean before we change the result in the caller's scratch
+   byte. The saved location, dungeon ownership and chest flags stay authoritative. */
+void hos_oot_map_item(Ctx *c, A64Fn get) {
+    const uint64_t out = c->x[1];
+    get(c);
+    if ((c->x[0] & 1) && hos_trainer_enabled(OOT_TRAINER_MAPS))
+        recomp_store8(c, out, 1);
+}
+
+/* The location getter is also used outside the map. Its caller's return
+   address is saved at x29+8 by the supported game's frame prologue. */
+void hos_oot_map_visit(Ctx *c, A64Fn get) {
+    switch (recomp_load64(c, c->x[29] + 8)) {
+        case 0x8022a1a0:  /* location marker */
+        case 0x805a413c:  /* local map */
+        case 0x80b47ce8:  /* choose field or unavailable map */
+        case 0x80b47eb4:  /* world map availability */
+        case 0x80b48084:  /* list of maps */
+        case 0x80dbb3ac:  /* local map availability */
+        case 0x83401b50:  /* map panes and labels */
+        case 0x83402144:
+        case 0x834024ac:
+        case 0x8340475c:
+        case 0x83404798:
+            hos_oot_map_item(c, get);
+            return;
+    }
+    get(c);
+}
+
 /* The lifter enters these scopes only around the supported build's inventory
    widgets and player equipment methods. A grant is an answer to a read, never
    a write to GameData. Threads running an event or autosave have their own scope. */

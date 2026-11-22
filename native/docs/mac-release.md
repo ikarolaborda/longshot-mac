@@ -1,5 +1,7 @@
 This preview updates an existing Longshot game build for Apple silicon. Unzip the installer, open it, and choose the folder containing your game files. It installs Longshot in Applications. The executable has a local ad hoc signature. Finder may require approval in Privacy & Security.
 
+Keypad 5 opens the cheat menu. “Hyrule map, dungeon maps and compasses” reveals unexplored locations on the world map and shows dungeon floor plans and compass markers. Press M to open the map. On a local map, press F (Y on the controller) to switch to the world map. You can still earn maps and compasses from their chests.
+
 Pressing A on Save in the System menu now opens the confirmation screen and shows a preview of the current scene. You can save from that screen and load your progress after you restart Longshot.
 
 With All Equipment enabled, Link now holds the Fairy Ocarina in Impa’s Zelda’s Lullaby lesson when his equipped ocarina slot is empty. The game keeps any ocarina already equipped. The visual fix only supplies the handheld model and its holder. The game still awards the song through the lesson.

@@ -308,6 +308,31 @@ def patch_inventory_loans(source):
     return source
 
 
+# Exact return addresses of the map UI's boolean reads. Reward scripts and the
+# dungeon's map/compass grant functions still use the original getters/setters.
+MAP_READ_SITES = {
+    0x805a5d38: (0x805a1170, "hos_oot_map_visit"),
+    0x80b4a438: (0x80199f70, "hos_oot_map_item"),  # dungeon minimap
+    0x832a2f38: (0x80199f70, "hos_oot_map_item"),  # compass markers
+    0x83401590: (0x80199f70, "hos_oot_map_item"),  # floor plan
+    0x83401634: (0x80199f70, "hos_oot_map_item"),  # compass
+    0x83401d88: (0x80199f70, "hos_oot_map_item"),  # map icons
+}
+
+
+def patch_map_reads(source):
+    for lr, (getter, hook) in MAP_READ_SITES.items():
+        call = "c->x[30] = %#xULL; " % lr
+        original = call + "f_%08x(c);" % getter
+        if original not in source:
+            continue
+        source = source.replace(original, call + "%s(c, f_%08x);" % (hook, getter))
+        decl = "extern void %s(Ctx *, A64Fn);\n" % hook
+        if decl not in source:
+            source = source.replace('#include "a64.h"\n', '#include "a64.h"\n' + decl, 1)
+    return source
+
+
 def patch_menu_focus(source):
     """f_802ed660, a menu screen's handler of a pane getting the focus (host/oot_menu.c), calls
     hos_oot_menu_focus first, with the screen, the pane and its caller's return address"""
@@ -1706,6 +1731,7 @@ def patch_file(s, name, protect_hearts=False):
     out = cue
     if protect_hearts:
         out = patch_inventory_loans(out)
+        out = patch_map_reads(out)
     return out, counts, lines
 
 

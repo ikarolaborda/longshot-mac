@@ -3,7 +3,7 @@
 
 static NSString *trainerPath;
 static NSArray<NSString *> *settingKeys(void) {
-    return @[@"health", @"magic", @"carrots", @"timers", @"rupees", @"ammunition", @"equipment", @"skulltulas"];
+    return @[@"health", @"magic", @"carrots", @"timers", @"rupees", @"ammunition", @"equipment", @"skulltulas", @"maps"];
 }
 
 void hos_mac_trainer_load(const char *directory) {
@@ -41,7 +41,7 @@ static BOOL saveSettings(void) {
 }
 
 - (instancetype)init {
-    self = [super initWithContentRect:NSMakeRect(0, 0, 338, 356)
+    self = [super initWithContentRect:NSMakeRect(0, 0, 338, 116 + 30 * OOT_TRAINER_OPTION_COUNT)
                             styleMask:NSWindowStyleMaskTitled | NSWindowStyleMaskClosable
                               backing:NSBackingStoreBuffered defer:NO];
     if (!self) return nil;
@@ -51,11 +51,11 @@ static BOOL saveSettings(void) {
     self.collectionBehavior = NSWindowCollectionBehaviorFullScreenAuxiliary | NSWindowCollectionBehaviorMoveToActiveSpace;
     NSArray *names = @[@"20 hearts and infinite health", @"Full double magic meter", @"Infinite Epona carrots",
                        @"Freeze challenge timers", @"Full largest wallet", @"Full ammunition and bags",
-                       @"All equipment", @"All 100 Gold Skulltulas"];
+                       @"All equipment", @"All 100 Gold Skulltulas", @"Hyrule map, dungeon maps and compasses"];
     for (int i = 0; i < OOT_TRAINER_OPTION_COUNT; ++i) {
         NSButton *button = [NSButton checkboxWithTitle:names[i] target:self action:@selector(changeOption:)];
         button.tag = i;
-        button.frame = NSMakeRect(20, 314 - i * 30, 306, 24);
+        button.frame = NSMakeRect(20, 104 + (OOT_TRAINER_OPTION_COUNT - 1 - i) * 30, 306, 24);
         [self.contentView addSubview:button];
         _switches[i] = button;
     }
