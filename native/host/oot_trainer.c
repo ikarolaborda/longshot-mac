@@ -49,6 +49,33 @@ void hos_oot_trainer_songs(Ctx *c) {
         recomp_store8(c, repertoire + song, 1);
 }
 
+int hos_oot_is_player(Ctx *c, uint64_t life);
+
+/* The contact record still belongs to one hit here. A thrown or reflected
+   weapon can have a last user of its own. Enemy hits and self-damage use the
+   game's original amount, including when Link is caught in his own blast. */
+void hos_oot_trainer_attack(Ctx *c) {
+    const int32_t damage = (int32_t)c->x[8];
+    if (damage <= 0 || !hos_trainer_enabled(OOT_TRAINER_ATTACK_DAMAGE)) return;
+    const uint64_t hit = c->x[19];
+    enum { none = 0, player = 3, unknown = 6 };
+    uint32_t source = recomp_load32(c, hit + 0xd0);  /* last user's affiliation */
+    if (source == none || source == unknown)
+        source = recomp_load32(c, hit + 0xc8);       /* attacker's affiliation */
+    if (source != player) return;
+
+    const uint64_t victim = recomp_load64(c, c->x[20] + 8);
+    const uint64_t parts = victim ? recomp_load64(c, victim + 0x270) : 0;
+    const uint64_t life = parts ? recomp_load64(c, parts + 0x2b8) : 0;
+    if (!life || hos_oot_is_player(c, life)) return;
+
+    const int64_t scaled = (int64_t)damage * 100;
+    c->x[8] = scaled > INT32_MAX ? INT32_MAX : (uint32_t)scaled;
+    if (getenv("HOS_TRACE_ATTACK"))
+        hos_log("trainer attack: life=%llx damage=%d scaled=%u",
+                (unsigned long long)life, damage, (unsigned)c->x[8]);
+}
+
 void hos_oot_trainer_clock(Ctx *c) {
     if (hos_trainer_enabled(OOT_TRAINER_CLOCK)) a64_vset64(c->vreg[9], 0);
 }

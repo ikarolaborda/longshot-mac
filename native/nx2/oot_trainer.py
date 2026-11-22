@@ -6,6 +6,8 @@ BUILD_ID = "e0f3ccfaf50065ae4ea01eb5aeb13b1a45da3348"
 # signed halfword at +0x27c and publishes it to the HUD as GameData 0x3514b108.
 # The timer loads the step it later subtracts from, or adds to, MiniGame_TimerValue.
 SITES = (
+    # One resolved external hit, immediately before the atomic add to the victim’s damage total.
+    (0x804a99f8, (0x91006289, 0xb8280128, 0x295c2688), "hos_oot_trainer_attack"),
     (0x82726f38, (0xb9403917, 0xbd423aa0, 0x1e202008), "hos_oot_trainer_horse"),
     (0x832cdd00, (0xbd400269, 0x52843117, 0xd10063a1), "hos_oot_trainer_clock"),
     # The scalar Int commit loop has loaded the pending record's GameData hash into w12.
