@@ -1,5 +1,7 @@
 This preview updates an existing Longshot game build for Apple silicon. Unzip the installer, open it, and choose the folder containing your game files. It installs Longshot in Applications. The executable has a local ad hoc signature. Finder may require approval in Privacy & Security.
 
+“All ocarina songs” in the keypad 5 cheat menu lets you play all twelve standard melodies as soon as you have an ocarina. Put the ocarina away and take it out again after changing this option. With the ocarina out, hold ZL (the number-row 1 key) to open the songbook and see the notes. Lessons still award songs as you reach them. You can record your own Scarecrow’s Song as usual.
+
 Open the keypad 5 cheat menu and enable “Perfect score after one target hit.” One hit earns 10/10 in the Market or Kakariko shooting gallery, or 2,000 points in Gerudo horseback archery. Finish the round to collect any prize you qualify for. A round with no hits scores zero.
 
 Press the mouse wheel once to hold ZR. Press it again to leave aiming and put your ranged weapon away. The minus key still works as a held ZR button. Moving the mouse up raises your aim, even when your controller uses inverted stick controls. The mouse has its own vertical inversion setting.

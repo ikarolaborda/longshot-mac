@@ -39,6 +39,16 @@ void hos_oot_trainer_target_score(Ctx *c) {
     }
 }
 
+/* Free play (input modes 1 and 3) caches learned compositions in scorebook
+   order. Lessons use a different path. Byte 12 belongs to Scarecrow's Song,
+   which needs the player's recorded notes. */
+void hos_oot_trainer_songs(Ctx *c) {
+    if (!hos_trainer_enabled(OOT_TRAINER_SONGS)) return;
+    const uint64_t repertoire = c->x[19] + 0x264;
+    for (unsigned song = 0; song < 12; ++song)
+        recomp_store8(c, repertoire + song, 1);
+}
+
 void hos_oot_trainer_clock(Ctx *c) {
     if (hos_trainer_enabled(OOT_TRAINER_CLOCK)) a64_vset64(c->vreg[9], 0);
 }

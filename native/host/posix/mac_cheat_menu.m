@@ -3,7 +3,7 @@
 
 static NSString *trainerPath;
 static NSArray<NSString *> *settingKeys(void) {
-    return @[@"health", @"magic", @"carrots", @"timers", @"rupees", @"ammunition", @"equipment", @"skulltulas", @"maps", @"targetScore"];
+    return @[@"health", @"magic", @"carrots", @"timers", @"rupees", @"ammunition", @"equipment", @"skulltulas", @"maps", @"targetScore", @"songs"];
 }
 
 void hos_mac_trainer_load(const char *directory) {
@@ -52,7 +52,7 @@ static BOOL saveSettings(void) {
     NSArray *names = @[@"20 hearts and infinite health", @"Full double magic meter", @"Infinite Epona carrots",
                        @"Freeze challenge timers", @"Infinite rupees (1,000)", @"Full ammunition and bags",
                        @"All equipment", @"All 100 Gold Skulltulas", @"Hyrule map, dungeon maps and compasses",
-                       @"Perfect score after one target hit"];
+                       @"Perfect score after one target hit", @"All ocarina songs"];
     for (int i = 0; i < OOT_TRAINER_OPTION_COUNT; ++i) {
         NSButton *button = [NSButton checkboxWithTitle:names[i] target:self action:@selector(changeOption:)];
         button.tag = i;
