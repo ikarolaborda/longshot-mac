@@ -204,6 +204,20 @@ int hos_oot_gamedata_int(uint32_t hash, int64_t *v) {
     return mgr && state_number(mgr, KIND_INT, hash, v);
 }
 
+/* Only the two shooting galleries and the diving game set MiniGame_ScoreMax.
+   Diving can also set it to ten. Horseback archery uses its own round flag. */
+int hos_oot_target_score_max(uint64_t mgr) {
+    int64_t value;
+    if (state_number(mgr, KIND_BOOL, 0xe30b8022u, &value) && value)
+        return 20 * 100;  /* Twenty arrows, one hundred points per bullseye. */
+    char map[64];
+    if (state_number(mgr, KIND_INT, 0x64e3083bu, &value) && value == 10 &&
+        state_text(mgr, STATE_MAP, map) &&
+        (!strcmp(map, "Market_Child") || !strcmp(map, "KakarikoVillage_Adult")))
+        return 10;
+    return 0;
+}
+
 int hos_oot_gamedata_bool(uint32_t hash, int64_t *v) {
     const uint64_t mgr = state_u64(state_u64(STATE_GAMEDATA_SLOT));
     return mgr && state_number(mgr, KIND_BOOL, hash, v);

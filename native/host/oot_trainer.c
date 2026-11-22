@@ -22,6 +22,23 @@ void hos_oot_trainer_horse(Ctx *c) {
         recomp_store16(c, c->x[21] + 0x27c, (uint16_t)maximum);
 }
 
+int hos_oot_target_score_max(uint64_t mgr);
+
+/* Before the game applies this score record, turn a scored hit into an absolute
+   maximum. Several horseback hits can arrive in the same batch as additions. */
+void hos_oot_trainer_target_score(Ctx *c) {
+    if ((uint32_t)c->x[12] != 0x3340e10cu || !hos_trainer_enabled(OOT_TRAINER_TARGET_SCORE))
+        return;
+    const uint64_t record = c->x[9];
+    if ((int32_t)recomp_load32(c, record) <= 0 || recomp_load32(c, record + 8) > 1)
+        return;
+    const int maximum = hos_oot_target_score_max(c->x[20]);
+    if (maximum) {
+        recomp_store32(c, record, (uint32_t)maximum);
+        recomp_store32(c, record + 8, 0);  /* Set, including when the actor queued Add. */
+    }
+}
+
 void hos_oot_trainer_clock(Ctx *c) {
     if (hos_trainer_enabled(OOT_TRAINER_CLOCK)) a64_vset64(c->vreg[9], 0);
 }

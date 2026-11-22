@@ -8,6 +8,8 @@ BUILD_ID = "e0f3ccfaf50065ae4ea01eb5aeb13b1a45da3348"
 SITES = (
     (0x82726f38, (0xb9403917, 0xbd423aa0, 0x1e202008), "hos_oot_trainer_horse"),
     (0x832cdd00, (0xbd400269, 0x52843117, 0xd10063a1), "hos_oot_trainer_clock"),
+    # The scalar Int commit loop has loaded the pending record's GameData hash into w12.
+    (0x80bb9b30, (0xb940052c, 0x340004ac, 0xf940728d), "hos_oot_trainer_target_score"),
     # The player's accessory factory has just read the equipped actor name.
     (0x82e17394, (0xf85a83a1, 0x360001c0, 0x39400028), "hos_oot_trainer_ocarina"),
 )

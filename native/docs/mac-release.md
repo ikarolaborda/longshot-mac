@@ -1,5 +1,7 @@
 This preview updates an existing Longshot game build for Apple silicon. Unzip the installer, open it, and choose the folder containing your game files. It installs Longshot in Applications. The executable has a local ad hoc signature. Finder may require approval in Privacy & Security.
 
+Open the keypad 5 cheat menu and enable “Perfect score after one target hit.” One hit earns 10/10 in the Market or Kakariko shooting gallery, or 2,000 points in Gerudo horseback archery. Finish the round to collect any prize you qualify for. A round with no hits scores zero.
+
 Press the mouse wheel once to hold ZR. Press it again to leave aiming and put your ranged weapon away. The minus key still works as a held ZR button. Moving the mouse up raises your aim, even when your controller uses inverted stick controls. The mouse has its own vertical inversion setting.
 
 With “Infinite rupees (1,000)” enabled in the keypad 5 menu, you can pay for items and keep a full wallet throughout the purchase. Turn it off to spend rupees normally.
