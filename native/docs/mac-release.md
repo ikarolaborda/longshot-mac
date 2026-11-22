@@ -1,5 +1,9 @@
 This preview updates an existing Longshot game build for Apple silicon. Unzip the installer, open it, and choose the folder containing your game files. It installs Longshot in Applications. The executable has a local ad hoc signature. Finder may require approval in Privacy & Security.
 
+With “Infinite rupees (1,000)” enabled in the keypad 5 menu, you can pay for items and keep a full wallet throughout the purchase. Turn it off to spend rupees normally.
+
+With All Equipment enabled, child Link can lift and throw Bomb Flowers before Darunia gives him the Goron Bracelet. Adult Link can lift heavy rocks with borrowed gauntlets. The borrowed Gold Scale also lets Link dive deeper. The story still records when Link earns each item.
+
 Keypad 5 opens the cheat menu. “Hyrule map, dungeon maps and compasses” reveals unexplored locations on the world map and shows dungeon floor plans and compass markers. Press M to open the map. On a local map, press F (Y on the controller) to switch to the world map. You can still earn maps and compasses from their chests.
 
 Pressing A on Save in the System menu now opens the confirmation screen and shows a preview of the current scene. You can save from that screen and load your progress after you restart Longshot.

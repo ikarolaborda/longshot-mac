@@ -308,9 +308,14 @@ def patch_inventory_loans(source):
     return source
 
 
-# Exact return addresses of the map UI's boolean reads. Reward scripts and the
-# dungeon's map/compass grant functions still use the original getters/setters.
-MAP_READ_SITES = {
+# Return addresses for wallet transactions, equipment use and map reads.
+# Acquisition scripts and save serialization continue through the original code.
+TRAINER_CALL_SITES = {
+    0x8007f000: (0x809d39e0, "hos_oot_wallet_transaction"),  # commit the pouch balance and inform its HUD
+    0x829e93cc: (0x80854960, "hos_oot_loan_bomb_flower_prompt"),  # default result in the no-bracelet angle test
+    0x82ea79a0: (0x8019bf90, "hos_oot_loan_strength"),  # player lifter, before the actor's grade cap
+    0x83044800: (0x80627f70, "hos_oot_loan_dive_depth"),  # dive action
+    0x833d953c: (0x80627f70, "hos_oot_loan_dive_depth"),  # dive meter
     0x805a5d38: (0x805a1170, "hos_oot_map_visit"),
     0x80b4a438: (0x80199f70, "hos_oot_map_item"),  # dungeon minimap
     0x832a2f38: (0x80199f70, "hos_oot_map_item"),  # compass markers
@@ -320,13 +325,13 @@ MAP_READ_SITES = {
 }
 
 
-def patch_map_reads(source):
-    for lr, (getter, hook) in MAP_READ_SITES.items():
+def patch_trainer_calls(source):
+    for lr, (callee, hook) in TRAINER_CALL_SITES.items():
         call = "c->x[30] = %#xULL; " % lr
-        original = call + "f_%08x(c);" % getter
+        original = call + "f_%08x(c);" % callee
         if original not in source:
             continue
-        source = source.replace(original, call + "%s(c, f_%08x);" % (hook, getter))
+        source = source.replace(original, call + "%s(c, f_%08x);" % (hook, callee))
         decl = "extern void %s(Ctx *, A64Fn);\n" % hook
         if decl not in source:
             source = source.replace('#include "a64.h"\n', '#include "a64.h"\n' + decl, 1)
@@ -1731,7 +1736,7 @@ def patch_file(s, name, protect_hearts=False):
     out = cue
     if protect_hearts:
         out = patch_inventory_loans(out)
-        out = patch_map_reads(out)
+        out = patch_trainer_calls(out)
     return out, counts, lines
 
 

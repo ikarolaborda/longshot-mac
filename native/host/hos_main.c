@@ -1511,6 +1511,25 @@ static int oot_flight_moved_away(Ctx *c, uint64_t actor, const float held[3]) {
 #define OOT_GD_PLAYER_MAX_LIFE 0xfbe01da1u   /* PlayerStatus.MaxLife */
 #define OOT_GD_PLAYER_RUPEES 0xa77921d7u     /* PlayerStatus.CurrentRupee */
 
+/* The pouch commits one accumulated rupee change here. The shop has already
+   accepted the payment. Its HUD notification uses x20 (capacity), x21 (new
+   balance), and x22 (actual change) immediately after the GameData setter. */
+void hos_oot_wallet_transaction(Ctx *c, A64Fn set) {
+    int rx_option(int id, int otherwise);
+    const int full = hos_trainer_enabled(OOT_TRAINER_MAX_RUPEES);
+    if (full || rx_option(HOS_OPT_TRAINER_RUPEES, 0) > 0) {
+        const int32_t before = (int32_t)recomp_load32(c, c->x[31]);
+        const int32_t after = (int32_t)c->x[21];
+        if (full || after < before) {
+            const int32_t balance = full && before < OOT_TRAINER_FULL_WALLET ? OOT_TRAINER_FULL_WALLET : before;
+            if ((int32_t)c->x[20] < balance) c->x[20] = (uint32_t)balance;
+            c->x[1] = c->x[21] = (uint32_t)balance;
+            c->x[22] = (uint32_t)balance - (uint32_t)before;
+        }
+    }
+    set(c);
+}
+
 static int oot_gamedata_int(Ctx *c, uint32_t hash, int32_t *value) {
     const uint64_t mgr = oot_singleton(c, OOT_GAMEDATA_SLOT);
     A64Fn get = a64_lookup(OOT_GD_INT_GET);
@@ -1622,7 +1641,7 @@ static void oot_trainer_tick(Ctx *c, uint64_t components, int64_t now) {
         oot_trainer_int(c, 0x76b18200u, 480);  /* Refill current MP. The fairy owns the saved maximum. */
     }
     if (max_rupees) {
-        oot_trainer_int(c, OOT_GD_PLAYER_RUPEES, 1000);
+        oot_trainer_int(c, OOT_GD_PLAYER_RUPEES, OOT_TRAINER_FULL_WALLET);
     } else if (rupees) {
         int32_t have = 0;
         if (oot_gamedata_int(c, OOT_GD_PLAYER_RUPEES, &have)) {

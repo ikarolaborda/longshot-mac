@@ -41,6 +41,39 @@ void hos_oot_trainer_ocarina(Ctx *c) {
         c->x[1] = fairy;
 }
 
+int hos_oot_event_playing(Ctx *c);
+
+static int loan_equipment_ability(Ctx *c) {
+    return hos_trainer_enabled(OOT_TRAINER_EQUIPMENT) && !hos_oot_event_playing(c);
+}
+
+/* Bomb Flowers without a recorded bracelet apply an extra approach-angle test.
+   This node initializes its answer to false and can only set it true thereafter. */
+void hos_oot_loan_bomb_flower_prompt(Ctx *c, A64Fn set) {
+    if (loan_equipment_ability(c)) c->x[1] = 1;
+    set(c);
+}
+
+/* These reads supply the player action and its HUD. The award code writes the
+   same fields independently. The lifter still clamps this grade to Link's
+   current actor limit (bracelet for a child, golden gauntlets for an adult). */
+void hos_oot_loan_strength(Ctx *c, A64Fn get) {
+    const uint64_t out = c->x[1];
+    get(c);
+    if ((c->x[0] & 1) && loan_equipment_ability(c))
+        recomp_store32(c, out, 0x165af889u);  /* PlayerStatus.LiftGrade: High */
+}
+
+void hos_oot_loan_dive_depth(Ctx *c, A64Fn get) {
+    const uint64_t out = c->x[1];
+    get(c);
+    if (!(c->x[0] & 1) || !loan_equipment_ability(c)) return;
+    const uint32_t bits = recomp_load32(c, out);
+    float depth;
+    memcpy(&depth, &bits, sizeof depth);
+    if (depth < 9.0f) recomp_store32(c, out, 0x41100000u);  /* Gold Scale: nine metres */
+}
+
 /* Only map presentation reads are redirected here. The original getter must
    resolve a real boolean before we change the result in the caller's scratch
    byte. The saved location, dungeon ownership and chest flags stay authoritative. */
@@ -83,8 +116,6 @@ static const struct LoanItem loans[] = {
 
 void hos_oot_loan_enter(void) { ++loan_depth; }
 void hos_oot_loan_leave(void) { --loan_depth; }
-
-int hos_oot_event_playing(Ctx *c);
 
 /* A story event can call a player or inventory helper while awarding an item. */
 static int loan_view(Ctx *c) { return loan_depth && !hos_oot_event_playing(c); }
@@ -132,7 +163,7 @@ static int loan_scalar(Ctx *c, uint32_t key, int integer) {
         static const struct { uint32_t key; int amount; enum OotTrainerOption option; } values[] = {
             {0x31ab5580u, 80, OOT_TRAINER_HEALTH}, {0xfbe01da1u, 80, OOT_TRAINER_HEALTH},
             {0x76b18200u, 480, OOT_TRAINER_MAGIC}, {0x12d63a97u, 480, OOT_TRAINER_MAGIC},
-            {0xe0010a50u, 1000, OOT_TRAINER_MAX_RUPEES},
+            {0xe0010a50u, OOT_TRAINER_FULL_WALLET, OOT_TRAINER_MAX_RUPEES},
             {0x457616b0u, 30, OOT_TRAINER_MAX_AMMO}, {0x735b00f7u, 40, OOT_TRAINER_MAX_AMMO},
             {0xe753508bu, 40, OOT_TRAINER_MAX_AMMO}, {0xae8cc742u, 50, OOT_TRAINER_MAX_AMMO},
             {0x418db791u, 50, OOT_TRAINER_MAX_AMMO}, {0x04735978u, 100, OOT_TRAINER_SKULLTULAS},

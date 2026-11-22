@@ -50,7 +50,7 @@ static BOOL saveSettings(void) {
     self.delegate = self;
     self.collectionBehavior = NSWindowCollectionBehaviorFullScreenAuxiliary | NSWindowCollectionBehaviorMoveToActiveSpace;
     NSArray *names = @[@"20 hearts and infinite health", @"Full double magic meter", @"Infinite Epona carrots",
-                       @"Freeze challenge timers", @"Full largest wallet", @"Full ammunition and bags",
+                       @"Freeze challenge timers", @"Infinite rupees (1,000)", @"Full ammunition and bags",
                        @"All equipment", @"All 100 Gold Skulltulas", @"Hyrule map, dungeon maps and compasses"];
     for (int i = 0; i < OOT_TRAINER_OPTION_COUNT; ++i) {
         NSButton *button = [NSButton checkboxWithTitle:names[i] target:self action:@selector(changeOption:)];
