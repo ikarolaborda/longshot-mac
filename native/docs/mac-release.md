@@ -8,7 +8,7 @@ If you already own all five bottles, diving for Ruto’s Letter at Lake Hylia no
 
 Open the keypad 5 cheat menu and enable “100× attack damage” to multiply damage from Link’s hits by 100. It takes effect on the next hit. Enemies can still block attacks, and Link takes his usual damage.
 
-With “All ocarina songs” enabled in the keypad 5 cheat menu, the ocarina can play the twelve standard melodies. Once Bonooru accepts your eight-note tune, you can play it in the field. With the ocarina out, hold ZL (the number-row 1 key) and select the scarecrow icon at the far right of the top row. The “Scarecrow Song” entry shows your recorded notes. Put the ocarina away and take it out again after changing the cheat. Song lessons and Bonooru’s adult quest still award their items during the story.
+With “All ocarina songs” enabled in the keypad 5 cheat menu, the ocarina can play the twelve standard melodies. Once Bonooru accepts your eight-note tune, you can play it in the field. With the ocarina out, hold the control shown beside “Check songbook.” For the D-pad Right prompt, hold Right Arrow on the keyboard. For the ZL prompt, hold the number-row 1 key. Use the right stick to select the scarecrow icon at the far right of the top row. The “Scarecrow Song” entry shows your recorded notes. Put the ocarina away and take it out again after changing the cheat. Song lessons and Bonooru’s adult quest still award their items during the story.
 
 Open the keypad 5 cheat menu and enable “Perfect score after one target hit.” One hit earns 10/10 in the Market or Kakariko shooting gallery, or 2,000 points in Gerudo horseback archery. Finish the round to collect any prize you qualify for. A round with no hits scores zero.
 
