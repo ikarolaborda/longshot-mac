@@ -250,6 +250,9 @@ static int guest_imported(uint64_t lo, uint64_t hi) { (void)lo, (void)hi; return
 static void vmap_changing(uint64_t gpu, uint64_t size) { (void)gpu, (void)size; }
 static void event_signal(uint64_t gpu, uint32_t value) { (void)gpu, (void)value; }   /* (the host wrote it: in order already) */
 static int option(int id) {
+    /* Flight uses -1 for disabled. Zero arms double-tap Jump. Metal does not
+       offer the debug flight control, so this option is always disabled. */
+    if (id == HOS_OPT_CHEAT_FLIGHT) return -1;
     if (id >= 0 && id < 128 && option_known[id]) return options[id];
     switch (id) {
     case 0: return 1;              /* game time follows the clock */
@@ -262,6 +265,7 @@ static int option(int id) {
     }
 }
 static void option_set(int id, int value) {
+    if (id == HOS_OPT_CHEAT_FLIGHT) return;
     if (id >= 0 && id < 128) options[id] = value, option_known[id] = 1;
 }
 static void jitter_sample(MkwVkJitter *out) { memset(out, 0, sizeof *out); }

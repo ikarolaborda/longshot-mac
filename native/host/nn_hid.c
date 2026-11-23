@@ -1340,9 +1340,11 @@ static void npad_states(Ctx *c) {
         const int flying = flight_jump_shortcut(&buttons, rx_option(HOS_OPT_CHEAT_FLIGHT, -1), menu_open, free_camera);
         if (free_camera && !menu_open) {
             for (int i = 0; i < 4; i++) axes |= (uint64_t)(uint16_t)stick[i] << (16 * i);
-            height = (int)(buttons >> B_R & 1) - (int)(buttons >> B_L & 1);
             memset(stick, 0, sizeof stick);
+#ifndef __APPLE__  /* On Mac, Page Up/Down control debug camera height. Q/P always reach the game. */
+            height = (int)(buttons >> B_R & 1) - (int)(buttons >> B_L & 1);
             buttons &= ~((1ULL << B_L) | (1ULL << B_R));
+#endif
         } else if (flying && !menu_open) {
             const uint64_t climb = (1ULL << B_B) | (1ULL << B_R);
             const int vertical = !!(buttons & climb) - (int)(buttons >> B_L & 1);

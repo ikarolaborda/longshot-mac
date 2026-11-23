@@ -1,5 +1,7 @@
 This preview updates an existing Longshot game build for Apple silicon. Unzip the installer, open it, and choose the folder containing your game files. It installs Longshot in Applications. The executable has a local ad hoc signature. Finder may require approval in Privacy & Security.
 
+The Mac build disables no-clip flight. Double-tapping Shift (controller B) used to activate it, letting Q and P move Link vertically. Space still jumps, Q sends L, and P sends R. Page Up and Page Down adjust the debug camera’s height.
+
 Longshot grabs the mouse when its game window gains focus. Press Option+§ to release the pointer. Click back into the game or switch back to its window to grab it again. Q and P send the L and R shoulder buttons after switching apps and after closing the keypad 5 cheat menu.
 
 If you already own all five bottles, diving for Ruto’s Letter at Lake Hylia now puts it in the first empty bottle. If all five contain something, empty one and dive again. To give it to King Zora, stand on the platform facing him, equip the letter bottle in Items, and use it with ZR. He returns the empty bottle when he opens the way to Zora’s Fountain.

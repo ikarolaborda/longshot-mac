@@ -1876,8 +1876,12 @@ Row rows[] = {
     // Debug: the tools' switch, the tools themselves below it while they are on (cheat: menu_tick does what they do), then the
     // developer's rows
     {TAB_DEBUG, "Debug tools", &opts.debug_tools, 0, 1, 1, tx_onoff,
+#ifdef __APPLE__
+     "Testing tools for the free camera, teleport, Link's age, inventory, clock, heart protection and movement speed.", nullptr, false, true},
+#else
      "Testing tools: no-clip flight, a free camera, teleport, Link's age, the inventory, the clock, heart protection and "
      "movement speed. Off puts flight, the free camera and heart protection away and Link back to his own speed and damage.", nullptr, false, true},
+#endif
     {TAB_DEBUG, "Heart protection", nullptr, 0, 0, 0, nullptr,
      "Protects Link's hearts. Hits can still knock him back.", nullptr, false, true, 0},
     {TAB_DEBUG, "Autosave:", &opts.transition_autosave, 0, 1, 1, tx_onoff,
@@ -1900,8 +1904,10 @@ Row rows[] = {
     {TAB_DEBUG, "Infinite ammo", &opts.trainer_ammo, 0, 1, 1, tx_onoff,
      "Deku Sticks, Deku Nuts, bombs, Bombchus, seeds and arrows refill to the most you held while this was on, within "
      "the bag or quiver you have.", nullptr, false, true},
+#ifndef __APPLE__
     {TAB_DEBUG, "No-clip flight", nullptr, 0, 0, 0, nullptr,
      "Enable double-tap Jump for takeoff and landing. Hold Jump to climb or L to descend.", nullptr, false, true, 1},
+#endif
     {TAB_DEBUG, "Mark position", nullptr, 0, 0, 0, nullptr,
      "Remember Link's position for this loaded scene.", nullptr, false, true, 2},
     {TAB_DEBUG, "Return to mark", nullptr, 0, 0, 0, nullptr,
@@ -1913,7 +1919,11 @@ Row rows[] = {
     {TAB_DEBUG, "Change quantity", nullptr, 0, 0, 0, nullptr,
      "Choose how many to add or remove. Enter applies the change.", nullptr, false, true, 6},
     {TAB_DEBUG, "Free camera", nullptr, 0, 0, 0, nullptr,
+#ifdef __APPLE__
+     "Move and look with your usual controls. Page Up and Page Down change camera height.", nullptr, false, true, 7},
+#else
      "Move and look with your usual controls. Page Up / Page Down or R / L changes height.", nullptr, false, true, 7},
+#endif
     {TAB_DEBUG, "Teleport", nullptr, 0, 0, 0, nullptr,
      "Opens the map list. Link travels through the game's own map change, in his current age.", nullptr, false, true, 8},
     {TAB_DEBUG, "Switch age", nullptr, 0, 0, 0, nullptr,
