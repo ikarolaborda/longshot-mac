@@ -27,3 +27,25 @@ def install(lifter, img, build_id):
             raise ValueError("trainer instruction mismatch at %#x" % address)
         hook = "{ extern void %s(Ctx *); %s(c); }" % (function, function)
         lifter.after[address] = (lifter.after.get(address, "") + "\n" + hook).strip()
+
+    # The bottle grant just read the fifth IsValid bit. Resume the native award
+    # with an existing empty slot only when all five are owned and this is the letter.
+    address = 0x8112f5e0
+    if (img.word(address), img.word(address + 4), img.word(0x81130798)) != (
+            0x385883a8, 0x3600ad28, 0xa94923f3):
+        raise ValueError("Ruto letter bottle award instruction mismatch")
+    lifter.after[address] = """{ extern int hos_oot_empty_bottle_for_letter(uint64_t, uint64_t);
+        if (c->x[8] & 1) {
+            int slot = hos_oot_empty_bottle_for_letter(c->x[24], recomp_load64(c, c->x[31] + 0x98));
+            if (slot >= 0) { c->x[21] = (unsigned)slot; goto L_81130798; }
+        } }"""
+
+    # The pickup eligibility check asks about the fifth bottle before it lets
+    # the world actor start the award. Use the same rule on both sides.
+    address = 0x80a95694
+    if (img.word(address), img.word(address + 4), img.word(0x80a9570c)) != (
+            0xaa1503e0, 0x9400065a, 0xb4000074):
+        raise ValueError("Ruto letter bottle capacity instruction mismatch")
+    lifter.after[address] = """{ extern int hos_oot_empty_bottle_for_letter(uint64_t, uint64_t);
+        if (hos_oot_empty_bottle_for_letter(c->x[23], recomp_load64(c, c->x[24])) >= 0)
+            goto L_80a9570c; }"""

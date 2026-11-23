@@ -1,5 +1,7 @@
 This preview updates an existing Longshot game build for Apple silicon. Unzip the installer, open it, and choose the folder containing your game files. It installs Longshot in Applications. The executable has a local ad hoc signature. Finder may require approval in Privacy & Security.
 
+If you already own all five bottles, diving for Ruto’s Letter at Lake Hylia now puts it in the first empty bottle. If all five contain something, empty one and dive again. To give it to King Zora, stand on the platform facing him, equip the letter bottle in Items, and use it with ZR. He returns the empty bottle when he opens the way to Zora’s Fountain.
+
 Open the keypad 5 cheat menu and enable “100× attack damage” to multiply damage from Link’s hits by 100. It takes effect on the next hit. Enemies can still block attacks, and Link takes his usual damage.
 
 “All ocarina songs” in the keypad 5 cheat menu lets you play all twelve standard melodies as soon as you have an ocarina. Put the ocarina away and take it out again after changing this option. With the ocarina out, hold ZL (the number-row 1 key) to open the songbook and see the notes. Lessons still award songs as you reach them. You can record your own Scarecrow’s Song as usual.

@@ -218,6 +218,33 @@ int hos_oot_target_score_max(uint64_t mgr) {
     return 0;
 }
 
+/* Older equipment cheats saved all five IsValid bits. When the native award
+   cannot allocate a new bottle, it can still deliver Ruto's Letter into an
+   owned empty one. Check the actual contents, including any existing letter. */
+int hos_oot_empty_bottle_for_letter(uint64_t mgr, uint64_t name_ptr) {
+    static const char letter[] = "Item_Bottle_Letter";
+    const char *name = hos_guest_range(name_ptr, sizeof letter);
+    if (!name || memcmp(name, letter, sizeof letter)) return -1;
+
+    /* The event sets GetRutoLetter before the pouch grant. IsGet is committed
+       after the grant and stays set when the King takes the letter. */
+    int64_t value;
+    if (!state_number(mgr, KIND_BOOL, 0x170b5df2u, &value) || value) return -1;
+    static const struct { uint32_t valid, content; int slot; } bottles[] = {
+        {0xf39ce410u, 0x7d48df76u, 14}, {0x000ff6eau, 0x1edd164au, 15},
+        {0xf63b1194u, 0xb80c70a8u, 16}, {0xb7f052ceu, 0xe4c1b1fcu, 17},
+        {0xe27b136du, 0x365e1953u, 50}
+    };
+    int empty = -1;
+    for (size_t i = 0; i < sizeof bottles / sizeof bottles[0]; ++i) {
+        if (!state_number(mgr, KIND_BOOL, bottles[i].valid, &value) || !value ||
+            !state_number(mgr, KIND_ENUM, bottles[i].content, &value) || value == 0x0f24e808u)
+            return -1;
+        if (empty < 0 && value == 0xbe69de49u) empty = bottles[i].slot;
+    }
+    return empty;
+}
+
 int hos_oot_gamedata_bool(uint32_t hash, int64_t *v) {
     const uint64_t mgr = state_u64(state_u64(STATE_GAMEDATA_SLOT));
     return mgr && state_number(mgr, KIND_BOOL, hash, v);
