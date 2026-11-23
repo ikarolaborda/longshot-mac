@@ -39,14 +39,42 @@ void hos_oot_trainer_target_score(Ctx *c) {
     }
 }
 
-/* Free play (input modes 1 and 3) caches learned compositions in scorebook
-   order. Lessons use a different path. Byte 12 belongs to Scarecrow's Song,
-   which needs the player's recorded notes. */
+int hos_oot_gamedata_bool(uint32_t hash, int64_t *value);
+
+/* Bonooru accepts the recording in childhood. The melody item itself is a
+   later quest reward. Read the eight saved pitches, not the current take,
+   which may be incomplete after canceling a replacement recording. */
+static int has_recorded_scarecrow_song(Ctx *c) {
+    int64_t accepted = 0;
+    if (!hos_oot_gamedata_bool(0xfdf0f4b8u, &accepted) || !accepted) return 0;  /* AskBonooru_listentothesong */
+    A64Fn read_note = a64_lookup(0x8377b980);  /* GameDataMgr::getUIntArray by hash and index */
+    const uint64_t holder = recomp_load64(c, 0x84c9e180);
+    const uint64_t manager = holder ? recomp_load64(c, holder) : 0;
+    if (!read_note || !manager) return 0;
+    Ctx query = *c;
+    const uint64_t scratch = (c->x[31] - 0x40) & ~UINT64_C(15);
+    for (unsigned i = 0; i < 8; ++i) {
+        query.x[31] = scratch;
+        query.x[0] = manager;
+        query.x[1] = scratch;
+        query.x[2] = 0xcc535536u;  /* Bonooru's saved score */
+        query.x[3] = i;
+        read_note(&query);
+        if (!(query.x[0] & 1) || !recomp_load32(c, scratch)) return 0;
+    }
+    return 1;
+}
+
+/* Free play (modes 1 and 3) has just cached the game's own repertoire.
+   Only this instrument session borrows songs. Lessons and rewards use the
+   original ownership checks. */
 void hos_oot_trainer_songs(Ctx *c) {
     if (!hos_trainer_enabled(OOT_TRAINER_SONGS)) return;
     const uint64_t repertoire = c->x[19] + 0x264;
     for (unsigned song = 0; song < 12; ++song)
         recomp_store8(c, repertoire + song, 1);
+    if (!recomp_load8(c, repertoire + 12) && has_recorded_scarecrow_song(c))
+        recomp_store8(c, repertoire + 12, 1);
 }
 
 int hos_oot_is_player(Ctx *c, uint64_t life);

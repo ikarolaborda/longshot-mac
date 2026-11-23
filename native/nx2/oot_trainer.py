@@ -12,8 +12,8 @@ SITES = (
     (0x832cdd00, (0xbd400269, 0x52843117, 0xd10063a1), "hos_oot_trainer_clock"),
     # The scalar Int commit loop has loaded the pending record's GameData hash into w12.
     (0x80bb9b30, (0xb940052c, 0x340004ac, 0xf940728d), "hos_oot_trainer_target_score"),
-    # Free play has populated the twelve repertoire bytes and is about to query the custom song.
-    (0x832b3848, (0x3909be68, 0x97f649b5, 0x12000008), "hos_oot_trainer_songs"),
+    # Free play has populated all thirteen repertoire bytes, including the custom song.
+    (0x832b3854, (0x3909c268, 0x14000009, 0x910b7268), "hos_oot_trainer_songs"),
     # The player's accessory factory has just read the equipped actor name.
     (0x82e17394, (0xf85a83a1, 0x360001c0, 0x39400028), "hos_oot_trainer_ocarina"),
 )
