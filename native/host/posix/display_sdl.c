@@ -12,6 +12,7 @@
 #include "../hos.h"
 void hos_input_clear_toggles(void);
 #ifdef __APPLE__
+#include <pthread.h>
 void hos_mac_middle_click(void);
 #endif
 #include "../hos_sdl.h"
@@ -179,19 +180,68 @@ static MkwVkWindow vk_window = {MKWVK_WINDOW_VERSION, create_surface, drawable_s
 /* Esc let the captured mouse go just before it opened the Insert menu (Menu shortcut "Insert, F1 or Esc"):
    the capture that comes back when the menu closes. Spent by the next capture or menu */
 static int esc_had_capture;
+#ifdef __APPLE__
+/* The SDL pump and the guest controller poll run on different threads. Keep a
+   short sequence of Q/P edges so both ends of a tap can arrive in one pump. */
+static pthread_mutex_t shoulder_lock = PTHREAD_MUTEX_INITIALIZER;
+static struct { unsigned edges, down; } shoulders[2];
+static void shoulder_key(int scancode, int pressed) {
+    const int i = scancode == 19 ? 1 : 0; /* P, Q */
+    if (scancode != 19 && scancode != 20) return;
+    pthread_mutex_lock(&shoulder_lock);
+    if ((shoulders[i].down ^ (shoulders[i].edges & 1)) != (unsigned)pressed) {
+        if (shoulders[i].edges >= 8) shoulders[i].edges -= 2;
+        ++shoulders[i].edges;
+    }
+    pthread_mutex_unlock(&shoulder_lock);
+}
+static void clear_shoulders(void) {
+    pthread_mutex_lock(&shoulder_lock);
+    memset(shoulders, 0, sizeof shoulders);
+    pthread_mutex_unlock(&shoulder_lock);
+}
+unsigned hos_mac_poll_shoulder_keys(void) {
+    unsigned mask = 0;
+    pthread_mutex_lock(&shoulder_lock);
+    for (int i = 0; i < 2; ++i) {
+        if (shoulders[i].edges) {
+            --shoulders[i].edges;
+            shoulders[i].down ^= 1;
+        }
+        mask |= shoulders[i].down << i;
+    }
+    pthread_mutex_unlock(&shoulder_lock);
+    return mask;
+}
+#endif
 static void mouse_capture(int on) {
     int rx_option(int id, int otherwise);
+#ifndef __APPLE__
     if (on && rx_option(6, 0) == 2) return;   /* (Mouse camera Off: the mouse plays no part) */
+#endif
     if (on == (int)mouse_captured) return;
     if (!hos_sdl_relative_mouse(window, on)) {
         hos_log("display: SDL relative mouse mode %d failed: %s", on, hos_sdl_error());
         if (on) return;
     }
+    if (env_on("HOS_TRACE_GAME_INPUT")) hos_log("display: mouse %s", on ? "captured" : "released");
     InterlockedExchange(&mouse_captured, on);
     InterlockedExchange(&mouse_dx, 0);
     InterlockedExchange(&mouse_dy, 0);
     if (on) esc_had_capture = 0;
 }
+#ifdef __APPLE__
+static void mac_game_focus(int focused) {
+    if (focused == hos_posix_window[0]) return;
+    hos_posix_window[0] = focused;
+    clear_shoulders();
+    if (!focused) {
+        hos_input_clear_toggles();
+        ptr_in = ptr_held = 0;
+    }
+    mouse_capture(focused);
+}
+#endif
 static void set_fullscreen(int on) {
     static int failed_logged;
     char wanted[512]; hos_monitor_wanted(wanted);
@@ -255,14 +305,22 @@ static void menu_mouse(int request) {
     menu_open = open;
     if (open) {
         hos_input_clear_toggles();
+#ifdef __APPLE__
+        clear_shoulders();
+#else
         captured_before_menu = (int)mouse_captured || (request == 2 && esc_had_capture);   /* (opened by Esc, which let it go) */
         esc_had_capture = 0;
         mouse_capture(0);
+#endif
         hos_pointer_reset(&pointer);
         pointer_update(0, 0);
     } else {
+#ifdef __APPLE__
+        clear_shoulders();
+#else
         if (captured_before_menu && hos_posix_window[0]) mouse_capture(1);
         captured_before_menu = 0;
+#endif
     }
 }
 static int sdl_ready;
@@ -356,7 +414,11 @@ void hos_display_loop(void) {
     vk_window.window = window;
     if (hos_renderer_metal() && !(window_layer = hos_sdl_metal_layer(window)))   /* (SDL's rule: on the main thread) */
         hos_log("display: no Metal view on the window (%s)", hos_sdl_error());
+#ifdef __APPLE__
+    mac_game_focus(hos_sdl_keyboard_focus(window));
+#else
     hos_posix_window[0] = 1;
+#endif
     {   /* the window's icon: longshot.png in the game folder (make_game.py puts it there: the game's own icon, else Longshot's),
            for X11 and the compositors that take one from the window; the others find it through the menu entry. (The folder, not
            the exe's: the game is bin/longshot in a packaged builder's folder, and the icon was looked for in bin/) */
@@ -417,6 +479,13 @@ void hos_display_loop(void) {
                         rx_resize(w, h);
                     }
                     break;
+#ifdef __APPLE__
+                case HOS_SDL_EV_FOCUS_GAINED: mac_game_focus(1); break;
+                case HOS_SDL_EV_FOCUS_LOST: mac_game_focus(0); break;
+                case HOS_SDL_EV_KEY_UP:
+                    if (hos_posix_window[0] && !menu_open) shoulder_key(e.scancode, 0);
+                    break;
+#else
                 case HOS_SDL_EV_FOCUS_GAINED:
                     hos_posix_window[0] = 1;
                     break;
@@ -427,6 +496,7 @@ void hos_display_loop(void) {
                     mouse_capture(0);
                     ptr_in = 0, ptr_held = 0;
                     break;
+#endif
                 case HOS_SDL_EV_MOUSE_LEAVE:
                     /* (Wayland: turning the relative mode on sends a leave in the same millisecond (Mutter), and
                        releasing here dropped the capture before the first motion: the mouse turned nothing and its
@@ -440,18 +510,26 @@ void hos_display_loop(void) {
                 case HOS_SDL_EV_KEY_DOWN: {
                     const int scancode = e.scancode, mod = e.mod;
 #ifdef __APPLE__
+                    if (hos_posix_window[0] && (mod & 0x300) && !(mod & 0x0cc3) &&
+                        (e.key == 0x00a7 || e.raw_key == 10 || (hos_sdl_load() == 2 && scancode == 100))) {
+                        if (!e.repeat) {
+                            mouse_capture(0);
+                            hos_input_clear_toggles();
+                        }
+                        break;
+                    }
+                    if (!e.repeat && hos_posix_window[0] && !menu_open) shoulder_key(scancode, 1);
                     if (scancode == 93 && !e.repeat && hos_posix_window[0] && !menu_open) {
                         extern void hos_mac_cheat_menu(void);
-                        mouse_capture(0);
-                        hos_input_clear_toggles();
                         hos_mac_cheat_menu();
                         break;
                     }
-#endif
+#else
                     if (e.scancode == 41) {   /* Esc (it may open the Insert menu too: the capture comes back) */
                         if (!menu_open && mouse_captured) esc_had_capture = 1;
                         mouse_capture(0);
                     }
+#endif
                     if (!e.repeat && ((scancode == 68 && !(mod & 0x0FC3)) || (scancode == 40 && (mod & 0x300)))) set_fullscreen(!fullscreen);   /* F11, Alt+Enter */
                     if (hos_text_focus()) text_key(&e);   /* (a text field of the Insert menu has the keyboard) */
                     break;
@@ -461,7 +539,7 @@ void hos_display_loop(void) {
                     ptr_held |= sdl_button_bit(e.button);
                     if (menu_open) pointer_publish_at(e.x, e.y, sdl_button_bit(e.button), 0);   /* (the menu's click) */
                     else {
-                        if (renderer && !mouse_captured) mouse_capture(1);
+                        if (renderer && !mouse_captured && hos_posix_window[0]) mouse_capture(1);
 #ifdef __APPLE__
                         if (e.button == 2 && mouse_captured && hos_posix_window[0]) hos_mac_middle_click();
 #endif
@@ -506,6 +584,10 @@ void hos_display_loop(void) {
             rx_close_asked();
             hos_window_closed_exit();
         }
+#ifdef __APPLE__
+        /* A native panel and an app switch can coalesce SDL focus events. */
+        mac_game_focus(hos_sdl_keyboard_focus(window));
+#endif
         pointer_update(0, 0);
         keys_update();
     }

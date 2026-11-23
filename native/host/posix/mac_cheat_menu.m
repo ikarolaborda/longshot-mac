@@ -31,6 +31,7 @@ static BOOL saveSettings(void) {
 
 @interface LongshotCheats : NSPanel <NSWindowDelegate>
 @property(nonatomic, assign) NSWindow *game;
+@property(nonatomic, retain) NSResponder *gameResponder;
 @end
 
 @implementation LongshotCheats {
@@ -88,6 +89,7 @@ static BOOL saveSettings(void) {
 
 - (void)openForGame:(NSWindow *)game {
     self.game = game;
+    self.gameResponder = game.firstResponder;
     for (int i = 0; i < OOT_TRAINER_OPTION_COUNT; ++i)
         _switches[i].state = hos_trainer_enabled((enum OotTrainerOption)i) ? NSControlStateValueOn : NSControlStateValueOff;
     [self refresh:nil];
@@ -106,12 +108,19 @@ static BOOL saveSettings(void) {
     [super sendEvent:event];
 }
 
-- (void)windowWillClose:(NSNotification *)notification {
+- (void)close {
+    NSWindow *game = self.game;
+    NSResponder *responder = self.gameResponder;
     [_refresh invalidate];
     _refresh = nil;
-    [self.game removeChildWindow:self];
-    [self.game makeKeyAndOrderFront:nil];
+    [game removeChildWindow:self];
+    [super close];
+    if (NSApp.isActive && game.isVisible) {
+        [game makeKeyAndOrderFront:nil];
+        if (responder) [game makeFirstResponder:responder];
+    }
     self.game = nil;
+    self.gameResponder = nil;
 }
 @end
 

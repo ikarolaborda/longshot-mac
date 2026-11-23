@@ -55,7 +55,18 @@ static int64_t sampling;
 
 int rx_option(int id, int otherwise);
 /* (the Insert menu takes the keyboard while it is open) */
-static int key(int vk) { return !rx_option(1, 0) && (GetAsyncKeyState(vk) & 0x8000) != 0; }
+#ifdef __APPLE__
+unsigned hos_mac_poll_shoulder_keys(void);
+static _Thread_local unsigned mac_shoulder_keys;
+#endif
+static int key(int vk) {
+    if (rx_option(1, 0)) return 0;
+#ifdef __APPLE__
+    if (vk == 'Q') return mac_shoulder_keys & 1;
+    if (vk == 'P') return (mac_shoulder_keys >> 1) & 1;
+#endif
+    return (GetAsyncKeyState(vk) & 0x8000) != 0;
+}
 
 int hos_mouse_take(int32_t *dx, int32_t *dy);   /* display.c */
 int hos_mouse_captured(void);
@@ -1149,6 +1160,9 @@ static void move_keys_stick(int x, int y, int percent, int32_t out[2]) {
 /* *taps: the host's own presses (hos_hid_tap), apart from the rest */
 static void read_input(uint64_t *buttons, uint64_t *taps, int32_t stick[4]) {
     *buttons = *taps = 0;
+#ifdef __APPLE__
+    mac_shoulder_keys = hos_mac_poll_shoulder_keys();
+#endif
     memset(stick, 0, 4 * sizeof *stick);
     void hos_mouse_native_stick(int held);
     scripted_input(buttons, taps, stick);

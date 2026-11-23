@@ -26,6 +26,7 @@ uint32_t hos_sdl_window_display(void *window); /* UINT32_MAX when unknown; SDL2 
 int hos_sdl_fullscreen_target(void *window, int on, uint32_t token);
 int hos_sdl_is_fullscreen(void *window);
 int hos_sdl_relative_mouse(void *window, int on);
+int hos_sdl_keyboard_focus(void *window);
 int hos_sdl_desktop_size(int *width, int *height);
 int hos_sdl_refresh_mhz(void *window);   /* the refresh rate of the window's display in mHz, 0 when not known (the main thread) */
 int hos_sdl_vulkan_surface(void *window, void *instance, void *surface_out);
@@ -48,11 +49,12 @@ void hos_sdl_free(void *p);
 enum {
     HOS_SDL_EV_OTHER, HOS_SDL_EV_QUIT, HOS_SDL_EV_CLOSE, HOS_SDL_EV_RESIZED, HOS_SDL_EV_FOCUS_GAINED,
     HOS_SDL_EV_FOCUS_LOST, HOS_SDL_EV_MOUSE_LEAVE, HOS_SDL_EV_KEY_DOWN, HOS_SDL_EV_MOUSE_DOWN, HOS_SDL_EV_MOUSE_MOTION,
-    HOS_SDL_EV_MOUSE_UP, HOS_SDL_EV_MOUSE_WHEEL, HOS_SDL_EV_MOUSE_ENTER, HOS_SDL_EV_TEXT
+    HOS_SDL_EV_MOUSE_UP, HOS_SDL_EV_MOUSE_WHEEL, HOS_SDL_EV_MOUSE_ENTER, HOS_SDL_EV_TEXT, HOS_SDL_EV_KEY_UP
 };
 typedef struct {
     int type;
-    int scancode, repeat;   /* (key down) */
+    int scancode, repeat;
+    uint16_t raw_key;       /* SDL3 platform keycode, zero on SDL2 */
     int key;                /* (key down: SDL's keycode, by the keyboard's layout: a letter's lower case) */
     uint16_t mod;           /* (key down: 0x300 an Alt key, 0xC0 a Ctrl key, 3 a Shift key) */
     float dx, dy;           /* (mouse motion, relative) */

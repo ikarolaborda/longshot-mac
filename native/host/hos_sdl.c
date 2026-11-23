@@ -17,7 +17,7 @@ static struct {
     void *InitSubSystem, *SetHint, *GetError;
     /* window */
     void *CreateWindow, *SetWindowPosition, *SetWindowFullscreen, *SetRelativeMouseMode, *GetPrimaryDisplay,
-        *GetDesktopDisplayMode, *Vulkan_CreateSurface, *PixelSize, *GetKeyboardState, *GetMouseState, *WaitEventTimeout,
+        *GetDesktopDisplayMode, *Vulkan_CreateSurface, *PixelSize, *GetKeyboardState, *GetKeyboardFocus, *GetMouseState, *WaitEventTimeout,
         *PollEvent, *GetWindowSize, *LoadPNG, *SetWindowIcon, *DestroySurface, *GetWindowDisplay, *GetCurrentDisplayMode;
     void *StartTextInput, *StopTextInput, *GetClipboardText;   /* (longshot: the menu's text fields; optional) */
     void *GetDisplays, *GetNumVideoDisplays, *GetDisplayName, *GetCurrentVideoDriver, *GetWindowPosition, *GetWindowFlags, *SyncWindow;
@@ -60,6 +60,7 @@ static int get_all(HMODULE m, int three) {
     GET(Vulkan_CreateSurface, "SDL_Vulkan_CreateSurface");
     GET2(PixelSize, "SDL_GetWindowSizeInPixels", "SDL_Vulkan_GetDrawableSize");
     GET(GetKeyboardState, "SDL_GetKeyboardState");
+    GET(GetKeyboardFocus, "SDL_GetKeyboardFocus");
     GET(GetMouseState, "SDL_GetMouseState");
     GET(GetWindowSize, "SDL_GetWindowSize");
     GET(WaitEventTimeout, "SDL_WaitEventTimeout");
@@ -304,6 +305,9 @@ int hos_sdl_fullscreen_target(void *window,int on,uint32_t token) {
     }
     return ok;
 }
+int hos_sdl_keyboard_focus(void *window) {
+    return window && CALL(void *(*)(void), GetKeyboardFocus)() == window;
+}
 int hos_sdl_relative_mouse(void *window, int on) {
     if (version == 3) return CALL(_Bool (*)(void *, _Bool), SetRelativeMouseMode)(window, on != 0);
     return CALL(int (*)(int), SetRelativeMouseMode)(on) == 0;
@@ -414,10 +418,11 @@ static void read_event(const uint8_t *raw, HosSdlEvent *e) {
         case 0x20e: e->type = HOS_SDL_EV_FOCUS_GAINED; break;
         case 0x20f: e->type = HOS_SDL_EV_FOCUS_LOST; break;
         case 0x210: e->type = HOS_SDL_EV_CLOSE; break;
+        case 0x301:
         case 0x300:   /* (SDL_KeyboardEvent: scancode at 24, keycode at 28, mod at 32, repeat at 37) */
-            e->type = HOS_SDL_EV_KEY_DOWN;
+            e->type = type == 0x300 ? HOS_SDL_EV_KEY_DOWN : HOS_SDL_EV_KEY_UP;
             memcpy(i, raw + 24, 8), e->scancode = i[0], e->key = i[1];
-            memcpy(&e->mod, raw + 32, 2), e->repeat = raw[37];
+            memcpy(&e->mod, raw + 32, 2), memcpy(&e->raw_key, raw + 34, 2), e->repeat = raw[37];
             break;
         case 0x303: {   /* (SDL_TextInputEvent: the text's pointer at 24) */
             const char *t;
@@ -455,8 +460,9 @@ static void read_event(const uint8_t *raw, HosSdlEvent *e) {
                 : raw[12] == 12 ? HOS_SDL_EV_FOCUS_GAINED : raw[12] == 13 ? HOS_SDL_EV_FOCUS_LOST
                 : raw[12] == 14 ? HOS_SDL_EV_CLOSE : HOS_SDL_EV_OTHER;
         break;
+    case 0x301:
     case 0x300:   /* (SDL_KeyboardEvent: repeat at 13, scancode at 16, keycode at 20, mod at 24) */
-        e->type = HOS_SDL_EV_KEY_DOWN;
+        e->type = type == 0x300 ? HOS_SDL_EV_KEY_DOWN : HOS_SDL_EV_KEY_UP;
         memcpy(i, raw + 16, 8), e->scancode = i[0], e->key = i[1];
         memcpy(&e->mod, raw + 24, 2), e->repeat = raw[13];
         break;
