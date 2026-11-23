@@ -6,6 +6,8 @@ BUILD_ID = "e0f3ccfaf50065ae4ea01eb5aeb13b1a45da3348"
 # signed halfword at +0x27c and publishes it to the HUD as GameData 0x3514b108.
 # The timer loads the step it later subtracts from, or adds to, MiniGame_TimerValue.
 SITES = (
+    # Link's MP controller has calculated the new balance, just before storing it and publishing it to GameData.
+    (0x80183a8c, (0xaa1403e0, 0xb9004661, 0x94000037), "hos_oot_trainer_magic"),
     # One resolved external hit, immediately before the atomic add to the victim’s damage total.
     (0x804a99f8, (0x91006289, 0xb8280128, 0x295c2688), "hos_oot_trainer_attack"),
     (0x82726f38, (0xb9403917, 0xbd423aa0, 0x1e202008), "hos_oot_trainer_horse"),

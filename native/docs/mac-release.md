@@ -6,6 +6,8 @@ Longshot grabs the mouse when its game window gains focus. Press Option+§ to re
 
 If you already own all five bottles, diving for Ruto’s Letter at Lake Hylia now puts it in the first empty bottle. If all five contain something, empty one and dive again. To give it to King Zora, stand on the platform facing him, equip the letter bottle in Items, and use it with ZR. He returns the empty bottle when he opens the way to Zora’s Fountain.
 
+Enable “Infinite magic (double meter)” in the keypad 5 cheat menu to keep Link’s meter full when casting spells or firing magic arrows. Magic arrows still use arrows from the quiver. You can still earn both Great Fairy magic upgrades during the story.
+
 Open the keypad 5 cheat menu and enable “100× attack damage” to multiply damage from Link’s hits by 100. It takes effect on the next hit. Enemies can still block attacks, and Link takes his usual damage.
 
 With “All ocarina songs” enabled in the keypad 5 cheat menu, the ocarina can play the twelve standard melodies. Once Bonooru accepts your eight-note tune, you can play it in the field. With the ocarina out, hold the control shown beside “Check songbook.” For the D-pad Right prompt, hold Right Arrow on the keyboard. For the ZL prompt, hold the number-row 1 key. Use the right stick to select the scarecrow icon at the far right of the top row. The “Scarecrow Song” entry shows your recorded notes. Put the ocarina away and take it out again after changing the cheat. Song lessons and Bonooru’s adult quest still award their items during the story.

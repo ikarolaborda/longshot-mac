@@ -1619,7 +1619,6 @@ static void oot_trainer_tick(Ctx *c, uint64_t components, int64_t now) {
     const int max_health = hos_trainer_enabled(OOT_TRAINER_HEALTH);
     const int health = max_health || rx_option(HOS_OPT_TRAINER_HEALTH, 0) > 0;
     const int max_hearts = rx_option(HOS_OPT_TRAINER_MAX_HEARTS, 0);
-    const int magic = hos_trainer_enabled(OOT_TRAINER_MAGIC);
     const int max_rupees = hos_trainer_enabled(OOT_TRAINER_MAX_RUPEES);
     const int max_ammo = hos_trainer_enabled(OOT_TRAINER_MAX_AMMO);
     const int rupees = rx_option(HOS_OPT_TRAINER_RUPEES, 0) > 0;
@@ -1627,7 +1626,7 @@ static void oot_trainer_tick(Ctx *c, uint64_t components, int64_t now) {
     if (!rupees) rupee_mark = -1;
     if (!ammo && ammo_on_before) memset(ammo_mark, 0, sizeof ammo_mark);
     ammo_on_before = ammo;
-    if (!health && !magic && max_hearts <= 0 && !rupees && !ammo && !max_rupees && !max_ammo) return;
+    if (!health && max_hearts <= 0 && !rupees && !ammo && !max_rupees && !max_ammo) return;
     /* (nothing while an event plays: a map change, a cutscene, the death and continue sequence; the game owns Link's values then) */
     if (hos_oot_event_playing(c)) return;
     in_tick = 1;
@@ -1658,10 +1657,6 @@ static void oot_trainer_tick(Ctx *c, uint64_t components, int64_t now) {
     if (health && life > 0 && life < max_life) {
         oot_raise_live_life(c, owner + 0x1c10, (uint32_t)max_life);
         oot_gamedata_set_int(c, OOT_GD_PLAYER_LIFE, max_life);
-    }
-    if (magic) {
-        /* The two fairy blessings specify 24 and 48 units. The player stores tenths. */
-        oot_trainer_int(c, 0x76b18200u, 480);  /* Refill current MP. The fairy owns the saved maximum. */
     }
     if (max_rupees) {
         oot_trainer_int(c, OOT_GD_PLAYER_RUPEES, OOT_TRAINER_FULL_WALLET);

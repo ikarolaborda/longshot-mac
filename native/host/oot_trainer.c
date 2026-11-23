@@ -15,6 +15,23 @@ void hos_trainer_set(enum OotTrainerOption option, int on) {
     hos_log("trainer: option %d %s", option, on ? "on" : "off");
 }
 
+enum { OOT_DOUBLE_MAGIC = 480 };  /* 48 units, tracked in tenths */
+
+void hos_oot_trainer_magic(Ctx *c) {
+    if (!hos_trainer_enabled(OOT_TRAINER_MAGIC)) return;
+    /* f_801839b0 commits both continuous drains and one-shot costs. The same
+       balance feeds spell eligibility, the HUD and the GameData MP write.
+       The Great Fairy owns MPMax and the blessing flags. */
+    if ((uint32_t)c->x[2] != 0x76b18200u) return;  /* PlayerStatus.MP */
+    const uint64_t meter = c->x[19];
+    const int32_t delta = (int32_t)recomp_load32(c, meter + 0x18);
+    if (delta < 0 && getenv("HOS_TRACE_MAGIC"))
+        hos_log("trainer magic: meter=%llx delta=%d balance=%u", (unsigned long long)meter,
+                delta, (unsigned)c->x[1]);
+    c->x[1] = OOT_DOUBLE_MAGIC;
+    recomp_store32(c, meter + 0x48, 0);  /* The HUD's pending charge for the equipped item. */
+}
+
 void hos_oot_trainer_horse(Ctx *c) {
     if (!hos_trainer_enabled(OOT_TRAINER_CARROTS)) return;
     uint32_t maximum = (uint32_t)c->x[23];
@@ -244,7 +261,7 @@ static int loan_scalar(Ctx *c, uint32_t key, int integer) {
     if (integer && loan_depth) {
         static const struct { uint32_t key; int amount; enum OotTrainerOption option; } values[] = {
             {0x31ab5580u, 80, OOT_TRAINER_HEALTH}, {0xfbe01da1u, 80, OOT_TRAINER_HEALTH},
-            {0x76b18200u, 480, OOT_TRAINER_MAGIC}, {0x12d63a97u, 480, OOT_TRAINER_MAGIC},
+            {0x76b18200u, OOT_DOUBLE_MAGIC, OOT_TRAINER_MAGIC}, {0x12d63a97u, OOT_DOUBLE_MAGIC, OOT_TRAINER_MAGIC},
             {0xe0010a50u, OOT_TRAINER_FULL_WALLET, OOT_TRAINER_MAX_RUPEES},
             {0x457616b0u, 30, OOT_TRAINER_MAX_AMMO}, {0x735b00f7u, 40, OOT_TRAINER_MAX_AMMO},
             {0xe753508bu, 40, OOT_TRAINER_MAX_AMMO}, {0xae8cc742u, 50, OOT_TRAINER_MAX_AMMO},
@@ -283,6 +300,16 @@ int hos_oot_loan_flag(Ctx *c, int integer) {
 /* Struct-member reads resolve the member's hash to its scalar GameData key.
    The supported build uses eight-byte lookup buckets and linear probing. */
 int hos_oot_loan_member(Ctx *c, int integer) {
+    /* The magic gauge reads PlayerStatus.MPMax at creation and in the HUD's
+       change detector. A loan here also refreshes the gauge when toggled
+       during play, without granting either saved Great Fairy upgrade. */
+    if (integer && (uint32_t)c->x[3] == 0x39e8a20du &&
+        (c->x[30] == 0x833ddfb0 || c->x[30] == 0x8019a674) &&
+        hos_trainer_enabled(OOT_TRAINER_MAGIC)) {
+        recomp_store32(c, c->x[1], OOT_DOUBLE_MAGIC);
+        c->x[0] = 1;
+        return 1;
+    }
     if (!loan_depth && !tracing_inventory()) return 0;
     const uint32_t member = (uint32_t)c->x[3];
     if (member != (integer ? 0x22344481u : 0xe1754905u)) return 0;  /* StockNum, IsValid */
