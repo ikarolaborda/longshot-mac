@@ -91,29 +91,34 @@ static void pointer_update(uint32_t pressed, int wheel) {
 static uint32_t sdl_button_bit(int b) { return b == 1 ? HOS_MOUSE_LEFT : b == 3 ? HOS_MOUSE_RIGHT : b == 2 ? HOS_MOUSE_MIDDLE : 0; }
 
 /* ---- keys: SDL's scancodes (USB HID usages) as Windows' virtual keys ---- */
+static unsigned virtual_key(int scancode) {
+    if (scancode >= 4 && scancode <= 29) return 'A' + scancode - 4;
+    if (scancode >= 30 && scancode <= 38) return '1' + scancode - 30;
+    if (scancode >= 58 && scancode <= 69) return VK_F1 + scancode - 58;
+    if (scancode >= 89 && scancode <= 97) return VK_NUMPAD0 + 1 + scancode - 89;
+    static const unsigned char keys[] = {
+        [39] = '0', [40] = VK_RETURN, [41] = VK_ESCAPE, [42] = VK_BACK, [43] = VK_TAB,
+        [44] = VK_SPACE, [45] = VK_OEM_MINUS, [46] = VK_OEM_PLUS, [47] = VK_OEM_4,
+        [48] = VK_OEM_6, [49] = VK_OEM_5, [51] = VK_OEM_1, [52] = VK_OEM_7,
+        [53] = VK_OEM_3, [54] = VK_OEM_COMMA, [55] = VK_OEM_PERIOD, [56] = VK_OEM_2,
+        [57] = VK_CAPITAL, [72] = VK_PAUSE, [73] = VK_INSERT, [74] = VK_HOME,
+        [75] = VK_PRIOR, [76] = VK_DELETE, [77] = VK_END, [78] = VK_NEXT,
+        [79] = VK_RIGHT, [80] = VK_LEFT, [81] = VK_DOWN, [82] = VK_UP,
+        [84] = VK_DIVIDE, [85] = VK_MULTIPLY, [86] = VK_SUBTRACT, [87] = VK_ADD,
+        [88] = VK_RETURN, [98] = VK_NUMPAD0, [99] = VK_DECIMAL,
+        [224] = VK_LCONTROL, [225] = VK_LSHIFT, [226] = VK_LMENU,
+        [228] = VK_RCONTROL, [229] = VK_RSHIFT, [230] = VK_RMENU
+    };
+    return (unsigned)scancode < sizeof keys ? keys[scancode] : 0;
+}
 static void keys_update(void) {
     int n = 0;
     const uint8_t *k = hos_sdl_keys(&n);
-    uint8_t v[256];
-    memset(v, 0, sizeof v);
+    uint8_t v[256] = {0};
     if (k && hos_posix_window[0]) {
-#define K(sc) ((sc) < n && k[sc])
-        for (int i = 0; i < 26; i++) v['A' + i] = K(4 + i);
-        for (int i = 0; i < 9; i++) v['1' + i] = K(30 + i);
-        v['0'] = K(39);
-        v[VK_RETURN] = K(40) || K(88), v[VK_ESCAPE] = K(41), v[VK_BACK] = K(42), v[VK_TAB] = K(43), v[VK_SPACE] = K(44);
-        v[VK_OEM_MINUS] = K(45), v[VK_OEM_PLUS] = K(46), v[VK_OEM_1] = K(51), v[VK_OEM_3] = K(53);
-        v[VK_OEM_COMMA] = K(54), v[VK_OEM_PERIOD] = K(55), v[VK_OEM_2] = K(56), v[VK_CAPITAL] = K(57);
-        v[VK_OEM_4] = K(47), v[VK_OEM_6] = K(48), v[VK_OEM_5] = K(49), v[VK_OEM_7] = K(52);   /* ([ ] \ ') */
-        for (int i = 0; i < 12; i++) v[VK_F1 + i] = K(58 + i);
-        v[VK_PAUSE] = K(72), v[VK_INSERT] = K(73), v[VK_HOME] = K(74), v[VK_PRIOR] = K(75), v[VK_DELETE] = K(76);
-        v[VK_END] = K(77), v[VK_NEXT] = K(78), v[VK_RIGHT] = K(79), v[VK_LEFT] = K(80), v[VK_DOWN] = K(81), v[VK_UP] = K(82);
-        v[VK_DIVIDE] = K(84), v[VK_MULTIPLY] = K(85), v[VK_SUBTRACT] = K(86), v[VK_ADD] = K(87);
-        for (int i = 0; i < 9; i++) v[VK_NUMPAD0 + 1 + i] = K(89 + i);
-        v[VK_NUMPAD0] = K(98), v[VK_DECIMAL] = K(99);
-        v[VK_LCONTROL] = K(224), v[VK_LSHIFT] = K(225), v[VK_LMENU] = K(226);
-        v[VK_RCONTROL] = K(228), v[VK_RSHIFT] = K(229), v[VK_RMENU] = K(230);
-#undef K
+        for (int scancode = 4; scancode < n && scancode <= 230; ++scancode)
+            if (k[scancode]) v[virtual_key(scancode)] = 1;
+        v[0] = 0;
         v[VK_CONTROL] = v[VK_LCONTROL] || v[VK_RCONTROL];
         v[VK_SHIFT] = v[VK_LSHIFT] || v[VK_RSHIFT];
         v[VK_MENU] = v[VK_LMENU] || v[VK_RMENU];
@@ -248,7 +253,7 @@ static void mac_game_focus(int focused) {
         hos_input_clear_toggles();
         ptr_in = ptr_held = 0;
     }
-    mouse_capture(focused);
+    mouse_capture(focused && !menu_open);
 }
 #endif
 static void set_fullscreen(int on) {
@@ -324,20 +329,18 @@ static void menu_mouse(int request) {
         hos_input_clear_toggles();
 #ifdef __APPLE__
         clear_shoulders();
-#else
+#endif
         captured_before_menu = (int)mouse_captured || (request == 2 && esc_had_capture);   /* (opened by Esc, which let it go) */
         esc_had_capture = 0;
         mouse_capture(0);
-#endif
         hos_pointer_reset(&pointer);
         pointer_update(0, 0);
     } else {
 #ifdef __APPLE__
         clear_shoulders();
-#else
+#endif
         if (captured_before_menu && hos_posix_window[0]) mouse_capture(1);
         captured_before_menu = 0;
-#endif
     }
 }
 static int sdl_ready;
@@ -535,7 +538,13 @@ void hos_display_loop(void) {
                         }
                         break;
                     }
-                    if (!e.repeat && hos_posix_window[0] && !menu_open) shoulder_key(scancode, 1);
+                    if (!e.repeat && hos_posix_window[0]) {
+                        // A short tap can start and end in this same batch of SDL events.
+                        extern void hos_vk_note_key_press(unsigned);
+                        unsigned key = virtual_key(scancode);
+                        if (key) hos_vk_note_key_press(key);
+                        if (!menu_open) shoulder_key(scancode, 1);
+                    }
                     if (scancode == 93 && !e.repeat && hos_posix_window[0] && !menu_open) {
                         extern void hos_mac_cheat_menu(void);
                         hos_mac_cheat_menu();
@@ -607,5 +616,9 @@ void hos_display_loop(void) {
 #endif
         pointer_update(0, 0);
         keys_update();
+#ifdef __APPLE__
+        extern void hos_mac_tick_settings(void *);
+        hos_mac_tick_settings(window_layer);
+#endif
     }
 }

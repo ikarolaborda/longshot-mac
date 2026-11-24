@@ -421,35 +421,6 @@ Row rows[] = {
     {TAB_DEBUG, "Movement speed", nullptr, 0, 0, 0, nullptr,
      "How fast Link walks, runs and swims, as a multiple of his own speed. Choose with Left or Right.", nullptr, false, true, 11},
     {TAB_DEBUG, "Developer", nullptr, 0, 0, 0, nullptr, nullptr, nullptr, false, true, -1, true},
-#ifndef __APPLE__
-    {TAB_DEBUG, "No-clip flight", nullptr, 0, 0, 0, nullptr,
-     "Enable double-tap Jump for takeoff and landing. Hold Jump to climb or L to descend.", nullptr, false, true, 1},
-#endif
-    {TAB_DEBUG, "Mark position", nullptr, 0, 0, 0, nullptr,
-     "Remember Link's position for this loaded scene.", nullptr, false, true, 2},
-    {TAB_DEBUG, "Return to mark", nullptr, 0, 0, 0, nullptr,
-     "Teleport Link to the marked position in the current scene.", nullptr, false, true, 3},
-    {TAB_DEBUG, "Set time", nullptr, 0, 0, 0, nullptr,
-     "Choose an hour with Left or Right. Enter sets the world clock.", nullptr, false, true, 4},
-    {TAB_DEBUG, "Inventory item", nullptr, 0, 0, 0, nullptr,
-     "Choose a consumable with Left or Right.", nullptr, false, true, 5},
-    {TAB_DEBUG, "Change quantity", nullptr, 0, 0, 0, nullptr,
-     "Choose how many to add or remove. Enter applies the change.", nullptr, false, true, 6},
-    {TAB_DEBUG, "Free camera", nullptr, 0, 0, 0, nullptr,
-#ifdef __APPLE__
-     "Move and look with your usual controls. Page Up and Page Down change camera height.", nullptr, false, true, 7},
-#else
-     "Move and look with your usual controls. Page Up / Page Down or R / L changes height.", nullptr, false, true, 7},
-#endif
-    {TAB_DEBUG, "Teleport", nullptr, 0, 0, 0, nullptr,
-     "Opens the map list. Link travels through the game's own map change, in his current age.", nullptr, false, true, 8},
-    {TAB_DEBUG, "Switch age", nullptr, 0, 0, 0, nullptr,
-     "Swaps Link between child and adult and reloads this map in the other age (the Market when this map has no match).", nullptr, false, true, 9},
-    {TAB_DEBUG, "Inventory", nullptr, 0, 0, 0, nullptr,
-     "Enter opens the inventory editor: unlock or relock equipment, items, upgrades and quest items, and change amounts.", nullptr, false, true, 10},
-    {TAB_DEBUG, "Movement speed", nullptr, 0, 0, 0, nullptr,
-     "How fast Link walks, runs and swims, as a multiple of his own speed. Choose with Left or Right.", nullptr, false, true, 11},
-    {TAB_DEBUG, "Developer", nullptr, 0, 0, 0, nullptr, nullptr, nullptr, false, true, -1, true},
     // (its rows: gpu/vk/menu/pipeline_list.cpp's Save my pipeline list first, then the features' (framegen.cpp's Frame pacing,
     // threads.cpp, replay_cache.cpp, gpu.cpp's Robust buffers and ASTC as RGBA8, intel.cpp), laptop.cpp's last)
     // (the Gameplay tab's last rows: Bug report, gpu/vk/menu/bug_report.cpp; Restart and Quit, session.cpp)
@@ -493,12 +464,13 @@ constexpr int kCoreRows = sizeof core::rows / sizeof core::rows[0];
 // tests/test_menu_rows_model.py checks it.
 const char* (ini_key)(const Row& r);   // (spelled apart from its definition: the checks cut that by its text)
 /// The model's page for each MenuTab: the strip's tabs, then the pages a row opens
-const char* const kTabIds[TAB_PAGE + 1] = {"graphics", "audio",  "gameplay",    "controls",     "nfc",
-                                           "mods",     "debug",  "motion",      "controller_speaker", "fps_details",
+const char* const kTabIds[] = {"graphics", "audio",  "gameplay",    "controls",     "nfc",
+                                           "mods",     "debug", "about", "motion",      "controller_speaker", "fps_details",
                                            "recordings", "sim_turf_settings", "controls_page"};
-const char* const kTabLabels[TAB_PAGE + 1] = {"Graphics", "Audio", "Gameplay", "Controls",            "NFC",
-                                              "Mods",     "Debug", "Motion",   "Controller speaker",  "FPS counter details",
+const char* const kTabLabels[] = {"Graphics", "Audio", "Gameplay", "Controls",            "NFC",
+                                              "Mods",     "Debug", "About", "Motion",   "Controller speaker",  "FPS counter details",
                                               "Play recording", "Simulated turf", "Controls"};
+static_assert(std::size(kTabIds) == TAB_PAGE + 1 && std::size(kTabLabels) == TAB_PAGE + 1);
 int page_tab(const char* id);   // (a page's MenuTab by its id: below)
 // (rows modules describe, headings included; past it a row is left out, and logged. Every row is a module's: 110 of them
 // when the last moved, so room to grow; tests/test_menu_module_slots.py keeps the menu within it)
@@ -972,7 +944,24 @@ bool debug_value_row(const int* v) {
     return v == &opts.damage_taken || v == &opts.trainer_health || v == &opts.trainer_max_hearts || v == &opts.trainer_rupees ||
            v == &opts.trainer_ammo;
 }
+#ifdef __APPLE__
+extern "C" int longshot_mac_overlay_active();
+#endif
 bool row_shown(int i) {
+#ifdef __APPLE__
+    if (longshot_mac_overlay_active()) {
+        const Row& r = rows[i];
+        if (r.cheat == 1) return false;  // The Mac port disables player flight.
+        if (r.tab == TAB_GRAPHICS) {
+            if (r.heading) return !strcmp(r.name, "Frame generation and latency") || !strcmp(r.name, "Screen");
+            const char *key = r.setting ? r.setting->key : nullptr;
+            const bool hud = key && (!strncmp(key, "hud_", 4) || !strcmp(key, "reset_hud_placement"));
+            if (!hud && r.value != &opts.fullscreen && r.value != &opts.hud_layout &&
+                !(r.setting && r.setting->key && !strncmp(r.setting->key, "metal_", 6))) return false;
+        }
+        if (r.value == &opts.realtime || r.value == &opts.show_fps) return false;
+    }
+#endif
     const int* v = rows[i].value;
     return ((rows[i].cheat < 0 && !debug_value_row(v)) || cheats_on()) &&
            // (longshot) who makes the frames only with Frame generation on; the CRT raster only with a CRT filter
@@ -4558,6 +4547,10 @@ void menu_set_gpu_count(int count) {
         if (rows[i].value == &opts.gpu_device) restart_state.restart_value(restart_slot[i], opts.gpu_device);
 }
 
+#ifdef __APPLE__
+static bool mac_menu_toggle;
+void mac_request_toggle() { mac_menu_toggle = true; }
+#endif
 bool menu_is_open() { return open_now.load(std::memory_order_relaxed); }
 int menu_grass_distance() { return grass_distance_now.load(std::memory_order_relaxed); }
 double menu_target_ms() { return fps_target_ms(); }   // (the performance summary's: perf_report.cpp)
@@ -4782,7 +4775,13 @@ void bridge_fill(int i, MkwVkSetting* out) {
 // (the Upscaler row's questions, asked before menu_mu is taken: row_shown and row_fixed ask upscalers_available(), which
 // waits for the start-up probe (NGX's start, ~3 s) while it runs. Under menu_mu that held menu_tick, and the present with
 // it; this way only the bridge's thread waits, and once answered the questions return at once)
-static void bridge_probe_first() { (void)upscalers_available(), (void)dlss_why(); }
+static void bridge_probe_first() {
+#ifdef __APPLE__
+    if (longshot_mac_overlay_active()) return;
+#endif
+    (void)upscalers_available();
+    (void)dlss_why();
+}
 /// The index-th settings row (an enumeration, for listing them; the index is not a name: rows come and go). 0: past the last
 int menu_setting(int index, MkwVkSetting* out) {
     bridge_probe_first();
@@ -5145,6 +5144,9 @@ void menu_tick() {
     // buttons the Switch's A and B are bound to as Enter and Esc, as in the game (vk_menu_keys.h; with the Nintendo layout A
     // is the right face button), not while a binding waits for its button
     static uint32_t pad_held = 0;
+#ifdef __APPLE__
+    if (mac_menu_toggle) { press[6] = true; mac_menu_toggle = false; }
+#endif
     const uint32_t raw = mine && host && host->pad_raw ? host->pad_raw() : 0, pad_press = raw & ~pad_held;
     const uint32_t chord = 1u << HOS_PAD_BACK | 1u << HOS_PAD_START;
     const bool chord_now = (raw & chord) == chord && (pad_held & chord) != chord;
@@ -5342,6 +5344,9 @@ void menu_tick() {
         // layout is not applied over them at start)
         if (open_now.load()) opts.pad_layout = detect_pad_layout();
         // (whether the Upscaler row can offer DLSS, FSR and XeSS here, and Frame generation by DLSS FG: asked once)
+#ifdef __APPLE__
+        if (!longshot_mac_overlay_active())
+#endif
         if (open_now.load()) dlss_probe(), dlss_fg_probe(), fsr4_probe(), xess_probe();
         if (open_now.load()) refresh_mics();   // (the microphones as they are now)
         if (open_now.load()) refresh_outputs();
@@ -5806,6 +5811,24 @@ void menu_rumble_tick() {
     if (was >= 0 && opts.rumble != was && menu_is_open() && host && host->version >= 32 && host->rumble_test) host->rumble_test();
     was = opts.rumble;
 }
+#ifdef __APPLE__
+void mac_settings_sync();
+void mac_menu_poll(uint32_t w, uint32_t h, bool toggle) {
+    dev.swap_extent = {w,h};
+    const bool wasOpen = menu_is_open();
+    if (toggle) mac_request_toggle();
+    { std::lock_guard lock(menu_mu); mac_settings_sync(); }
+    menu_tick();
+    menu_rumble_tick();
+    if (wasOpen != menu_is_open()) logf("Metal settings %s", menu_is_open() ? "opened" : "closed");
+}
+void mac_draw_menu(uint32_t w, uint32_t h, float dt) {
+    ui::Ctx c = ui_ctx(w, h);
+    ease_step = std::min(1.f, dt * 15.f);
+    prebake(c);
+    draw_menu(c);
+}
+#endif
 void menu_record(VkCommandBuffer cmd, uint32_t index, uint32_t w, uint32_t h, int colour_vision) {
     const bool start = startup_on.load(std::memory_order_acquire);
     const bool fps = opts.show_fps && !start;   // (no game frames yet: not "0 FPS" over the start-up screen)

@@ -116,6 +116,7 @@ extern std::atomic<uint32_t> g_table_check_unchecked;
 #include "vk_work.h"   // (after the others: counts the commands that do GPU work, for full_barrier)
 
 namespace mkwvk {
+bool recording_parts_enabled();
 static bool route_scene_format(VkFormat f);   // (the FPS counter footer's, below upscale_stub)
 // (EvilOOT, RX_VK_DRAW_STATS: the pointer table's regions, vk_bank.cpp)
 struct PointerEntry { uint64_t addr, size; };
@@ -5971,7 +5972,7 @@ bool targets_persistent(const Targets& at) {
 // ---- (longshot-mac) RX_VK_FALLBACK_AHEAD: what the recording's own command buffer has written and read so far. Work is moved
 // ahead of it, into the upload command buffer, only when none of what it reads was written there, and none of what it writes
 // was read there (ahead_*). Ranges are guest addresses; the lists are short (a recording's dispatches and bound storage buffers)
-bool recording_parts_enabled();
+
 static bool fallback_ahead_on() {
     static const bool on = [] {
         const bool v = getenv("RX_VK_FALLBACK_AHEAD") && atoi(getenv("RX_VK_FALLBACK_AHEAD")) != 0;

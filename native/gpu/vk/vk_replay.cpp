@@ -8287,6 +8287,61 @@ int jitter_option(int id) {
     return (int)(d ? d : fsr3_inputs::jitter_size(axis));
 }
 
+int menu_host_option(int id, int fallback) {
+    if (id == 11) return opts.stick_dead_zone;
+    if (id == HOS_OPT_WALK_MODE) return opts.walk_mode;
+    if (id == HOS_OPT_WALK_SPEED) return opts.walk_speed;
+    if (id == HOS_OPT_CHEAT_HEARTS) return menu_heart_protection();
+    if (id == HOS_OPT_CHEAT_FLIGHT) return menu_player_flight();
+    if (id == HOS_OPT_CHEAT_ACTION) return menu_take_cheat_action();
+    if (id == HOS_OPT_CHEAT_CAMERA) return menu_free_camera();
+    if (id == HOS_OPT_CHEAT_SPEED) return menu_link_speed();
+    if (id == HOS_OPT_HDR_NATIVE) return dev.hdr && opts.hdr == 2;
+    if (id == HOS_OPT_HDR_TONEMAP) return scene_tonemap_on();
+    if (id == HOS_OPT_HDR_PEAK) return std::clamp(opts.hdr_peak, 400, 10000);
+    if (id == HOS_OPT_HDR_WHITE) return std::clamp(opts.hdr_white, 80, 500);
+    if (id == HOS_OPT_DISCORD) return opts.discord != 0;
+    if (id == HOS_OPT_VOLUME) return opts.volume;
+    if (id == HOS_OPT_AUDIO_OUTPUT) return opts.audio_output;
+    if (id == HOS_OPT_MUTE_BACKGROUND) return opts.mute_background;
+    if (id == HOS_OPT_DISABLE_CAMERA_CENTERING) return opts.disable_camera_centering;
+    if (id == HOS_OPT_SPRINT) return opts.sprint;
+    if (id == HOS_OPT_SPRINT_TOGGLE)
+        return host && host->version >= 40 && host->binding ? host->binding(HOS_BIND_SPRINT_TOGGLE, 0, 0) : 0;
+    if (id == HOS_OPT_TEXT_SIZE) return opts.text_size;
+    if (id == HOS_OPT_CAMERA_SPEED) return opts.camera_speed;
+    if (id == HOS_OPT_PROMPTS) return opts.prompts;
+    if (id == HOS_OPT_FOV) return opts.fov;
+    if (id == HOS_OPT_TRANSITION_AUTOSAVE) return menu_transition_autosave();
+    if (id == HOS_OPT_SHADOW_RES) return menu_shadow_res();
+    if (id == HOS_OPT_DAMAGE_TAKEN) return menu_damage_taken();
+    if (id >= HOS_OPT_TRAINER_HEALTH && id <= HOS_OPT_TRAINER_AMMO) return menu_trainer(id);
+    if (id == HOS_OPT_SKIP_OPENING) return opts.skip_opening;
+    if (id == HOS_OPT_FPS_CAP) return opts.fps_cap;
+    if (id == HOS_OPT_HOLD_TOGGLE) return opts.hold_toggle;
+    if (id == HOS_OPT_MOUSE_INVERT_X) return opts.mouse_invert_x;
+    if (id >= HOS_OPT_HUD_LAYOUT && id <= HOS_OPT_HUD_MINIMAP) return menu_hud_option(id);
+    if (id == HOS_OPT_WIDE_MENUS) return opts.wide_menus;
+    if (id == HOS_OPT_SKIP_TITLE) return opts.skip_title != 0;
+    if (id == HOS_OPT_PAD_SPEAKER_VOLUME) return opts.pad_speaker_volume;
+    if (id == HOS_OPT_PAD_SPEAKER_SYNC) return opts.pad_speaker_sync;
+    if (id == HOS_OPT_PAD_SPEAKER_HEADPHONES) return opts.pad_speaker_headphones;
+    if (id == HOS_OPT_PAD_SPEAKER_HEADPHONE_VOLUME) return opts.pad_speaker_headphone_volume;
+    if (id >= HOS_OPT_PAD_SPEAKER_CLASS && id < HOS_OPT_PAD_SPEAKER_CLASS + 9)   // (HOS_OPT_PAD_SPEAKER_OF: 141 to 149, then 150 to 152)
+        return opts.pad_speaker[id - HOS_OPT_PAD_SPEAKER_CLASS];
+    if (id >= HOS_OPT_PAD_SPEAKER_CLASS2 && id < HOS_OPT_PAD_SPEAKER_CLASS2 + HOS_PAD_SPEAKER_CLASS_OPTIONS - 9)
+        return opts.pad_speaker[9 + id - HOS_OPT_PAD_SPEAKER_CLASS2];
+    if (id == HOS_OPT_RENDER_THREAD) return async_on();   // (host/nvn_native.c: the present poll answered at once)
+    if (id == HOS_OPT_NATIVE_ZSTD) return native_zstd_default.load(std::memory_order_acquire);   // (host/hos_zstd.c)
+    /* (longshot) Vibration (host/vibration.h), and what plays the controller used last as the host wrote it back */
+    if (id == HOS_OPT_VIBRATION) return opts.vibration;
+    if (id == HOS_OPT_DS_HD_HAPTICS) return opts.ds_hd_haptics;
+    if (id == HOS_OPT_VIBRATION_STATUS) return menu_vibration_status_option();
+    return id == 0 ? opts.realtime : id == 1 ? menu_is_open() : id == 2 ? resolution_auto() && !temporal_full_scale() : id == 3 ? (temporal_full_scale() ? 10000 : resolution_scale()) : id == 4 ? opts.pad_background : id == 5 ? opts.text_speed : id == 6 ? opts.mouse_native :
+           id == 7 ? opts.mouse_sens : id == 8 ? opts.mouse_invert : id == 9 ? opts.rumble : id == 16 ? opts.invert_cam_x : id == 17 ? opts.invert_cam_y : id == HOS_OPT_GYRO ? opts.gyro : id == HOS_OPT_GYRO_SENS_X ? opts.gyro_sens_x : id == HOS_OPT_GYRO_SENS_Y ? opts.gyro_sens_y : id == HOS_OPT_GYRO_INV_X ? opts.gyro_inv_x : id == HOS_OPT_GYRO_INV_Y ? opts.gyro_inv_y : id == HOS_OPT_GYRO_DEADZONE ? opts.gyro_deadzone :
+           id == HOS_OPT_DLSS_JITTER_W || id == HOS_OPT_DLSS_JITTER_H || id == HOS_OPT_DLSS_JITTER_PHASES ? jitter_option(id) : fallback;
+}
+
 void fill_replay_table(MkwVkRenderer& t) {
     t.stats = stats;
     t.nvn_submit = submit;
@@ -8302,60 +8357,7 @@ void fill_replay_table(MkwVkRenderer& t) {
     t.nvn_present_trial = present_tagged;
     t.nvn_register_texture = register_texture_queued;
     t.nvn_event_signal = event_signal_queued;
-    t.option = [](int id) -> int {   // (3: the fixed path's scale in 1/10000, vk_menu.cpp; DLAA: full scale, vk_dlss.cpp)
-        if (id == 11) return opts.stick_dead_zone;
-        if (id == HOS_OPT_WALK_MODE) return opts.walk_mode;
-        if (id == HOS_OPT_WALK_SPEED) return opts.walk_speed;
-        if (id == HOS_OPT_CHEAT_HEARTS) return menu_heart_protection();
-        if (id == HOS_OPT_CHEAT_FLIGHT) return menu_player_flight();
-        if (id == HOS_OPT_CHEAT_ACTION) return menu_take_cheat_action();
-        if (id == HOS_OPT_CHEAT_CAMERA) return menu_free_camera();
-        if (id == HOS_OPT_CHEAT_SPEED) return menu_link_speed();
-        if (id == HOS_OPT_HDR_NATIVE) return dev.hdr && opts.hdr == 2;
-        if (id == HOS_OPT_HDR_TONEMAP) return scene_tonemap_on();
-        if (id == HOS_OPT_HDR_PEAK) return std::clamp(opts.hdr_peak, 400, 10000);
-        if (id == HOS_OPT_HDR_WHITE) return std::clamp(opts.hdr_white, 80, 500);
-        if (id == HOS_OPT_DISCORD) return opts.discord != 0;
-        if (id == HOS_OPT_VOLUME) return opts.volume;
-        if (id == HOS_OPT_AUDIO_OUTPUT) return opts.audio_output;
-        if (id == HOS_OPT_MUTE_BACKGROUND) return opts.mute_background;
-        if (id == HOS_OPT_DISABLE_CAMERA_CENTERING) return opts.disable_camera_centering;
-        if (id == HOS_OPT_SPRINT) return opts.sprint;
-        if (id == HOS_OPT_SPRINT_TOGGLE)
-            return host && host->version >= 40 && host->binding ? host->binding(HOS_BIND_SPRINT_TOGGLE, 0, 0) : 0;
-        if (id == HOS_OPT_TEXT_SIZE) return opts.text_size;
-        if (id == HOS_OPT_CAMERA_SPEED) return opts.camera_speed;
-        if (id == HOS_OPT_PROMPTS) return opts.prompts;
-        if (id == HOS_OPT_FOV) return opts.fov;
-        if (id == HOS_OPT_TRANSITION_AUTOSAVE) return menu_transition_autosave();
-        if (id == HOS_OPT_SHADOW_RES) return menu_shadow_res();
-        if (id == HOS_OPT_DAMAGE_TAKEN) return menu_damage_taken();
-        if (id >= HOS_OPT_TRAINER_HEALTH && id <= HOS_OPT_TRAINER_AMMO) return menu_trainer(id);
-        if (id == HOS_OPT_SKIP_OPENING) return opts.skip_opening;
-        if (id == HOS_OPT_FPS_CAP) return opts.fps_cap;
-        if (id == HOS_OPT_HOLD_TOGGLE) return opts.hold_toggle;
-        if (id == HOS_OPT_MOUSE_INVERT_X) return opts.mouse_invert_x;
-        if (id >= HOS_OPT_HUD_LAYOUT && id <= HOS_OPT_HUD_MINIMAP) return menu_hud_option(id);
-        if (id == HOS_OPT_WIDE_MENUS) return opts.wide_menus;
-        if (id == HOS_OPT_SKIP_TITLE) return opts.skip_title != 0;
-        if (id == HOS_OPT_PAD_SPEAKER_VOLUME) return opts.pad_speaker_volume;
-        if (id == HOS_OPT_PAD_SPEAKER_SYNC) return opts.pad_speaker_sync;
-        if (id == HOS_OPT_PAD_SPEAKER_HEADPHONES) return opts.pad_speaker_headphones;
-        if (id == HOS_OPT_PAD_SPEAKER_HEADPHONE_VOLUME) return opts.pad_speaker_headphone_volume;
-        if (id >= HOS_OPT_PAD_SPEAKER_CLASS && id < HOS_OPT_PAD_SPEAKER_CLASS + 9)   // (HOS_OPT_PAD_SPEAKER_OF: 141 to 149, then 150 to 152)
-            return opts.pad_speaker[id - HOS_OPT_PAD_SPEAKER_CLASS];
-        if (id >= HOS_OPT_PAD_SPEAKER_CLASS2 && id < HOS_OPT_PAD_SPEAKER_CLASS2 + HOS_PAD_SPEAKER_CLASS_OPTIONS - 9)
-            return opts.pad_speaker[9 + id - HOS_OPT_PAD_SPEAKER_CLASS2];
-        if (id == HOS_OPT_RENDER_THREAD) return async_on();   // (host/nvn_native.c: the present poll answered at once)
-        if (id == HOS_OPT_NATIVE_ZSTD) return native_zstd_default.load(std::memory_order_acquire);   // (host/hos_zstd.c)
-        /* (longshot) Vibration (host/vibration.h), and what plays the controller used last as the host wrote it back */
-        if (id == HOS_OPT_VIBRATION) return opts.vibration;
-        if (id == HOS_OPT_DS_HD_HAPTICS) return opts.ds_hd_haptics;
-        if (id == HOS_OPT_VIBRATION_STATUS) return menu_vibration_status_option();
-        return id == 0 ? opts.realtime : id == 1 ? menu_is_open() : id == 2 ? resolution_auto() && !temporal_full_scale() : id == 3 ? (temporal_full_scale() ? 10000 : resolution_scale()) : id == 4 ? opts.pad_background : id == 5 ? opts.text_speed : id == 6 ? opts.mouse_native :
-               id == 7 ? opts.mouse_sens : id == 8 ? opts.mouse_invert : id == 9 ? opts.rumble : id == 16 ? opts.invert_cam_x : id == 17 ? opts.invert_cam_y : id == HOS_OPT_GYRO ? opts.gyro : id == HOS_OPT_GYRO_SENS_X ? opts.gyro_sens_x : id == HOS_OPT_GYRO_SENS_Y ? opts.gyro_sens_y : id == HOS_OPT_GYRO_INV_X ? opts.gyro_inv_x : id == HOS_OPT_GYRO_INV_Y ? opts.gyro_inv_y : id == HOS_OPT_GYRO_DEADZONE ? opts.gyro_deadzone :
-               id == HOS_OPT_DLSS_JITTER_W || id == HOS_OPT_DLSS_JITTER_H || id == HOS_OPT_DLSS_JITTER_PHASES ? jitter_option(id) : 0;
-    };
+    t.option = [](int id) { return menu_host_option(id, 0); };
     t.option_set = menu_option_set;
     t.jitter_sample = jitter_sample;
     t.frame_info = frame_info;

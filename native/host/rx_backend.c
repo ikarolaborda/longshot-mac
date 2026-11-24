@@ -377,7 +377,7 @@ extern const char *hos_romfs_dir;   /* nn_fs.c, set by hos_main.c */
 static const char *host_romfs_dir(void) { return hos_romfs_dir; }
 const char *hos_options_file(void);   /* options_path.c */
 
-#ifdef _WIN32
+#if defined(_WIN32) || defined(__APPLE__)
 static unsigned char menu_key_press[256];
 void hos_vk_note_key_press(unsigned key) {
     if (key < sizeof menu_key_press) __atomic_store_n(&menu_key_press[key], 1, __ATOMIC_RELAXED);
@@ -594,7 +594,7 @@ static void flush_early(void) {
 }
 
 /* dll: longshot_vk.dll (longshot_vk.so on Linux), the Vulkan back end: one export */
-static const MkwVkRenderer *load_vulkan(const char *dll) {
+static HMODULE renderer_library(const char *dll) {
     char path[MAX_PATH];
     const DWORD n = GetModuleFileNameA(NULL, path, MAX_PATH);
     char *slash = n ? (strrchr(path, '\\') ? strrchr(path, '\\') : strrchr(path, '/')) : NULL;   /* (linux: '/') */
@@ -616,10 +616,16 @@ static const MkwVkRenderer *load_vulkan(const char *dll) {
 #endif
         return NULL;
     }
+    return m;
+}
+
+static const MkwVkRenderer *load_vulkan(const char *dll) {
+    HMODULE m = renderer_library(dll);
+    if (!m) return NULL;
     vk_module = m;
     mkwvk_init_fn init = (mkwvk_init_fn)(void *)GetProcAddress(m, "mkwvk_init");
     if (!init) {
-        hos_log("rx: %s has no mkwvk_init: nothing is drawn", path);
+        hos_log("rx: %s has no mkwvk_init: nothing is drawn", dll);
         return NULL;
     }
     const MkwVkRenderer *r = init(&vk_host);
@@ -634,6 +640,23 @@ static const MkwVkRenderer *load_vulkan(const char *dll) {
     return r;
 }
 
+#ifdef __APPLE__
+#include "../gpu/mtl/metal_menu.h"
+static const LongshotMetalMenu *metal_menu;
+static int menu_toggle;
+void hos_mac_request_settings(void) { __atomic_store_n(&menu_toggle, 1, __ATOMIC_RELEASE); }
+void hos_mac_tick_settings(void *layer) {
+    const LongshotMetalMenu *m = __atomic_load_n(&metal_menu, __ATOMIC_ACQUIRE);
+    if (m && layer) m->tick(layer, __atomic_exchange_n(&menu_toggle, 0, __ATOMIC_ACQ_REL));
+}
+static void start_metal_menu(void *hwnd) {
+    HMODULE lib = renderer_library("longshot_vk.dll");
+    typedef const LongshotMetalMenu *(*Start)(const MkwVkHost *, void *);
+    Start start = lib ? (Start)(void *)GetProcAddress(lib, "longshot_mac_menu_start") : NULL;
+    if (start) __atomic_store_n(&metal_menu, start(&vk_host, hwnd), __ATOMIC_RELEASE);
+    else hos_log("Metal settings overlay could not load");
+}
+#endif
 int rx_start(void *hwnd) {
     /* (longshot: Vulkan, the only renderer; RX_BACKEND, which once picked the WebGPU one, is not read) */
     const char *dll = "longshot_vk.dll";
@@ -648,6 +671,9 @@ int rx_start(void *hwnd) {
     if (r) hos_log("report: renderer %s", renderer);
     if (r && r->start(hwnd)) {
         vk = r;
+#ifdef __APPLE__
+        if (hwnd && hos_renderer_metal()) start_metal_menu(hwnd);
+#endif
         hos_log("rx: renderer: %s (%s)", renderer, dll);
         flush_early();
         return 1;
@@ -918,11 +944,24 @@ int hos_input_movie_option(int id, int *v);
 int rx_option(int id, int otherwise) {
     int v;
     if (hos_input_movie_option(id, &v)) return v;
+#ifdef __APPLE__
+    const LongshotMetalMenu *menu = __atomic_load_n(&metal_menu, __ATOMIC_ACQUIRE);
+    if (menu && id != HOS_OPT_CHEAT_FLIGHT && id != 0) {
+        v = menu->option(id);
+        if (v != INT_MIN) return v;
+    }
+#endif
     if (!vk || !vk->option) return otherwise;
     v = vk->option(id);
     return v == INT_MIN ? otherwise : v;
 }
-void rx_option_set(int id, int value) { if (vk && vk->option_set) vk->option_set(id, value); }
+void rx_option_set(int id, int value) {
+#ifdef __APPLE__
+    const LongshotMetalMenu *menu = __atomic_load_n(&metal_menu, __ATOMIC_ACQUIRE);
+    if (menu && id != HOS_OPT_CHEAT_FLIGHT) { menu->option_set(id, value); return; }
+#endif
+    if (vk && vk->option_set) vk->option_set(id, value);
+}
 #ifdef __APPLE__
 int hos_renderer_metal(void);
 int hos_metal_frame_info(int64_t *, int64_t *, int *, int *);
@@ -952,6 +991,11 @@ static void control_setting_copy(HosControlSetting *to, const MkwVkSetting *from
 }
 int rx_control_setting(int index, HosControlSetting *out) {
     MkwVkSetting s;
+#ifdef __APPLE__
+    const LongshotMetalMenu *menu = __atomic_load_n(&metal_menu, __ATOMIC_ACQUIRE);
+    if (menu) { if (!menu->setting(index, &s)) return 0; }
+    else
+#endif
     if (!vk || !vk->setting || !vk->setting(index, &s)) return 0;
     control_setting_copy(out, &s);
     return 1;
@@ -959,7 +1003,13 @@ int rx_control_setting(int index, HosControlSetting *out) {
 int rx_control_setting_set(const char *key, int value, HosControlSetting *out) {
     MkwVkSetting s;
     memset(&s, 0, sizeof s);
-    const int r = vk && vk->setting_set ? vk->setting_set(key, value, &s) : 0;
+#ifdef __APPLE__
+    const LongshotMetalMenu *menu = __atomic_load_n(&metal_menu, __ATOMIC_ACQUIRE);
+    const int r = menu ? menu->setting_set(key, value, &s) :
+#else
+    const int r =
+#endif
+        vk && vk->setting_set ? vk->setting_set(key, value, &s) : 0;
     if (r) control_setting_copy(out, &s);
     return r;
 }

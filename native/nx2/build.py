@@ -2118,6 +2118,12 @@ def main():
         imgui_deps = b"".join(open(os.path.join(d, f), "rb").read() for d in (imgui, os.path.join(imgui, "backends"), zbic)
                               for f in sorted(os.listdir(d)) if f.endswith(".h"))
         imgui_users = ("vk_imgui.cpp", "vk_menu.cpp", "vk_crash_window.cpp", "reshade.cpp")
+        if MAC:
+            with open(os.path.join(GPU, "mtl", "metal_menu.h"), "rb") as header:
+                metal_menu_deps = vdeps + imgui_deps + header.read()
+            for src in (os.path.join(imgui, "backends", "imgui_impl_metal.mm"), os.path.join(GPU, "mtl", "metal_menu.mm")):
+                metal_menu_flags = vflags + imgui_flags + ["-fobjc-arc", "-I" + vk]
+                vk_jobs.append((cxx, src, os.path.join(obj_dir, os.path.basename(src) + ".o"), metal_menu_flags, metal_menu_deps))
         for f in ("imgui.cpp", "imgui_draw.cpp", "imgui_tables.cpp", "imgui_widgets.cpp", "backends/imgui_impl_vulkan.cpp"):
             vk_jobs.append((cxx, os.path.join(imgui, *f.split("/")),
                             os.path.join(obj_dir, "vk_imgui_" + os.path.basename(f)[:-4] + ".o"), tp_vflags + imgui_flags,
@@ -2434,7 +2440,7 @@ def main():
         t = time.time()
         if MAC:   # (longshot-mac) a Mach-O dylib: host symbols resolve from the loading executable at load time
             link = [toolchain.need(toolchain.find("clang++"))] + target() + ["-shared", "-undefined", "dynamic_lookup", "-o", vdll] + \
-                ["@" + vrsp] + \
+                ["@" + vrsp, "-framework", "Metal", "-framework", "QuartzCore", "-framework", "AppKit", "-framework", "MetalKit"] + \
                 ([ngx_library(NGX_SDK, True)] if NGX_SDK else []) + ["-ldl", "-lpthread", "-lm"]
         elif LINUX:   # (its C++ runtime inside: the game folder runs where the AppImage's sysroot is older than the system)
             link = [toolchain.need(toolchain.find("clang++"))] + target() + ["-fuse-ld=lld", "-shared", "-o", vdll] + \

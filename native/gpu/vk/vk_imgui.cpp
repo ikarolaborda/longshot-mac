@@ -472,6 +472,19 @@ void bake_some() {
 
 } // namespace
 
+#ifdef __APPLE__
+bool begin_metal(uint32_t w, uint32_t h, float dt) {
+    if (!ready) { load_fonts(); ready = true; }
+    ImGuiIO& io = ImGui::GetIO();
+    io.DisplaySize = ImVec2((float)w, (float)h);
+    io.DeltaTime = std::clamp(dt, .001f, .25f);
+    script_fonts(i18n::lang_code());
+    name_fonts();
+    ImGui::NewFrame();
+    bake_some();
+    return true;
+}
+#endif
 bool begin(uint32_t w, uint32_t h) {
     if (!tried) ready = init();
     if (!ready || (!dev.offscreen && dev.swap_views.empty())) return false;

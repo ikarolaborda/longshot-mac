@@ -2204,6 +2204,12 @@ static const MkwVkRenderer* init_body(const MkwVkHost* h) {
 }
 
 namespace mkwvk {
+#ifdef __APPLE__
+void mac_menu_host(const MkwVkHost *h, void *window) {
+    host = h;
+    main_window = (HWND)window;
+}
+#endif
 HWND app_window() { return main_window; }   // (longshot: the Insert menu's Fullscreen row)
 
 /// (longshot) The refresh rate of the display the window is on, in mHz; 0 when not known (frame generation's Auto). Asked

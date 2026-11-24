@@ -23182,7 +23182,18 @@ static int mfx_present_frame_body(const tex_t *t, double period, int discard) {
 static int mfx_present_frame(const tex_t *t, double period, int discard) {
     @autoreleasepool { return mfx_present_frame_body(t, period, discard); }
 }
+#ifdef LONGSHOT_MTL
+float hos_mac_live_scale(void) {
+    unsigned output = atomic_load(&g_out_w), scene = atomic_load(&g_scene_w);
+    return output && scene <= output ? (float)scene/output : 0.f;
+}
+#endif
 uint64_t mtl_present(const tex_t *t, double period, const int crop[4]) {
+#ifdef LONGSHOT_MTL
+    extern void hos_mac_adapt_frame(double,double);
+    uint64_t sample = atomic_load(&g_cur_frame);
+    if (sample >= 8) hos_mac_adapt_frame(CACurrentMediaTime(),mtl_gpu_ms(sample-8));
+#endif
     hdr_note_swap(t);
     taa_frame_end();   // TOTK_TAA: next frame's jitter, this frame's depth and camera forgotten (also while off: key 5)
     if (g_vr_framelog > 0) {
@@ -23195,6 +23206,10 @@ uint64_t mtl_present(const tex_t *t, double period, const int crop[4]) {
     }
     if (g_vr_cam_taken && !mfx_enabled()) { g_vr_cam_taken = 0; g_mfx.want_cam = 0; }
     int discard = atomic_load(&g_present_discard), islot = mfx_enabled() && t ? mfx_present_frame(t, period, discard) : -1;
+#ifdef LONGSHOT_MTL
+    extern double hos_mac_pair_period(double);
+    if (islot >= 0) period = hos_mac_pair_period(period);
+#endif
     if (mfx_latch() && !mfx_enabled()) { g_mfx.scene_done = g_mfx.ui_cleared = g_mfx.depth_done = g_mfx.want_cam = 0; BOTW_MFX_FRAME_RESET() }   // key 2 / flag mfx_interp: the next frame is fully on or off
     if (t && !mfx_enabled() && uw_ratio()) uw_note_present(t);   // key 4: the canvas search (TOTK_MFX does it in mfx_present_frame)
     mtl_wb_eager();

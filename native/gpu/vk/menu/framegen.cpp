@@ -203,7 +203,38 @@ const char* tx_fps_cap(int v) {
 }
 } // namespace
 
+#if defined(__APPLE__) && !defined(MENU_LAYOUT_ONLY)
+extern "C" int longshot_mac_overlay_active();
+extern "C" int hos_mac_graphics_get(int);
+extern "C" void hos_mac_graphics_set(int,int);
+static int mac_values[3];
+void mac_settings_sync() {
+    for (int i=0;i<3;i++) mac_values[i] = hos_mac_graphics_get(i);
+}
+#endif
 MENU_MODULE(framegen) {
+#if defined(__APPLE__) && !defined(MENU_LAYOUT_ONLY)
+    if (longshot_mac_overlay_active()) {
+        menu::tab("graphics").heading("framegen", "Frame generation and latency", menu::after("resolution"))
+            .row({.key = "metal_adaptive",
+                  .label = "Adaptive 144 FPS",
+                  .help = "Targets up to 144 displayed frames per second. Adjusts 3D resolution under GPU load and uses MetalFX when the game needs extra frames.",
+                  .kind = menu::Kind::Toggle, .value = &mac_values[2], .preset_exempt = true,
+                  .on_change = [](int v) { hos_mac_graphics_set(2, v); }})
+            .row({.key = "metal_limit",
+                  .label = "Game frame rate cap",
+                  .help = "Sets a manual frame limit and turns off Adaptive 144 FPS.",
+                  .value = &mac_values[0], .hi = 7, .choices = {"Match Display","30","60","90","120","144","165","240"},
+                  .preset_exempt = true, .on_change = [](int v) { hos_mac_graphics_set(0, v); }})
+            .row({.key = "metal_interpolation",
+                  .label = "MetalFX Frame Interpolation",
+                  .help = "Makes an extra frame between game frames on supported Macs. A manual choice turns off Adaptive 144 FPS.",
+                  .kind = menu::Kind::Toggle, .value = &mac_values[1], .preset_exempt = true,
+                  .shown = [] { return hos_mac_graphics_get(3) != 0; },
+                  .on_change = [](int v) { hos_mac_graphics_set(1, v); }});
+        return;
+    }
+#endif
     menu::tab("graphics")
         .heading("framegen", "Frame generation and latency", menu::after("resolution"))
         .row({.key = "frame_generation",

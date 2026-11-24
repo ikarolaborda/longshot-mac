@@ -1,8 +1,12 @@
 This Mac release uses the stable Longshot v3.2.0 game code, including the controller trigger, save-loading, first adult night, and high-frame-rate movie fixes. Movies keep their sound timing and 16:9 shape. The upstream release also lists driver fixes specific to Windows and Vulkan. [Upstream release notes](https://git.magicbean.dev/MagicBeanDev/Longshot/releases/tag/v3.2.0)
 
-In the Mac menu bar, open Frame Rate. Match Display follows the screen that contains the game window, up to 240 Hz. You can also choose a game frame limit such as 60, 120, or 144 FPS. The game uses elapsed time for movement and animation.
+Press F1 or Insert in the game window to open Longshot Settings. On a Mac keyboard, use Fn+F1 if F1 changes the screen brightness. You can also choose Longshot Settings… from the Longshot menu or press Command+comma. Use Tab to change pages and the arrow keys to select a setting. The keypad 5 shortcut still opens the cheat menu.
 
-On Macs that support it, turn on MetalFX Frame Interpolation in the same menu to show extra frames between game frames. This setting starts off and the app remembers your choice. In the LG 240 Hz test on an M5 Max, adult Kakariko averaged 53 game frames per second at the 144 FPS setting. With interpolation on, adult Goron City averaged 62 game frames per second, and Metal displayed about 95 frames per second over a six-second sample. The game clock ran within 1% of real time during steady play. A second game window was open during the tests.
+In Graphics, turn on Adaptive 144 FPS to target up to 144 displayed frames per second. The target follows the screen when its refresh rate is lower. When game frames fall behind on a high-refresh screen, supported Macs can use MetalFX to draw a frame between two game frames. If the GPU is the limit, the game can lower its 3D resolution and raise it again when the GPU has time. Movement and animation use elapsed time.
+
+Adaptive mode is on for new installations. The app keeps an existing frame rate or interpolation preference. Choose a manual frame rate or change MetalFX Frame Interpolation to leave adaptive mode. You can also change these settings from Frame Rate in the Mac menu bar.
+
+In an adult Death Mountain Crater test on an M5 Max and a 240 Hz LG display, the manual 144 FPS cap delivered 74 to 84 displayed frames per second. Adaptive mode delivered 115 to 120 across three samples of 600 displayed frames, including frames from MetalFX. The game produced 70 frames per second on average during the 22-second adaptive test. The game clock ran within 1% of real time during steady play. A second game window was open.
 
 This preview updates an existing Longshot game build for Apple silicon. Unzip the installer, open it, and choose the folder containing your game files. It installs Longshot in Applications. The executable has a local ad hoc signature. Finder may require approval in Privacy & Security.
 
