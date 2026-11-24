@@ -1840,7 +1840,7 @@ def main():
         if LINUX or MAC:   # (the window on SDL2, the Win32 calls on POSIX, no Media Foundation)
             host_srcs += [os.path.join(POSIX, f) for f in ("win32_posix.c", "display_sdl.c", "linux_stubs.c", "prof.c")]
         if MAC:
-            host_srcs.extend(os.path.join(POSIX, name) for name in ("mac_cheat_menu.m", "mac_bundle.m"))
+            host_srcs.extend(os.path.join(POSIX, name) for name in ("mac_cheat_menu.m", "mac_bundle.m", "mac_response.m"))
     else:
         srcs += [os.path.join(NX2_RT, "eden_shim.c"), write_info(out)]
     if kit.env_on("RX_VK_ONLY"):   # (no lift needed: the back end alone)

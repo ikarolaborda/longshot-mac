@@ -4,6 +4,7 @@
 #include <unistd.h>
 #include <pthread.h>
 #include <stdatomic.h>
+#include "mac_response.h"
 #import <QuartzCore/CAMetalLayer.h>
 #import <MetalFX/MetalFX.h>
 #import "../../third_party/d2r_gfx/gfx/nvn/totk_mfx.h"
@@ -155,23 +156,28 @@ static unsigned graphicsRevision;
 static const int rates[] = {0,30,60,90,120,144,165,240};
 extern void hos_log(const char *, ...);
 int hos_mac_graphics_get(int setting) {
-    if (setting == 1) return atomic_load(&adaptive) ? atomic_load(&adaptiveInterpolation) : atomic_load(&manualInterpolation);
-    if (setting == 2) return atomic_load(&adaptive);
-    if (setting == 3) return atomic_load(&supported);
+    if (setting == MAC_INTERPOLATION) return atomic_load(&adaptive) ? atomic_load(&adaptiveInterpolation) : atomic_load(&manualInterpolation);
+    if (setting == MAC_ADAPTIVE) return atomic_load(&adaptive) == 1;
+    if (setting == MAC_RESPONSIVE) return hos_mac_response_active();
+    if (setting == MAC_CAN_INTERPOLATE) return atomic_load(&supported);
     for (int i=1; i<8; ++i) if (rates[i] == atomic_load(&selectedHz)) return i;
     return 0;
 }
 void hos_mac_graphics_set(int setting, int value) {
     NSUserDefaults *prefs = NSUserDefaults.standardUserDefaults;
-    if (setting < 0 || setting > 2 || (setting == 0 && (unsigned)value >= 8)) return;
-    if (setting == 1 && !atomic_load(&supported)) return;
+    if (setting < 0 || (setting > MAC_ADAPTIVE && setting != MAC_RESPONSIVE) || (setting == MAC_RATE && (unsigned)value >= 8)) return;
+    if (setting == MAC_INTERPOLATION && !atomic_load(&supported)) return;
     pthread_mutex_lock(&graphicsLock);
     ++graphicsRevision;
-    if (setting == 0) { atomic_store(&selectedHz,rates[value]); [prefs setInteger:rates[value] forKey:@"MetalFrameRate"]; }
-    if (setting == 1) { atomic_store(&manualInterpolation,!!value); [prefs setBool:value forKey:@"MetalFrameInterpolation"]; }
-    BOOL automatic = setting == 2 && value;
+    if (setting == MAC_RATE) { atomic_store(&selectedHz,rates[value]); [prefs setInteger:rates[value] forKey:@"MetalFrameRate"]; }
+    if (setting == MAC_INTERPOLATION) { atomic_store(&manualInterpolation,!!value); [prefs setBool:value forKey:@"MetalFrameInterpolation"]; }
+    int automatic = 0;
+    if (value && setting == MAC_ADAPTIVE) automatic = 1;
+    if (value && setting == MAC_RESPONSIVE) automatic = 2;
+    hos_mac_response_reset(automatic == 2);
     atomic_store(&adaptive, automatic);
-    [prefs setBool:automatic forKey:@"MetalAdaptive144"];
+    [prefs setBool:automatic == 1 forKey:@"MetalAdaptive144"];
+    [prefs setBool:automatic == 2 forKey:@"MetalPreferResponsiveness"];
     atomic_store(&scalePercent,0);
     atomic_store(&adaptiveInterpolation,0);
     if (atomic_load(&supported)) mfx_set(!automatic && atomic_load(&manualInterpolation) ? MFX_MAX : MFX_OFF);
@@ -186,12 +192,14 @@ static int slow, heavy, spare;
 static void updateAdaptiveMode(double fps, double gpu, int hz) {
     const int interp = atomic_load(&adaptiveInterpolation);
     slow = fps < hz*.90 ? slow+1 : 0;
-    if (!interp && hz >= 100 && slow >= 2 && atomic_load(&supported)) {
+    const int responsive = hos_mac_response_active();
+    const int wantFill = responsive ? hos_mac_response_wants_fill() : slow >= 2;
+    if (!interp && hz >= 100 && wantFill && atomic_load(&supported)) {
         mfx_set(MFX_MAX); atomic_store(&adaptiveInterpolation,1);
         hos_log("Metal adaptive: %.1f base FPS, enabling interpolation for %d Hz",fps,hz);
         slow=heavy=spare=0;
         return;
-    } else if (interp && hz < 100) {
+    } else if (interp && (hz < 100 || (responsive && !wantFill))) {
         mfx_set(MFX_OFF); atomic_store(&adaptiveInterpolation,0);
         slow=heavy=spare=0;
         return;
@@ -222,10 +230,12 @@ static void updateAdaptiveMode(double fps, double gpu, int hz) {
 void hos_mac_adapt_frame(double now, double gpuMS) {
     static double last, elapsed, gpuSum;
     static int frames, gpuSamples, lastHz;
-    const int hz = MIN(144, atomic_load(&displayHz));
+    const int display = atomic_load(&displayHz);
+    const int hz = hos_mac_response_active() ? hos_mac_response_target(display) : MIN(144, display);
     const double delta = now-last;
     last = now;
     if (!atomic_load(&adaptive) || hz < 30 || delta <= 0 || delta > .10 || hz != lastHz) {
+        if (delta > .10 && hos_mac_response_active()) hos_mac_response_discard_window();
         frames = gpuSamples = 0;
         slow = heavy = spare = 0;
         elapsed = gpuSum = 0;
@@ -239,7 +249,9 @@ void hos_mac_adapt_frame(double now, double gpuMS) {
     extern int hos_oot_state(int *,int *,int *);
     const double fps = frames/elapsed, gpu = gpuSamples ? gpuSum/gpuSamples : 0;
     frames=gpuSamples=0; elapsed=gpuSum=0;
-    if (!hos_oot_state(&event,&loading,&child) || event || loading || !atomic_load(&gameActive)) {
+    int gameplay = hos_oot_state(&event,&loading,&child) && !event && !loading && atomic_load(&gameActive);
+    hos_mac_response_evaluate(now, display, gameplay, atomic_load(&supported));
+    if (!gameplay) {
         slow=heavy=spare=0;
         return;
     }
@@ -256,7 +268,8 @@ void hos_mac_adapt_frame(double now, double gpuMS) {
 int front_display_hz(void) { return atomic_load(&displayHz); }
 
 double hos_mac_pair_period(double gamePeriod) {
-    int hz = MIN(144, front_display_hz());
+    int display = front_display_hz();
+    int hz = hos_mac_response_active() ? hos_mac_response_target(display) : MIN(144, display);
     if (hz >= 100 && atomic_load(&adaptive) && atomic_load(&adaptiveInterpolation))
         return 2.0 / hz;
     return gamePeriod;
@@ -266,8 +279,9 @@ int hos_mac_frame_cap(int configured) {
     int display = front_display_hz();
     if (display < 30) display = 60;
     if (atomic_load(&adaptive)) {
-        int target = MIN(144,display);
-        if (atomic_load(&adaptiveInterpolation) && target >= 100) return (target+1)/2;
+        int target = hos_mac_response_active() ? hos_mac_response_target(display) : MIN(144,display);
+        if (!hos_mac_response_active() && atomic_load(&adaptiveInterpolation) && target >= 100)
+            return (target+1)/2;
         return target;
     }
     int choice = atomic_load(&selectedHz);
@@ -280,15 +294,17 @@ int hos_mac_frame_cap(int configured) {
 @end
 @implementation LongshotFrameRate
 - (void)choose:(NSMenuItem *)sender {
-    hos_mac_graphics_set(0,(int)sender.tag);
+    hos_mac_graphics_set(MAC_RATE,(int)sender.tag);
 }
-- (void)toggleInterpolation:(NSMenuItem *)sender { hos_mac_graphics_set(1,!hos_mac_graphics_get(1)); }
-- (void)toggleAdaptive:(NSMenuItem *)sender { hos_mac_graphics_set(2,!hos_mac_graphics_get(2)); }
+- (void)toggleInterpolation:(NSMenuItem *)sender { hos_mac_graphics_set(MAC_INTERPOLATION,!hos_mac_graphics_get(MAC_INTERPOLATION)); }
+- (void)toggleAdaptive:(NSMenuItem *)sender { hos_mac_graphics_set(MAC_ADAPTIVE,!hos_mac_graphics_get(MAC_ADAPTIVE)); }
+- (void)toggleResponsive:(NSMenuItem *)sender { hos_mac_graphics_set(MAC_RESPONSIVE,!hos_mac_response_active()); }
 - (void)openSettings:(NSMenuItem *)sender { extern void hos_mac_request_settings(void); hos_mac_request_settings(); }
 - (BOOL)validateMenuItem:(NSMenuItem *)item {
-    if (item.action == @selector(choose:)) item.state = !hos_mac_graphics_get(2) && item.tag == hos_mac_graphics_get(0);
-    if (item.action == @selector(toggleInterpolation:)) item.state = hos_mac_graphics_get(1);
-    if (item.action == @selector(toggleAdaptive:)) item.state = hos_mac_graphics_get(2);
+    if (item.action == @selector(choose:)) item.state = !atomic_load(&adaptive) && item.tag == hos_mac_graphics_get(MAC_RATE);
+    if (item.action == @selector(toggleInterpolation:)) item.state = hos_mac_graphics_get(MAC_INTERPOLATION);
+    if (item.action == @selector(toggleAdaptive:)) item.state = hos_mac_graphics_get(MAC_ADAPTIVE);
+    if (item.action == @selector(toggleResponsive:)) item.state = hos_mac_response_active();
     return YES;
 }
 @end
@@ -296,12 +312,24 @@ int hos_mac_frame_cap(int configured) {
 void hos_mac_refresh_screen(void *metalLayer, int sdlMillihertz) {
     if (!metalLayer) return;
     @autoreleasepool {
-        atomic_store(&gameActive,NSApp.active);
         CAMetalLayer *layer = (__bridge CAMetalLayer *)metalLayer;
-        NSScreen *screen = nil;
-        for (CALayer *l = layer; l && !screen; l = l.superlayer) {
-            if ([l.delegate isKindOfClass:NSView.class]) screen = [(NSView *)l.delegate window].screen;
+        NSWindow *window = nil;
+        for (CALayer *l = layer; l && !window; l = l.superlayer) {
+            if ([l.delegate isKindOfClass:NSView.class]) window = [(NSView *)l.delegate window];
         }
+        // An opt-in, scripted timing run may keep its visible window on a second
+        // screen while the player uses another app. Hidden windows never qualify.
+        static int visibleTest = -1;
+        if (visibleTest < 0) {
+            const char *test = getenv("HOS_METAL_BENCH_VISIBLE");
+            visibleTest = test && !strcmp(test, "1") && getenv("HOS_CONTROL") && getenv("HOS_METAL_TIMING");
+        }
+        if (!window && visibleTest) {
+            for (NSWindow *candidate in NSApp.windows)
+                if (candidate.contentView && candidate.visible && candidate.canBecomeKeyWindow) { window = candidate; break; }
+        }
+        atomic_store(&gameActive, NSApp.active || (visibleTest && (window.occlusionState & NSWindowOcclusionStateVisible)));
+        NSScreen *screen = window.screen;
         if (!screen) screen = NSApp.mainWindow.screen ?: NSScreen.mainScreen;
         int hz = (sdlMillihertz + 500) / 1000;
         if (screen) {
@@ -333,9 +361,14 @@ void hos_mac_refresh_screen(void *metalLayer, int sdlMillihertz) {
             settings.target = target;
             NSMenuItem *autoItem = [menu addItemWithTitle:@"Adaptive 144 FPS" action:@selector(toggleAdaptive:) keyEquivalent:@""];
             autoItem.target = target;
+            NSMenuItem *responseItem = [menu addItemWithTitle:@"Prefer responsiveness" action:@selector(toggleResponsive:) keyEquivalent:@""];
+            responseItem.target = target;
             [menu addItem:NSMenuItem.separatorItem];
             NSNumber *priorAuto = [NSUserDefaults.standardUserDefaults objectForKey:@"MetalAdaptive144"];
             atomic_store(&adaptive,priorAuto ? priorAuto.boolValue : !saved && !row && ![NSUserDefaults.standardUserDefaults objectForKey:@"MetalFrameInterpolation"] && !getenv("TOTK_MFX") && !getenv("HOS_FPS_MAX"));
+            BOOL responsive = [NSUserDefaults.standardUserDefaults boolForKey:@"MetalPreferResponsiveness"];
+            if (responsive) atomic_store(&adaptive,2);
+            hos_mac_response_reset(responsive);
             for (NSNumber *rate in choices) {
                 NSString *title = rate.intValue ? [NSString stringWithFormat:@"%@ FPS",rate] : @"Match Display";
                 NSMenuItem *item = [menu addItemWithTitle:title action:@selector(choose:) keyEquivalent:@""];
@@ -350,7 +383,8 @@ void hos_mac_refresh_screen(void *metalLayer, int sdlMillihertz) {
                     NSMenuItem *item = [menu addItemWithTitle:@"MetalFX Frame Interpolation" action:@selector(toggleInterpolation:) keyEquivalent:@""];
                     item.target = target;
                     atomic_store(&manualInterpolation, getenv("TOTK_MFX") ? mfx_requested() != MFX_OFF : [NSUserDefaults.standardUserDefaults boolForKey:@"MetalFrameInterpolation"]);
-                    if (!atomic_load(&adaptive) && atomic_load(&manualInterpolation) && !getenv("TOTK_MFX")) mfx_set(MFX_MAX);
+                    if (responsive) mfx_set(MFX_OFF);
+                    else if (!atomic_load(&adaptive) && atomic_load(&manualInterpolation) && !getenv("TOTK_MFX")) mfx_set(MFX_MAX);
                     item.state = mfx_requested() == MFX_OFF ? NSControlStateValueOff : NSControlStateValueOn;
                 }
             }

@@ -8,4 +8,3 @@ typedef struct {
     int (*setting)(int, MkwVkSetting *);
     int (*setting_set)(const char *, int, MkwVkSetting *);
 } LongshotMetalMenu;
-enum { MAC_RATE, MAC_INTERPOLATION, MAC_ADAPTIVE };

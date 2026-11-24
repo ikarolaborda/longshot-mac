@@ -46,7 +46,7 @@ void mfx_note_scene(void) {}
 void mfx_note_depth(id<MTLTexture> depth) { (void)depth; }
 void mfx_note_camera(const float *cam, int n) { (void)cam; (void)n; }
 id<MTLResidencySet> mfx_residency(void) { return nil; }
-int mfx_frame_prepare(double frame_s) { (void)frame_s; return -1; }
+int mfx_frame_prepare(double frame_s, int preferReal) { (void)frame_s; (void)preferReal; return -1; }
 NSArray *mfx_frame_encode(id<MTL4CommandBuffer> cb, int slot, id<MTL4CounterHeap> heap, NSUInteger stamp) { (void)cb; (void)slot; (void)heap; (void)stamp; return nil; }
 void mfx_note_gpu(double ms) { (void)ms; }
 void mfx_frame_abort(void) {}
@@ -294,7 +294,7 @@ static int camera_cut(void) {
     return sqrt(dx * dx + dy * dy + dz * dz) > 8.0 || f < cos(25.0 * M_PI / 180.0);
 }
 
-int mfx_frame_prepare(double frame_s) {
+int mfx_frame_prepare(double frame_s, int preferReal) {
     g.frames++;
     id<MTLTexture> depth = g.depth;
     int ok = g.scene_ok && g.cam_ok && depth && g.ui;
@@ -308,8 +308,11 @@ int mfx_frame_prepare(double frame_s) {
         g.prev_ok = g.hist_ok = 0; return -1;
     }
     ensure_fi(depth.width, depth.height);
-    if (!g.prev_ok || camera_cut()) {
-        if (g.prev_ok) g.skip_cut++; else g.skip_first++;
+    if (preferReal || !g.prev_ok || camera_cut()) {
+        // Keep this real image as the source for the next interpolated pair.
+        if (!preferReal) {
+            if (g.prev_ok) g.skip_cut++; else g.skip_first++;
+        }
         memcpy(g.prev_cam, g.cam, sizeof g.cam); g.cur ^= 1; g.prev_ok = 1; g.hist_ok = 0;
         return -1;
     }

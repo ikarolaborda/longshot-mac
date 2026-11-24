@@ -4,7 +4,19 @@ Press F1 or Insert in the game window to open Longshot Settings. On a Mac keyboa
 
 In Graphics, turn on Adaptive 144 FPS to target up to 144 displayed frames per second. The target follows the screen when its refresh rate is lower. When game frames fall behind on a high-refresh screen, supported Macs can use MetalFX to draw a frame between two game frames. If the GPU is the limit, the game can lower its 3D resolution and raise it again when the GPU has time. Movement and animation use elapsed time.
 
+For quicker control response, open Graphics and select Prefer responsiveness. The Mac menu bar also has this setting under Frame Rate. Metal gives a new control input priority on the next game frame. On supported Macs, it adds MetalFX frames when they improve frame spacing. It starts with a limit of 120 FPS or the display refresh rate, whichever is lower. On displays that support 144 Hz, the game tries 144 FPS when it has time to draw more frames. It keeps that limit when more frames reach the display and both frame spacing and control response stay steady.
+
 Adaptive mode is on for new installations. The app keeps an existing frame rate or interpolation preference. Choose a manual frame rate or change MetalFX Frame Interpolation to leave adaptive mode. You can also change these settings from Frame Rate in the Mac menu bar.
+
+The Mac benchmark uses a copy of an adult Kakariko Village save. Link runs ten times, swings his drawn sword ten times, turns the camera, and attacks while advancing. The test then loads Hyrule Field and follows a 14-second route on foot. It records Link’s position and checks game time against real time.
+
+On an M5 Max with a 1920 × 1080 game window on a 240 Hz LG UltraGear+, 95% of the 24 control inputs reached a displayed game frame within 40 ms with Prefer responsiveness and 58 ms with Adaptive 144 FPS. The median time to sustained visible running motion was 71 ms and 93 ms, respectively. Sword swings measured 61 ms and 85 ms. The image check detected all ten runs in each mode and ten of ten swings in Prefer responsiveness versus nine of ten in Adaptive. All six idle checks stayed below the threshold.
+
+With pixel sampling enabled in both modes, Hyrule Field averaged 104 displayed FPS with Prefer responsiveness and 117 with Adaptive. Both had a 12.5 ms 95th-percentile frame gap and ran at real-time game speed. Village frame gaps were 16.7 ms and 12.5 ms, respectively. Both modes had a first-use stall of about half a second when Metal compiled a mesh shader. These runs did not sustain 144 FPS. Pixel sampling adds rendering overhead.
+
+The controller timer starts when the test sends the input. It stops when Metal displays the first game frame submitted after the game reads that input. The frame-spacing measurement includes the game’s frames and frames added by MetalFX. These timings cover the game and the Mac display system. Physical controller and panel latency need separate equipment.
+
+The two routes are in `scripts/mac/tests/village_response.py` and `scripts/mac/tests/field_traversal.py`. Set `HOS_METAL_TIMING=2` for displayed-frame timestamps. For a small image sample from each SDR drawable, also set `HOS_METAL_PIXEL_TRACE` to a new file and pass that path to the village script with `--pixels`.
 
 In an adult Death Mountain Crater test on an M5 Max and a 240 Hz LG display, the manual 144 FPS cap delivered 74 to 84 displayed frames per second. Adaptive mode delivered 115 to 120 across three samples of 600 displayed frames, including frames from MetalFX. The game produced 70 frames per second on average during the 22-second adaptive test. The game clock ran within 1% of real time during steady play. A second game window was open.
 

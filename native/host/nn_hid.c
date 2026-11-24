@@ -61,6 +61,7 @@ static int64_t sampling;
 int rx_option(int id, int otherwise);
 /* (the Insert menu takes the keyboard while it is open) */
 #ifdef __APPLE__
+#include "posix/mac_response.h"
 unsigned hos_mac_poll_shoulder_keys(void);
 static _Thread_local unsigned mac_shoulder_keys;
 #endif
@@ -1849,6 +1850,7 @@ static void npad_states(Ctx *c) {
         hos_input_movie_end(&pad);   /* (recording: the frame's pad) */
     }
 #ifdef __APPLE__
+    if (count && connected && !played) hos_mac_response_input(word, stick);
     /* Opt-in verification of the exact gamepad word delivered to the guest. */
     static int trace = -1;
     static uint64_t previous;

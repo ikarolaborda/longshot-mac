@@ -14,6 +14,10 @@
 #include "vk_reflex.h"
 #endif
 
+#if defined(__APPLE__) && !defined(MENU_LAYOUT_ONLY)
+#include "../../../host/posix/mac_response.h"
+#endif
+
 #include <algorithm>
 #include <cstdio>
 #include <string>
@@ -205,11 +209,9 @@ const char* tx_fps_cap(int v) {
 
 #if defined(__APPLE__) && !defined(MENU_LAYOUT_ONLY)
 extern "C" int longshot_mac_overlay_active();
-extern "C" int hos_mac_graphics_get(int);
-extern "C" void hos_mac_graphics_set(int,int);
-static int mac_values[3];
+static int mac_values[MAC_RESPONSIVE + 1];
 void mac_settings_sync() {
-    for (int i=0;i<3;i++) mac_values[i] = hos_mac_graphics_get(i);
+    for (int i = MAC_RATE; i <= MAC_RESPONSIVE; ++i) mac_values[i] = hos_mac_graphics_get(i);
 }
 #endif
 MENU_MODULE(framegen) {
@@ -219,19 +221,24 @@ MENU_MODULE(framegen) {
             .row({.key = "metal_adaptive",
                   .label = "Adaptive 144 FPS",
                   .help = "Targets up to 144 displayed frames per second. Adjusts 3D resolution under GPU load and uses MetalFX when the game needs extra frames.",
-                  .kind = menu::Kind::Toggle, .value = &mac_values[2], .preset_exempt = true,
-                  .on_change = [](int v) { hos_mac_graphics_set(2, v); }})
+                  .kind = menu::Kind::Toggle, .value = &mac_values[MAC_ADAPTIVE], .preset_exempt = true,
+                  .on_change = [](int v) { hos_mac_graphics_set(MAC_ADAPTIVE, v); }})
+            .row({.key = "metal_responsive",
+                  .label = "Prefer responsiveness",
+                  .help = "Gives new controls priority on the next game frame. Uses MetalFX when it improves pacing and tests 144 FPS when input timing allows it.",
+                  .kind = menu::Kind::Toggle, .value = &mac_values[MAC_RESPONSIVE], .preset_exempt = true,
+                  .on_change = [](int v) { hos_mac_graphics_set(MAC_RESPONSIVE, v); }})
             .row({.key = "metal_limit",
                   .label = "Game frame rate cap",
-                  .help = "Sets a manual frame limit and turns off Adaptive 144 FPS.",
-                  .value = &mac_values[0], .hi = 7, .choices = {"Match Display","30","60","90","120","144","165","240"},
-                  .preset_exempt = true, .on_change = [](int v) { hos_mac_graphics_set(0, v); }})
+                  .help = "Sets a manual frame limit.",
+                  .value = &mac_values[MAC_RATE], .hi = 7, .choices = {"Match Display","30","60","90","120","144","165","240"},
+                  .preset_exempt = true, .on_change = [](int v) { hos_mac_graphics_set(MAC_RATE, v); }})
             .row({.key = "metal_interpolation",
                   .label = "MetalFX Frame Interpolation",
-                  .help = "Makes an extra frame between game frames on supported Macs. A manual choice turns off Adaptive 144 FPS.",
-                  .kind = menu::Kind::Toggle, .value = &mac_values[1], .preset_exempt = true,
-                  .shown = [] { return hos_mac_graphics_get(3) != 0; },
-                  .on_change = [](int v) { hos_mac_graphics_set(1, v); }});
+                  .help = "Makes an extra frame between game frames on supported Macs. Choosing this sets the frame rate mode to manual.",
+                  .kind = menu::Kind::Toggle, .value = &mac_values[MAC_INTERPOLATION], .preset_exempt = true,
+                  .shown = [] { return hos_mac_graphics_get(MAC_CAN_INTERPOLATE) != 0; },
+                  .on_change = [](int v) { hos_mac_graphics_set(MAC_INTERPOLATION, v); }});
         return;
     }
 #endif

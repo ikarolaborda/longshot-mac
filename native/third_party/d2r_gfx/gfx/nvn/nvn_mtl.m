@@ -200,6 +200,9 @@ static id<MTL4ArgumentTable> g_present_args[3];
 static id<MTLBuffer> g_present_uv[3];
 static id<MTLBuffer> g_present_probe_src[3], g_present_probe_dst[3];
 static int g_present_probe;
+#ifdef LONGSHOT_MTL
+static id<MTLBuffer> g_response_tile[3];
+#endif
 // TOTK: FPS / picture-size overlay textures (BGRA8, shared). Slots 0..2 follow the present allocator index (the previous
 // present on a slot has completed before the slot is reused); slot 3 serves whole-window grabs. g_fps_key: what is drawn.
 static id<MTLTexture> g_fps_tex[4];
@@ -237,6 +240,15 @@ static uint64_t g_link_dropped;
 static int g_pq_inflight;   // 持 g_pq_mu：已提交给 GPU、完成回调还没来的上屏数 | Under g_pq_mu: number of presents committed to the GPU whose completion callback has not arrived yet
 int g_dm_present_link;   // 出图节拍模式（DM_PRESENT_LINK 的运行时值，同进程交替测量时直接改它）：0 = 自己取 drawable；1 = 显示节拍 60 Hz；2 = 120 Hz 节拍、游戏隔拍出一帧 | Present pacing mode (runtime value of DM_PRESENT_LINK, modified directly during same-process alternating measurement): 0 = acquire the drawable itself; 1 = display link at 60 Hz; 2 = display link at 120 Hz, the game presents a frame every other display-link tick
 static int g_present_latency = 1;
+#ifdef LONGSHOT_MTL
+extern int hos_mac_response_active(void);
+extern int hos_mac_response_allows_fill(double);
+extern int hos_mac_response_waiting(void);
+extern int hos_mac_response_wants_fill(void);
+extern int hos_mac_response_open_pixels(void);
+extern void hos_mac_response_record_pixels(uint64_t, int, const uint8_t *);
+extern void hos_mac_response_present(uint64_t, double, int);
+#endif
 static uint64_t g_pq_done;
 static uint64_t g_pq_read;
 static id<MTLResidencySet> g_res;
@@ -1096,6 +1108,9 @@ void mtl_init(void) {
     if (g_dev) return;
     if (runtime_boot_status) runtime_boot_status(TOTK_UI("创建 Metal 图形设备","Creating the Metal device"),TOTK_UI("准备 GPU、命令队列和图形资源","Preparing the GPU, command queues and graphics resources"));
     g_present_probe = getenv("DM_PRESENT_PROBE") != NULL;
+#ifdef LONGSHOT_MTL
+    int sampleResponsePixels = hos_mac_response_open_pixels();
+#endif
     const char *link = getenv("DM_PRESENT_LINK");
     g_dm_present_link = link ? atoi(link) : 1; if (g_dm_present_link < 0 || g_dm_present_link > 2) g_dm_present_link = 1;   // 缺省 1（真机同进程交替：负载超一拍时长帧 15% → 0、帧间隔变匀；稳 60 时与 0 无差别）；DM_PRESENT_LINK=0 关   // 1 = 60 Hz 节拍每拍出图；2 = 120 Hz 节拍、游戏隔拍出一帧（落后时下一个 8.33 ms 拍就能上屏） | Default 1 (real-device same-process alternation: when load exceeds one display-link period, long frames 15% → 0 and frame intervals even out; no difference from 0 at a steady 60); DM_PRESENT_LINK=0 turns it off   // 1 = present on every tick of a 60 Hz display link; 2 = 120 Hz display link, the game presents a frame every other display-link tick (when behind, it can present on the next 8.33 ms display-link tick)
     const char *latency = getenv("DM_PRESENT_LATENCY");
@@ -1153,6 +1168,12 @@ void mtl_init(void) {
         g_present_uv[i] = [g_dev newBufferWithLength:sizeof(float) * 12 options:MTLResourceStorageModeShared];
         if (!g_present_uv[i]) MDIE("建立出图 UV 缓冲[%d] 失败", i);
         res_add(g_present_uv[i]);
+#ifdef LONGSHOT_MTL
+        if (sampleResponsePixels) {
+            g_response_tile[i] = [g_dev newBufferWithLength:128 * 128 * 4 options:MTLResourceStorageModeShared];
+            if (g_response_tile[i]) res_add(g_response_tile[i]);
+        }
+#endif
         if (g_present_probe) {
             g_present_probe_src[i] = [g_dev newBufferWithLength:128 * 128 * 4 options:MTLResourceStorageModeShared];
             g_present_probe_dst[i] = [g_dev newBufferWithLength:128 * 128 * 4 options:MTLResourceStorageModeShared];
@@ -22482,7 +22503,24 @@ static double present_min_duration(double period) {
     return whole - fmin(0.001, tick / 4);
 }
 #endif
-static int present_now(const tex_t *t, double period, uint64_t frame, uint64_t ticket, const int crop[4], __strong id<CAMetalDrawable> supplied, double target_ts, int interp) {
+#ifdef LONGSHOT_MTL
+// Only the current layer owner calls this. A ready game frame can otherwise
+// sit behind two outstanding drawables before it reaches the display.
+static __weak CAMetalLayer *responseLayer;
+static NSUInteger originalDrawableCount;
+static void response_drawables(CAMetalLayer *layer, int direct) {
+    if (responseLayer && (responseLayer != layer || !direct)) {
+        responseLayer.maximumDrawableCount = originalDrawableCount;
+        responseLayer = nil;
+    }
+    if (direct && layer && !responseLayer) {
+        originalDrawableCount = layer.maximumDrawableCount;
+        responseLayer = layer;
+        layer.maximumDrawableCount = 2;
+    }
+}
+#endif
+static int present_now(const tex_t *t, double period, uint64_t frame, uint64_t guest_frame, uint64_t ticket, const int crop[4], __strong id<CAMetalDrawable> supplied, double target_ts, int interp) {
     if (g_present_stall_ns) { struct timespec ts = {0, (long)g_present_stall_ns}; nanosleep(&ts, NULL); }
     g_present_n++;
     /* TOTK: the FPS box counts game presents per second and, while MetalFX interpolates, the generated frames shown as
@@ -22695,6 +22733,9 @@ static int present_now(const tex_t *t, double period, uint64_t frame, uint64_t t
         if (grab_game) grab_game(NULL);
         pthread_mutex_lock(&g_pq_mu); if (ticket > g_pq_done) g_pq_done = ticket; pthread_cond_broadcast(&g_pq_cv); pthread_mutex_unlock(&g_pq_mu); return 1; }
     uint64_t dt0 = now_ns();
+#ifdef LONGSHOT_MTL
+    if (!supplied) response_drawables(layer, hos_mac_response_active());
+#endif
     id<CAMetalDrawable> dr = supplied ? supplied : [layer nextDrawable];
     if (!supplied) g_drawable_ns += now_ns() - dt0;
     if (!dr) { if (grab) grab(NULL); if (grab_game) grab_game(NULL); return 0; }
@@ -22766,6 +22807,22 @@ static int present_now(const tex_t *t, double period, uint64_t frame, uint64_t t
         [be barrierAfterQueueStages:MTLStageAll beforeStages:MTLStageAll visibilityOptions:MTL4VisibilityOptionDevice];
         [be copyFromTexture:src sourceSlice:0 sourceLevel:0 toTexture:g_flash_guard_previous destinationSlice:0 destinationLevel:0 sliceCount:1 levelCount:1];
         m4_end(be); }
+#ifdef LONGSHOT_MTL
+    // Read the character area after the final draw and before the layer can
+    // recycle the drawable. Each buffer follows its present allocator.
+    id<MTLBuffer> responseTile = g_response_tile[alloc_i];
+    if (responseTile && (dr.texture.pixelFormat != MTLPixelFormatBGRA8Unorm ||
+                         dr.texture.width < 128 || dr.texture.height < 192)) responseTile = nil;
+    if (responseTile) {
+        id<MTL4ComputeCommandEncoder> copy = [cb computeCommandEncoder];
+        [copy barrierAfterQueueStages:MTLStageAll beforeStages:MTLStageBlit visibilityOptions:MTL4VisibilityOptionDevice];
+        MTLOrigin origin = MTLOriginMake(dr.texture.width / 2 - 64, dr.texture.height * 2 / 3 - 64, 0);
+        [copy copyFromTexture:dr.texture sourceSlice:0 sourceLevel:0 sourceOrigin:origin
+                   sourceSize:MTLSizeMake(128, 128, 1) toBuffer:responseTile destinationOffset:0
+                   destinationBytesPerRow:512 destinationBytesPerImage:65536];
+        m4_end(copy);
+    }
+#endif
     int probe = interp < 0 && g_present_probe && src.width >= 128 && src.height >= 128 && dr.texture.width >= 128 && dr.texture.height >= 128 &&
         (src.pixelFormat == MTLPixelFormatBGRA8Unorm || src.pixelFormat == MTLPixelFormatRGBA8Unorm) && dr.texture.pixelFormat == MTLPixelFormatBGRA8Unorm;
     if (probe) {
@@ -22831,6 +22888,10 @@ static int present_now(const tex_t *t, double period, uint64_t frame, uint64_t t
     [o addFeedbackHandler:^(id<MTL4CommitFeedback> f) {
         if (f.error) MLOG("【红】上屏命令缓冲错误：%s", f.error.description.UTF8String);
         vr_source_done(vr_slot, !f.error);
+#ifdef LONGSHOT_MTL
+        if (responseTile && !f.error)
+            hos_mac_response_record_pixels(guest_frame, interp >= 0, responseTile.contents);
+#endif
         if (probe && !f.error) {
             const unsigned char *s = g_present_probe_src[alloc_i].contents, *d = g_present_probe_dst[alloc_i].contents;
             unsigned long long sv = 0, dv = 0, srgb[3] = {0}, drgb[3] = {0}; int sb = 0, db = 0, sm = 0, dm = 0;
@@ -22889,6 +22950,9 @@ static int present_now(const tex_t *t, double period, uint64_t frame, uint64_t t
     [dr addPresentedHandler:^(id<MTLDrawable> d) {   // 真实呈现时刻（屏幕上真正换上这一帧的时间，CACurrentMediaTime 基准） | Actual presentation time (the time this frame is really put on screen, CACurrentMediaTime base)
         CFTimeInterval tt = d.presentedTime;
         if (interp < 0) g_pres[pn % PRING] = (pres_ent){pn, tt > 0 ? tt : -1};   // statistics per game frame; the interpolated one is not a game frame
+#ifdef LONGSHOT_MTL
+        hos_mac_response_present(guest_frame, tt, interp >= 0);
+#endif
         cadence_note(tt, interp >= 0);
         front_frame_presented();
     }];
@@ -22913,10 +22977,10 @@ static int present_now(const tex_t *t, double period, uint64_t frame, uint64_t t
 // Swapchain texture return: before AcquireTexture gets a texture it waits for the ticket of that texture's previous present to be processed (mtl_present_wait), after which the commands the game draws into it
 // are necessarily ordered after that blit on the GPU queue.
 #define PQ 8
-typedef struct { tex_t t; double period; uint64_t frame; int crop[4]; double t_in; int interp, interp_shown; double interp_ts; int ring; } pq_item;   // interp (TOTK_MFX): output slot of the frame shown before this one, or -1; interp_ts: the refresh it was shown at   // t_in：游戏把这一帧交进出图队列的时刻（CACurrentMediaTime） | t_in: the time the game handed this frame into the present queue (CACurrentMediaTime)
+typedef struct { tex_t t; double period; uint64_t frame; int crop[4]; double t_in; int interp, interp_shown; double interp_ts; int ring; uint64_t guest_frame; } pq_item;   // interp (TOTK_MFX): output slot of the frame shown before this one, or -1; interp_ts: the refresh it was shown at   // t_in：游戏把这一帧交进出图队列的时刻（CACurrentMediaTime） | t_in: the time the game handed this frame into the present queue (CACurrentMediaTime)
 static pq_item g_pq[PQ];
 static uint64_t g_pq_in;
-static int present_now(const tex_t *, double, uint64_t, uint64_t, const int[4], id<CAMetalDrawable>, double, int);
+static int present_now(const tex_t *, double, uint64_t, uint64_t, uint64_t, const int[4], id<CAMetalDrawable>, double, int);
 
 @interface NvMetalDisplayLinkDelegate : NSObject <CAMetalDisplayLinkDelegate>
 @end
@@ -22962,8 +23026,13 @@ __attribute__((weak)) uint64_t dm_focus_in_since(void) { return 0; }
     uint64_t first = g_pq_read + 1, ticket = g_pq_in;
     pq_item *ip = &g_pq[(g_pq_in - 1) % PQ];
     int interp = ip->interp >= 0 && !ip->interp_shown ? ip->interp : -1;   // TOTK_MFX: this tick shows the interpolated frame, a later one the game frame
+    int prioritize = 0;
+#ifdef LONGSHOT_MTL
+    prioritize = hos_mac_response_active() && hos_mac_response_waiting();
+    if (prioritize) interp = -1;
+#endif
     double tts = update.targetPresentationTimestamp;
-    if (interp < 0 && ip->interp >= 0 && tts > 0 && ip->interp_ts > 0) {
+    if (!prioritize && interp < 0 && ip->interp >= 0 && tts > 0 && ip->interp_ts > 0) {
         /* TOTK_MFX: the game frame goes up at the refresh nearest to half a game frame after its interpolated one, so the
            two pictures share the frame's time evenly (30+30 on a 100 Hz display: two refreshes later, not one; half the
            refresh rate and uncapped: the next refresh). Until then the interpolated picture stays up. */
@@ -22982,7 +23051,7 @@ __attribute__((weak)) uint64_t dm_focus_in_since(void) { return 0; }
     pthread_mutex_unlock(&g_pq_mu);
     int submitted;
     t_pn_ring = ring;
-    @autoreleasepool { submitted = present_now(&it.t, it.period, it.frame, ticket, it.crop, update.drawable, update.targetPresentationTimestamp, interp); }
+    @autoreleasepool { submitted = present_now(&it.t, it.period, it.frame, it.guest_frame, ticket, it.crop, update.drawable, update.targetPresentationTimestamp, interp); }
     t_pn_ring = -1;
     if (ring >= 0 && !submitted) { pthread_mutex_lock(&g_pq_mu); g_pring_busy[ring] = 0; pthread_mutex_unlock(&g_pq_mu); }
     if (!submitted && interp < 0) {
@@ -23016,6 +23085,9 @@ static void *link_main(void *arg) {   // 显示节拍线程：切到节拍模式
     pthread_set_qos_class_self_np(QOS_CLASS_USER_INTERACTIVE, 0);
     CAMetalLayer *layer = (__bridge CAMetalLayer *)front_metal_layer();
     pthread_mutex_lock(&g_pq_mu); g_link_owns_layer = 1; while (g_classic_busy) pthread_cond_wait(&g_pq_cv, &g_pq_mu); pthread_mutex_unlock(&g_pq_mu);   // 等出图线程手上那一帧交完 | Wait for the present thread to finish handing over the frame it holds
+#ifdef LONGSHOT_MTL
+    response_drawables(layer, 0);
+#endif
     NvMetalDisplayLinkDelegate *delegate = [NvMetalDisplayLinkDelegate new];
     CAMetalDisplayLink *link = [[CAMetalDisplayLink alloc] initWithMetalLayer:layer];
     link.preferredFrameRateRange = link_range(g_link_mode);
@@ -23033,6 +23105,11 @@ static void link_sync(void) {   // 游戏出图线程每帧调：把节拍对象
         pthread_mutex_lock(&g_pq_mu); g_dm_present_link = g_rescue_mode; g_rescue_mode = 0; g_stall_t0 = 0; g_link_tick_ns = now_ns(); pthread_mutex_unlock(&g_pq_mu);
         MLOG("显示节拍：抢救期满，换回节拍模式 %d 再试（帧 %llu）", g_dm_present_link, (unsigned long long)atomic_load(&g_cur_frame)); }
     int want = g_dm_present_link;
+#ifdef LONGSHOT_MTL
+    // The direct worker submits a ready game frame at the next available
+    // refresh. The display link and the worker take turns owning the layer.
+    if (hos_mac_response_active() && !hos_mac_response_wants_fill()) want = 0;
+#endif
     if (want < 0 || want > 2) { g_dm_present_link = applied == 3 ? 1 : applied; return; }
     if (want && mtl_fps_target() == 30) want = 3;   // 省电模式：显示节拍 30 Hz | Power-saving mode: display link at 30 Hz
     static int appliedDisplayHz;
@@ -23082,6 +23159,7 @@ static void *present_main(void *arg) {
         while (g_pq_read == g_pq_in || g_link_owns_layer) pthread_cond_wait(&g_pq_cv, &g_pq_mu);   // 节拍模式下由节拍回调取；空队列看「已取出」；「已完成」要等上屏提交的 feedback，落后于取出 | In display-link mode the display-link callback takes them; an empty queue is judged by "taken"; "done" has to wait for the feedback of the present submit and lags behind taken
         pq_item it = g_pq[g_pq_read % PQ];
         uint64_t ticket = ++g_pq_read; g_classic_busy = 1;
+        g_pdiag[ticket % PRING] = (pdiag_ent){ticket, it.t_in, CACurrentMediaTime(), 0, 0, 0};
         if (it.ring >= 0) g_pring_busy[it.ring] = 1;   // as in the display link's callback
         pthread_mutex_unlock(&g_pq_mu);
         int submitted;
@@ -23092,9 +23170,23 @@ static void *present_main(void *arg) {
         int hz = mtl_display_hz(); double tick = 1.0 / (hz > 0 ? hz : 60);   // the window may change display
         pthread_mutex_lock(&g_pq_mu); int behind = g_pq_read < g_pq_in; pthread_mutex_unlock(&g_pq_mu);
         int show_interp = it.interp >= 0 && !behind;
-        if (show_interp) { @autoreleasepool { (void)present_now(&it.t, fmin(it.period / 2, tick), it.frame, ticket, it.crop, nil, 0, it.interp); } }
+        double generatedDuration = fmin(it.period / 2, tick);
+#ifdef LONGSHOT_MTL
+        const int responsive = hos_mac_response_active();
+        if (responsive && show_interp && hos_mac_response_waiting()) show_interp = 0;
+        if (responsive && show_interp) {
+            // Use one refresh for the generated picture. A completed game
+            // picture can then replace it as soon as the GPU is ready.
+            generatedDuration = tick;
+        }
+#endif
+        if (show_interp) { @autoreleasepool { (void)present_now(&it.t, generatedDuration, it.frame, it.guest_frame, ticket, it.crop, nil, 0, it.interp); } }
         t_pn_ring = it.ring;
-        @autoreleasepool { submitted = present_now(&it.t, show_interp ? it.period / 2 : it.period, it.frame, ticket, it.crop, nil, 0, -1); }
+        double duration = show_interp ? it.period / 2 : it.period;
+#ifdef LONGSHOT_MTL
+        if (responsive) duration = 0;  // the layer still synchronizes to the display
+#endif
+        @autoreleasepool { submitted = present_now(&it.t, duration, it.frame, it.guest_frame, ticket, it.crop, nil, 0, -1); }
         t_pn_ring = -1;
         if (it.ring >= 0 && !submitted) { pthread_mutex_lock(&g_pq_mu); g_pring_busy[it.ring] = 0; pthread_mutex_unlock(&g_pq_mu); }
         pthread_mutex_lock(&g_pq_mu); g_classic_busy = 0; pthread_cond_broadcast(&g_pq_cv); pthread_mutex_unlock(&g_pq_mu);
@@ -23124,9 +23216,9 @@ void mtl_present_discard(int on) { atomic_store(&g_present_discard, on != 0); if
    per-frame state. Returns the output slot or -1. */
 static id<MTL4CommandAllocator> g_mfx_alloc[3]; static id<MTL4CommandBuffer> g_mfx_cb[3]; static _Atomic int g_mfx_busy[3];
 static id<MTLTexture> g_mfx_swap_prev;   // TOTK_MFX_DUMP: copy of the previous presented image
-static int mfx_present_frame_body(const tex_t *t, double period, int discard) {
+static int mfx_present_frame_body(const tex_t *t, double period, int discard, int preferReal) {
     if (t) uw_note_present(t);
-    int slot = mfx_frame_prepare(period);
+    int slot = mfx_frame_prepare(period, preferReal);
     if (slot >= 0) {
         int a = -1; for (int i = 0; i < 3 && a < 0; i++) if (!atomic_load(&g_mfx_busy[i])) a = i;
         if (a < 0 || discard || nogpu()) { mfx_frame_abort(); slot = -1; }
@@ -23179,8 +23271,8 @@ static int mfx_present_frame_body(const tex_t *t, double period, int discard) {
     if (++g_mfx.frames % 300 == 0) { char b[256]; mfx_stats(b, sizeof b); MLOG("[mfx] 至帧 %llu：%s", (unsigned long long)atomic_load(&g_cur_frame), b); }
     return slot;
 }
-static int mfx_present_frame(const tex_t *t, double period, int discard) {
-    @autoreleasepool { return mfx_present_frame_body(t, period, discard); }
+static int mfx_present_frame(const tex_t *t, double period, int discard, int preferReal) {
+    @autoreleasepool { return mfx_present_frame_body(t, period, discard, preferReal); }
 }
 #ifdef LONGSHOT_MTL
 float hos_mac_live_scale(void) {
@@ -23188,7 +23280,7 @@ float hos_mac_live_scale(void) {
     return output && scene <= output ? (float)scene/output : 0.f;
 }
 #endif
-uint64_t mtl_present(const tex_t *t, double period, const int crop[4]) {
+uint64_t mtl_present(const tex_t *t, double period, const int crop[4], uint64_t guest_frame) {
 #ifdef LONGSHOT_MTL
     extern void hos_mac_adapt_frame(double,double);
     uint64_t sample = atomic_load(&g_cur_frame);
@@ -23205,7 +23297,13 @@ uint64_t mtl_present(const tex_t *t, double period, const int crop[4]) {
         g_fl_passes[0] = 0; g_fl_npass = 0; g_fl_cam_pass = -1; g_fl_cam_fov = -1; g_fl_body = 0; g_fl_body_any = 0; g_fl_allpass = 0; g_fl_t1 = 0;
     }
     if (g_vr_cam_taken && !mfx_enabled()) { g_vr_cam_taken = 0; g_mfx.want_cam = 0; }
-    int discard = atomic_load(&g_present_discard), islot = mfx_enabled() && t ? mfx_present_frame(t, period, discard) : -1;
+    int discard = atomic_load(&g_present_discard);
+    int preferReal = 0;
+#ifdef LONGSHOT_MTL
+    if (hos_mac_response_active() && mfx_enabled() && !hos_mac_response_allows_fill(CACurrentMediaTime()))
+        preferReal = 1;
+#endif
+    int islot = mfx_enabled() && t ? mfx_present_frame(t, period, discard, preferReal) : -1;
 #ifdef LONGSHOT_MTL
     extern double hos_mac_pair_period(double);
     if (islot >= 0) period = hos_mac_pair_period(period);
@@ -23259,7 +23357,7 @@ uint64_t mtl_present(const tex_t *t, double period, const int crop[4]) {
     }
     pthread_mutex_lock(&g_pq_mu);
     while (g_pq_in - g_pq_done >= PQ) pthread_cond_wait(&g_pq_cv, &g_pq_mu);   // 队满才等；正常由 AcquireTexture 先挡住 | Wait only when the queue is full; normally AcquireTexture blocks first
-    pq_item *it = &g_pq[g_pq_in % PQ]; *it = (pq_item){*t, period, atomic_load(&g_cur_frame), {0}, CACurrentMediaTime(), islot, 0, 0, ring};
+    pq_item *it = &g_pq[g_pq_in % PQ]; *it = (pq_item){*t, period, atomic_load(&g_cur_frame), {0}, CACurrentMediaTime(), islot, 0, 0, ring, guest_frame};
     if (crop) memcpy(it->crop, crop, sizeof it->crop);   // 当帧状态随票号入队，不在出图线程晚读可变window | The current frame's state is enqueued with the ticket number, rather than reading the mutable window late on the present thread
     uint64_t tk = ++g_pq_in;
     eye_note_present(t, crop);   // stereo replay: which textures the game presents, and the picture's rectangle
@@ -23283,6 +23381,9 @@ void mtl_sr_picture(totk_sr_gfx *s, uint64_t *upscaled_at, uint64_t *antialiased
     s->upscale = metalfx_5k_output() ? 2 : mfxup_enabled() ? 1 + mfxup_output_enabled() : 0;
     s->taa = taa_enabled(); s->fi_mode = mfx_enabled(); s->temporal = tup_enabled();
     s->present_path = __atomic_load_n(&g_rescue_mode, __ATOMIC_RELAXED) ? 2 : !__atomic_load_n(&g_dm_present_link, __ATOMIC_RELAXED);
+#ifdef LONGSHOT_MTL
+    if (hos_mac_response_active() && !hos_mac_response_wants_fill()) s->present_path = 1;
+#endif
     *upscaled_at = atomic_load(&g_mfxup_last); *antialiased_at = atomic_load(&g_taa_last);
 }
 /* The game's counters for the state reports, read without any lock (a report may see a frame less): game presents (the
