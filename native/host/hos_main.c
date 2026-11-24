@@ -1804,6 +1804,9 @@ static void oot_trainer_tick(Ctx *c, uint64_t components, int64_t now) {
     in_tick = 0;
 }
 
+#ifdef __APPLE__
+#include "oot_equipment_sets.inc"
+#endif
 static void oot_update_player_cheats(Ctx *c, uint64_t actor, uint64_t components) {
     int rx_option(int id, int otherwise);
     static uint64_t flying_actor, marked_actor, marked_controller;
@@ -1847,6 +1850,9 @@ static void oot_update_player_cheats(Ctx *c, uint64_t actor, uint64_t components
     oot_teleport_followup(c, actor);
     oot_inventory_refresh(c, now);
     oot_trainer_tick(c, components, now);
+#ifdef __APPLE__
+    oot_equipment_request(c);
+#endif
 
     oot_player_speed(c, components);
     oot_map_refresh(c, now);

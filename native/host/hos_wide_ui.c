@@ -779,6 +779,9 @@ float hos_hud_reach(float r, float max) {
 float hos_hud_scale(float r, float full) { return r > 0.0f && full > 0.0f && r < full ? r / full : 1.0f; }
 
 /* Each present (host/rx_backend.c host_wide_menus): the scales and moves for the picture's shape, and the plan */
+#ifdef __APPLE__
+static int staff_percent = 100;
+#endif
 void hos_wide_ui_tick(void) {
     static const char *env;
     static int looked, keep_forced;
@@ -861,6 +864,14 @@ void hos_wide_ui_tick(void) {
     } else if (hos_wide_ui_force) {
         hos_wide_ui_force--;
     }
+    #ifdef __APPLE__
+    const int staff = rx_option(HOS_OPT_OCARINA_STAFF_SIZE, 100);
+    if (staff >= 85 && staff <= 125 && staff != staff_percent) {
+        staff_percent = staff;
+        hos_log("ui: ocarina staff at %d%%", staff);
+        hos_wide_ui_force = 3;
+    }
+#endif
     if (map_placement != last_map_placement) {
         last_map_placement = map_placement;
         hos_wide_ui_force = 3;
@@ -913,6 +924,35 @@ void hos_wide_ui_placed(Ctx *c, uint64_t pane) {
     const uint64_t parent = ui_parent;
     ui_parent = 0;
     ui_lock();
+#ifdef __APPLE__
+    if (staff_percent != 100) {
+        uint64_t layout = recomp_load64(c, pane + PANE_LAYOUT);
+        uint64_t res = layout ? recomp_load64(c, layout + LAYOUT_RES) : 0;
+        uint64_t layout_name = res ? recomp_load64(c, res + RES_NAME) : 0;
+        int lesson = guest_is(layout_name, "PaOcarinaDialog_00");
+        if (lesson || guest_is(layout_name, "Ocarina_00")) {
+            uint64_t base = recomp_load64(c, layout + LAYOUT_PANES);
+            uint64_t names = recomp_load64(c, res + RES_PANE_NAMES);
+            uint64_t index = pane >= base ? (pane - base) / PANE_SIZE : UINT64_MAX;
+            if (names && index < (recomp_load32(c, layout + LAYOUT_COUNT) & 0xffff)) {
+                const uint64_t name = recomp_load64(c, names + index * 8);
+                if (lesson ? guest_is(name, "N_All_00") :
+                    guest_is(name, "N_NotationBg_00") || guest_is(name, "N_Notation_00")) {
+                    /* Sibling groups in Ocarina_00 share the midpoint of the staff at (0,-390). The
+                       original transform was just calculated. Children, including the clip, inherit this once. */
+                    const float scale = staff_percent / 100.0f;
+                    const float center_y = lesson ? -572.0f : -390.0f;
+                    for (int i = 0; i < 9; i++) {
+                        const uint64_t at = pane + PANE_XX + 4*i;
+                        store_f(c, at, load_f(c, at) * scale);
+                    }
+                    store_f(c, pane + PANE_X, scale * load_f(c, pane + PANE_X));
+                    store_f(c, pane + PANE_Y, center_y + scale * (load_f(c, pane + PANE_Y) - center_y));
+                }
+            }
+        }
+    }
+#endif
     Node *previous = node_find(pane);
     if (previous && (!ui_menus || !previous->in_menu || previous->wide <= 1.0f)) restore_width(c, previous, pane);
     if (!ui_on) { ui_unlock(); return; }   /* (off: the transforms are the game's) */

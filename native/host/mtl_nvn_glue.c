@@ -45,6 +45,15 @@ static uint64_t h2g(uint64_t p, const char *name) {
     return p;
 }
 
+void runtime_game_prompt_pool(const void *host, size_t bytes, int added) {
+    extern void hos_prompts_pool(uint64_t, uint64_t);
+    extern void hos_prompts_pool_gone(uint64_t);
+    const uintptr_t addr = (uintptr_t)host, base = (uintptr_t)A64_MEM;
+    if (addr < base || addr - base >= kGuestSpan) return;
+    if (added) hos_prompts_pool(addr - base, bytes);
+    else hos_prompts_pool_gone(addr - base);
+}
+
 typedef uint64_t (*CallInt)(uint64_t, uint64_t, uint64_t, uint64_t, uint64_t, uint64_t, uint64_t, uint64_t, double,
                             double, double, double, double, double, double, double);
 typedef double (*CallFp)(uint64_t, uint64_t, uint64_t, uint64_t, uint64_t, uint64_t, uint64_t, uint64_t, double,
@@ -142,6 +151,8 @@ static void mtl_nvn_call(Ctx *c, void *user) {
     }
     const uint64_t r = ((CallInt)p->fn)(x[0], x[1], x[2], x[3], x[4], x[5], x[6], x[7], d[0], d[1], d[2], d[3], d[4], d[5], d[6], d[7]);
     if (p->pace == 2) {
+        extern void hos_wide_ui_tick(void);
+        hos_wide_ui_tick();
         __atomic_add_fetch(&hos_present_count, 1, __ATOMIC_RELAXED);
         hos_vi_native_presented((const int64_t[4]){0, 0, 0, 0});
     }

@@ -61,6 +61,11 @@ static struct {
     int motion, motion_on;
     int64_t motion_retry_ns, used_ns;
     uint64_t input_sig;
+#ifdef __APPLE__
+    int64_t prompt_used;
+    uint64_t prompt_buttons;
+    int32_t prompt_axes[4];
+#endif
     unsigned rested;   /* (longshot) the sticks' axes seen at rest since it was opened, a bit each (AX_LX ... AX_RY):
                           only those steer; and its triggers seen let go (AX_LT, AX_RT): only those press */
     signed char held[4];   /* (the way each axis was last held, -1, 0 or 1: one held the other way has passed its rest) */
@@ -80,6 +85,9 @@ static uint32_t pads_opened;
 static SRWLOCK state_lock = SRWLOCK_INIT;
 static uint64_t state_buttons;
 static int32_t state_stick[4];
+#ifdef __APPLE__
+int hos_display_owns_sdl(void);
+#endif
 static int state_count;
 static int state_deck_builtin;   /* (longshot) the Deck's built-in controls gave gameplay input in that poll */
 static char state_name[128];   /* the first controller's name (host/prompts.c: the button prompts' Auto) */
@@ -691,6 +699,25 @@ static void pads_poll(void) {
             if (inv_y) v[3] = -v[3];
             for (int k = 0; k < 4; k++)
                 if ((v[k] < 0 ? -v[k] : v[k]) > (s[k] < 0 ? -s[k] : s[k])) s[k] = v[k];
+#ifdef __APPLE__
+            /* Releases, drift and the motion-only half of a Steam controller cannot steal the prompt face. */
+            uint64_t physical = sig | ((uint64_t)(pull[0] > 8000) << HOS_PAD_LTRIGGER) |
+                                      ((uint64_t)(pull[1] > 8000) << HOS_PAD_RTRIGGER);
+            int used = (physical & ~pads[i].prompt_buttons) != 0;
+            pads[i].prompt_buttons = physical;
+            for (int k = 0; k < 4; k++) {
+                if (abs(v[k] - pads[i].prompt_axes[k]) > 3500) {
+                    used |= abs(v[k]) > 8000;
+                    pads[i].prompt_axes[k] = v[k];
+                }
+            }
+            if (used) {
+                pads[i].prompt_used = now;
+                extern volatile int hos_posix_window[4];
+                extern void hos_mac_prompt_input(int);
+                if (hos_posix_window[0] || !hos_display_owns_sdl()) hos_mac_prompt_input(1);
+            }
+#endif
             {   /* (motion: the pad last used; a stick counts by which way it is pushed, not by how far) */
                 for (int k = 0; k < 4; k++) sig |= (uint64_t)(v[k] > 0 ? 1 : v[k] < 0 ? 2 : 0) << (32 + 2 * k);
                 if (sig != pads[i].input_sig) pads[i].input_sig = sig, pads[i].used_ns = now;
@@ -748,7 +775,14 @@ static void pads_poll(void) {
         state_deck_builtin = deck_builtin;
         state_name[0] = 0;
         state_type = state_sdl = 0;
-        for (int i = 0; i < MAX_PADS; i++)
+        int preferred = 0;
+#ifdef __APPLE__
+        for (int i = 1; i < MAX_PADS; ++i)
+            if (pads[i].gc && !pads[i].motion_only && pads[i].prompt_used > pads[preferred].prompt_used)
+                preferred = i;
+#endif
+        for (int pass = 0; pass < MAX_PADS; pass++) {
+            const int i = (preferred + pass) % MAX_PADS;
             if (pads[i].gc && !pads[i].motion_only) {   /* (the stand-in's name, not its motion-only pad's) */
                 const char *name = hos_sdl_pad_name(pads[i].gc);
                 snprintf(state_name, sizeof state_name, "%s", name ? name : "");
@@ -762,6 +796,7 @@ static void pads_poll(void) {
                 state_sdl = sdl;
                 break;
             }
+        }
         ReleaseSRWLockExclusive(&state_lock);
 }
 

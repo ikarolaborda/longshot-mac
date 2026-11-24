@@ -91,6 +91,9 @@ static void pointer_update(uint32_t pressed, int wheel) {
 static uint32_t sdl_button_bit(int b) { return b == 1 ? HOS_MOUSE_LEFT : b == 3 ? HOS_MOUSE_RIGHT : b == 2 ? HOS_MOUSE_MIDDLE : 0; }
 
 /* ---- keys: SDL's scancodes (USB HID usages) as Windows' virtual keys ---- */
+#ifdef __APPLE__
+void hos_mac_prompt_input(int pad);
+#endif
 static unsigned virtual_key(int scancode) {
     if (scancode >= 4 && scancode <= 29) return 'A' + scancode - 4;
     if (scancode >= 30 && scancode <= 38) return '1' + scancode - 30;
@@ -542,7 +545,10 @@ void hos_display_loop(void) {
                         // A short tap can start and end in this same batch of SDL events.
                         extern void hos_vk_note_key_press(unsigned);
                         unsigned key = virtual_key(scancode);
-                        if (key) hos_vk_note_key_press(key);
+                        if (key) {
+                            hos_mac_prompt_input(0);
+                            hos_vk_note_key_press(key);
+                        }
                         if (!menu_open) shoulder_key(scancode, 1);
                     }
                     if (scancode == 93 && !e.repeat && hos_posix_window[0] && !menu_open) {
@@ -561,6 +567,9 @@ void hos_display_loop(void) {
                     break;
                 }
                 case HOS_SDL_EV_MOUSE_DOWN:
+#ifdef __APPLE__
+                    if (hos_posix_window[0]) hos_mac_prompt_input(0);
+#endif
                     ptr_in = 1;
                     ptr_held |= sdl_button_bit(e.button);
                     if (menu_open) pointer_publish_at(e.x, e.y, sdl_button_bit(e.button), 0);   /* (the menu's click) */
@@ -578,6 +587,9 @@ void hos_display_loop(void) {
                     if (menu_open) pointer_update(0, (int)(e.wheel * 120));
                     break;
                 case HOS_SDL_EV_MOUSE_MOTION:
+                    #ifdef __APPLE__
+                    if (mouse_captured && (e.dx > 1 || e.dx < -1 || e.dy > 1 || e.dy < -1)) hos_mac_prompt_input(0);
+#endif
                     if (!mouse_captured) ptr_in = 1;
                     if (mouse_captured) {   /* (SDL3's motion comes in fractions of a pixel: the remainders kept for the next) */
                         static float rx, ry;

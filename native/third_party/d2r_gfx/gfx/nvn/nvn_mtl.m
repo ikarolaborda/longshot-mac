@@ -12542,6 +12542,8 @@ static void warm_start(void) {
         if ([fm fileExistsAtPath:title]) [all addObject:title];
         // iOS: the shared list's pipelines (shader-seed/pso_list.tsv, build_ipa.py), whose pso_manifest.tsv there is the
         // seed's own; the Mac's export is build/pso_manifest.tsv. Before 2026-10-22 the phone warmed none of them.
+        NSString *gate = [dir stringByAppendingPathComponent:@"kakariko-mesh.tsv"];
+        if ([fm fileExistsAtPath:gate]) [all addObject:gate];
         NSString *list = [dir stringByAppendingPathComponent:@"pso_list.tsv"];
         if ([fm fileExistsAtPath:list]) [all addObject:list];
         if ([fm fileExistsAtPath:seed]) [all addObject:seed];

@@ -73,7 +73,10 @@ int rx_option(int id, int otherwise);   /* rx_backend.c: the Insert menu's rows 
 #define STICK_GAME 0xF8D0
 /* what the prompts follow (current_binds): each Switch button's pad input, then its first key (BUTTON_BINDS: all the textures
    and the layouts follow), then the first key of each way the keys move (HOS_KEY_MOVE_*'s order: the sticks' icons in texts) */
-#define BUTTON_BINDS (2 * HOS_SW_N)
+#define NOTE_PADS (2 * HOS_SW_N)
+#define NOTE_KEYS (3 * HOS_SW_N)
+#define BACKDROP (4 * HOS_SW_N)
+#define BUTTON_BINDS (BACKDROP + 1)
 #define BINDS (BUTTON_BINDS + 4)
 static const char *const faces[HOS_PROMPT_N] = {"switch", "xbox", "ps4", "ps5", "steamdeck", "keyboard"};
 /* the Switch buttons' code points in the font, in HOS_SW_* order (nx2/prompt_assets.py SWITCH) */
@@ -163,16 +166,46 @@ static int face_of_pad(const char *name, int sdl, int type) {
 }
 
 /* the first key bound to Switch button b (a Windows key code, the second slot's when the first is clear), 0 none */
+#ifdef __APPLE__
+enum { PROMPT_AUTO_START, PROMPT_DESKTOP, PROMPT_PAD };
+static int last_input;
+void hos_mac_prompt_input(int pad) {
+    __atomic_store_n(&last_input, pad ? PROMPT_PAD : PROMPT_DESKTOP, __ATOMIC_RELAXED);
+}
+#endif
+
 static int first_key(int b) {
     int k = hos_binding(HOS_BIND_KEY, b, 0);
-    if (k <= 0 || k > 0xFF) k = hos_binding(HOS_BIND_KEY, b, 1);
+    int alternate = hos_binding(HOS_BIND_KEY, b, 1);
+#ifdef __APPLE__
+    /* Attack and targeting show the bound mouse button when playing with keyboard and mouse. */
+    if ((b == HOS_SW_Y || b == HOS_SW_ZL) && alternate > 0 && alternate <= 6) return alternate;
+#endif
+    if (k <= 0 || k > 0xFF) k = alternate;
     return k > 0 && k <= 0xFF ? k : 0;
 }
 
 /* the controls now (BINDS: hos_binding's, as the Controls page sets them): the pad input bound to each Switch button, then its
    first key, then the first key of each way the keys move */
 static void current_binds(int *bind) {
-    for (int b = 0; b < HOS_SW_N; b++) bind[b] = hos_binding(HOS_BIND_PAD, b, 0), bind[HOS_SW_N + b] = first_key(b);
+    for (int b = 0; b < HOS_SW_N; b++) {
+        bind[b] = hos_binding(HOS_BIND_PAD, b, 0);
+        if (bind[b] < 0) bind[b] = hos_binding(HOS_BIND_PAD, b, 1);
+        bind[HOS_SW_N + b] = first_key(b);
+    }
+    memcpy(bind + NOTE_PADS, bind, 2 * HOS_SW_N * sizeof *bind);
+    static const int note_buttons[] = {HOS_SW_L, HOS_SW_R, HOS_SW_A, HOS_SW_Y, HOS_SW_X};
+    for (int i = 0; i < 5; ++i) {
+        const int row = HOS_KEY_OC_NOTE_L + i, b = note_buttons[i];
+        int pad = hos_binding(HOS_BIND_PAD, row, 0);
+        if (pad < 0) pad = hos_binding(HOS_BIND_PAD, row, 1);
+        int key = first_key(row);
+        if (pad >= 0 || key) {
+            bind[NOTE_PADS + b] = pad;
+            bind[NOTE_KEYS + b] = key;
+        }
+    }
+    bind[BACKDROP] = rx_option(HOS_OPT_DIALOGUE_BACKDROP, 0);
     for (int m = 0; m < 4; m++) bind[BUTTON_BINDS + m] = first_key(HOS_KEY_MOVE_UP + m);
 }
 
@@ -194,6 +227,10 @@ static int keyboard_built;   /* (the build made the keyboard face: prompts/keybo
 /* Auto's face: the first controller's (by SDL's name and type: sdl, the SDL it came from); with none, and none through XInput
    either, the keyboard's */
 static int auto_face(const char *name, int sdl, int type) {
+#ifdef __APPLE__
+    int device = __atomic_load_n(&last_input, __ATOMIC_RELAXED);
+    if (keyboard_built && device == PROMPT_DESKTOP) return HOS_PROMPT_KEYBOARD;
+#endif
     return !name[0] && keyboard_built && !hos_xinput_pads() ? HOS_PROMPT_KEYBOARD : face_of_pad(name, sdl, type);
 }
 
@@ -218,7 +255,12 @@ static int choose_face(const char *dir) {
     for (int i = 0; i < 30 && !name[0]; i++) {
         hos_sdl_pads(&b, s, NULL);
         hos_sdl_pad_first(name, sizeof name, &type, &sdl);
+        #ifdef __APPLE__
+        /* The live face can follow a controller as soon as it opens. */
+        break;
+#else
         if (!name[0]) Sleep(50);
+#endif
     }
     const int face = auto_face(name, sdl, type);
     hos_log("prompts: auto: controller \"%s\" (SDL%d type %d): %s", name[0] ? name : "(none)", sdl, type, faces[face]);
@@ -697,33 +739,37 @@ static int write_patched(const char *game, const char *out, const char *keypath,
 
 /* the runs of a face's textures.bin (t, tn bytes) that the controls (bind: each Switch button's pad input) choose, in the
    file's order; *nruns of them */
-static Run *texture_runs(const uint8_t *t, long tn, const int *bind, size_t *nruns) {
+static void append_texture_runs(const uint8_t *t, long tn, int face, const int *bind,
+                                Run **runs, size_t *nruns, size_t *cap_runs) {
     const uint32_t count = rd32le(t + 4);
-    size_t at = 8, cap_runs = 256;
-    Run *runs = (Run *)malloc(cap_runs * sizeof *runs);
-    *nruns = 0;
+    size_t at = 8;
     for (uint32_t e = 0; e < count && at + 8 <= (size_t)tn; e++) {
         const int sw = t[at], pad = t[at + 1];
         const uint32_t nr = rd32le(t + at + 4);
-        const int on = sw == 0xff || (sw < HOS_SW_N && bind[sw] == pad);
+        const int base = face == HOS_PROMPT_KEYBOARD ? HOS_SW_N : 0;
+        const int on = sw == 0xff || (sw == 0xfe && bind[BACKDROP] == pad) || (sw < HOS_SW_N && bind[base + sw] == pad) ||
+            (sw >= HOS_SW_N && sw < 2 * HOS_SW_N && bind[base + NOTE_PADS + sw - HOS_SW_N] == pad);
         at += 8;
         for (uint32_t r = 0; r < nr && at + 8 <= (size_t)tn; r++) {
             const uint32_t off = rd32le(t + at), len = rd32le(t + at + 4);
             if (len > (size_t)tn - at - 8) break;
-            if (on) add_run(&runs, nruns, &cap_runs, off, len, t + at + 8);
+            if (on) add_run(runs, nruns, cap_runs, off, len, t + at + 8);
             at += 8 + len;
         }
     }
-    return runs;
 }
 
-/* the face whose textures a face shows (the keyboard's: the Switch's), and the controls they follow (the keyboard face: the
-   Switch's own, its default controls: the game's pictures as they are); own: room for those */
-static int texture_face(int face) { return face == HOS_PROMPT_KEYBOARD ? HOS_PROMPT_SWITCH : face; }
-static const int *texture_bind(int face, const int *bind, int *own) {
-    if (face != HOS_PROMPT_KEYBOARD) return bind;
-    for (int b = 0; b < HOS_SW_N; b++) own[b] = switch_pad[b];
-    return own;
+static uint8_t *dialogue_masks;
+static long dialogue_size;
+static Run *texture_runs(const uint8_t *t, long tn, int face, const int *bind, size_t *nruns) {
+    size_t capacity = 256;
+    Run *runs = malloc(capacity * sizeof *runs);
+    *nruns = 0;
+    if (!runs) return NULL;
+    append_texture_runs(t, tn, face, bind, &runs, nruns, &capacity);
+    if (dialogue_masks && bind[BACKDROP])
+        append_texture_runs(dialogue_masks, dialogue_size, face, bind, &runs, nruns, &capacity);
+    return runs;
 }
 
 static void live_textures_start(const char *bntx, const Run *runs, size_t nruns);
@@ -756,7 +802,7 @@ static int build_textures(char *out, size_t cap) {
     char dir[MAX_PATH], path[MAX_PATH];
     int face;
     if (!setup(dir, sizeof dir, &face)) return 0;
-    snprintf(path, sizeof path, "%sprompts/%s/textures.bin", dir, faces[texture_face(face)]);
+    snprintf(path, sizeof path, "%sprompts/%s/textures.bin", dir, faces[face]);
     long tn;
     uint8_t *t = read_all(path, "HPTX", &tn);
     if (!t) return 0;   /* (built without the textures: the game's) */
@@ -764,11 +810,14 @@ static int build_textures(char *out, size_t cap) {
         free(t);
         return 0;
     }
-    int bind[BINDS], own[HOS_SW_N];
+    snprintf(path, sizeof path, "%sprompts/dialogue.bin", dir);
+    dialogue_masks = read_all(path, "HPTX", &dialogue_size);
+    int bind[BINDS];
     current_binds(bind);
     uint64_t h = fnv(fnv(fnv(0xcbf29ce484222325ull, &face, sizeof face), bind, BUTTON_BINDS * sizeof *bind), t, (size_t)tn);
+    if (dialogue_masks && bind[BACKDROP]) h = fnv(h, dialogue_masks, (size_t)dialogue_size);
     size_t nruns;
-    Run *runs = texture_runs(t, tn, texture_bind(face, bind, own), &nruns);
+    Run *runs = texture_runs(t, tn, face, bind, &nruns);
     snprintf(path, sizeof path, "%sprompts/Common.bntx", dir);
     live_textures_start(path, runs, nruns);   /* (before write_patched sorts them: the ranges only) */
     char keypath[MAX_PATH], made[MAX_PATH];
@@ -994,7 +1043,6 @@ void hos_prompts_pool_gone(uint64_t mem) {
 /* the pool's textures as this face and these controls choose them; 0 when they could not be */
 /* the face's textures.bin, read once (before tex_lock: a finalize waits for the writes alone); 0 none */
 static int texture_bin(const char *dir, int face) {
-    face = texture_face(face);
     if (!tex.bins[face]) {
         char path[MAX_PATH];
         snprintf(path, sizeof path, "%sprompts/%s/textures.bin", dir, faces[face]);
@@ -1007,8 +1055,7 @@ static int live_textures(const char *dir, int face, const int *bind) {
     if (!texture_bin(dir, face)) return 0;
     size_t nruns, written, put_back;
     if (!__atomic_load_n(&tex.l.base, __ATOMIC_ACQUIRE)) return 0;   /* (finalized since: hos_prompts_pool_gone; tex_lock held) */
-    int own[HOS_SW_N];
-    Run *runs = texture_runs(tex.bins[texture_face(face)], tex.nbins[texture_face(face)], texture_bind(face, bind, own), &nruns);
+    Run *runs = texture_runs(tex.bins[face], tex.nbins[face], face, bind, &nruns);
     const size_t outside = put_runs(&tex.l, runs, nruns, &written, &put_back);
     free(runs);
     hos_log("prompts: now %s textures: %zu runs written, %zu put back%s", faces[face], written, put_back,
@@ -1524,7 +1571,7 @@ static int layout_runs(const char *dir, int face, const int *bind, Layout *o) {
         const size_t panes_at = 8 + 4 * (size_t)npads;
         float extra[5], shift[6] = {0};
         for (int i = 0; i < 5; i++) {
-            const int p = face == HOS_PROMPT_KEYBOARD ? bind[HOS_SW_N + notes[i]] : bind[notes[i]];   /* (keyboard: by key) */
+            const int p = bind[(face == HOS_PROMPT_KEYBOARD ? NOTE_KEYS : NOTE_PADS) + notes[i]];   /* (keyboard: by key) */
             extra[i] = 0;
             if (p >= 0 && (uint32_t)p < npads && panes_at <= (size_t)hn) memcpy(&extra[i], hint + 8 + 4 * p, 4);
         }

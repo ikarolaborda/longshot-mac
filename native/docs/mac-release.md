@@ -1,3 +1,15 @@
+## New in v3.2.0-mac.4
+
+Metal now prepares known Kakariko Village and Hyrule Field mesh pipelines before play and remembers newly encountered mesh pipelines for later launches. On an M5 Max, a copied adult save walked through the Kakariko gate, returned, and crossed again. In two offscreen runs of the update, the first exit took 5.69 and 7.32 seconds, compared with 11.75 seconds in mac.3. The repeats took 4.52 and 4.50 seconds, compared with 4.89 seconds. Both timings include the transition until Link can move in Hyrule Field. The longest frame on the final build was 396 ms, compared with 3.73 seconds in mac.3.
+
+Press **Command+,** and open **Gameplay** to change dialogue text size, dialogue background contrast, or the size of the ocarina staff (85–125%). Under **Graphics → HUD layout → Custom**, you can resize and move hearts and magic, action and item buttons, and the minimap. Button and ocarina prompts follow the active input device and its bindings.
+
+Choose **Equipment → Set 1 → Save current equipment** in the Mac menu bar. Press **7**, **8**, or **9** during gameplay to equip a saved set. Each set remembers worn gear and the item on ZR. Bottle selections follow the slot, so drinking a potion or releasing bugs changes what the set shows and equips. Child and adult Link have separate sets. You can rename a set in the Equipment menu or assign a different key or controller button under **Settings → Controls**.
+
+With **All Equipment** enabled, the pause inventory identifies loaned gear as **Borrowed** and story rewards as **Earned**. The Mac menu **Equipment → Inventory status** lists both. Copied saves replayed Darunia awarding the Goron Bracelet and Impa teaching Zelda’s Lullaby.
+
+## Mac controls and previous changes
+
 This Mac release uses the stable Longshot v3.2.0 game code, including the controller trigger, save-loading, first adult night, and high-frame-rate movie fixes. Movies keep their sound timing and 16:9 shape. The upstream release also lists driver fixes specific to Windows and Vulkan. [Upstream release notes](https://git.magicbean.dev/MagicBeanDev/Longshot/releases/tag/v3.2.0)
 
 Press F1 or Insert in the game window to open Longshot Settings. On a Mac keyboard, use Fn+F1 if F1 changes the screen brightness. You can also choose Longshot Settings… from the Longshot menu or press Command+comma. Use Tab to change pages and the arrow keys to select a setting. The keypad 5 shortcut still opens the cheat menu.

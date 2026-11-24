@@ -436,10 +436,50 @@ class Layer:
         self.name, self.texture, self.sw, self.pad, self.im, self.box, self.over = name, texture, sw, pad, im, box, over
 
 
+def message_backdrops(textures, tex):
+    """Patch only the BC4 coverage masks used by dialogue, signs, and Navi's messages."""
+    names = ("MessageWindowCommonBase_00", "MessageWindowSignboardBase_00", "MessageWindowNaviBase_00",
+             "MessageWindowBaseTruth_00", "BalloonWindowCommon_00", "BalloonWindowNavi_00")
+    variants = []
+    for choice, factor in enumerate((.50, .75, 1.5), start=1):
+        changes = []
+        for name in names:
+            mask = decode(textures, tex[name])
+            assert mask.mode == "L"
+            changes.extend(runs(tex[name], mask.point(lambda a: min(255, round(a * factor)))))
+        variants.append((0xfe, choice, changes))
+    return variants
+
+
+def keyboard_note_layers(tex, otf):
+    """The ocarina staff uses texture sprites. Draw them from the same keys as the text font."""
+    from PIL import Image, ImageDraw, ImageFont
+    import prompt_keys
+    from functools import lru_cache
+
+    @lru_cache(maxsize=512)
+    def sprite(w, h, key):
+        font = ImageFont.truetype(io.BytesIO(otf), h)
+        glyph = chr(prompt_keys.KEY_BASE + key)
+        box = font.getbbox(glyph)
+        mask = Image.new("L", (max(1, box[2] - box[0]), max(1, box[3] - box[1])))
+        ImageDraw.Draw(mask).text((-box[0], -box[1]), glyph, font=font, fill=255)
+        mask.thumbnail((max(1, int(w * .92)), max(1, int(h * .92))), Image.Resampling.LANCZOS)
+        image = Image.new("RGBA", (w, h))
+        image.paste((255, 255, 255, 255), ((w - mask.width) // 2, (h - mask.height) // 2,
+                    (w - mask.width) // 2 + mask.width, (h - mask.height) // 2 + mask.height), mask)
+        return image
+
+    return [Layer(f"{name}.{key}.png", name, len(SW) + SW[sw], key, sprite(*tex[name][2:4], key))
+            for name, sw in NOTES.items() for key in prompt_keys.KEYS]
+
+
 def face_layers(b, tex, face, otf):
     """this face's images, as layers (in textures.bin's order), each a hand-made one if nx2/prompt_faces/<face>/ has it"""
     from PIL import Image, ImageDraw
     import prompt_draw
+    if face == "keyboard":
+        return keyboard_note_layers(tex, otf)
     icons = Icons(face, otf)
     layers = []
 
@@ -457,7 +497,7 @@ def face_layers(b, tex, face, otf):
             o = ((w - icon.width) // 2, (h - icon.height) // 2)
             im.paste(Image.new("RGBA", icon.size, (255, 255, 255, 255)), o, shape)
             im.paste(Image.new("RGBA", icon.size, (0, 0, 0, 255)), o, holes)
-            layers.append(Layer(f"{name}.{pad}.png", name, SW[sw], PADS.index(pad), im))
+            layers.append(Layer(f"{name}.{pad}.png", name, len(SW) + SW[sw], PADS.index(pad), im))
     for name, sw in LETTERS.items():
         t = tex[name]
         w, h = t[2], t[3]
@@ -1350,6 +1390,8 @@ def generate(a):
         with open(os.path.join(a.out, "Common.bntx"), "wb") as f:
             f.write(textures)
         tex = bntx_textures(textures)
+        if sys.platform == "darwin":
+            write_textures(os.path.join(a.out, "dialogue.bin"), message_backdrops(textures, tex))
     blarc = read_zs(a.romfs, LAYOUTS, dictionary)
     hint = hint_panes(blarc)
     if not hint:
@@ -1371,7 +1413,7 @@ def generate(a):
         os.makedirs(d, exist_ok=True)
         if hint:
             write_hint(os.path.join(d, "hint.bin"), widths[face], hint)
-    drawn = [face for face in faces if textures and face != "keyboard"]   # (the keyboard's: the Switch's textures, host/prompts.c)
+    drawn = faces if textures else []
     jobs = face_jobs(len(drawn)) if not a.dump else 1
     if jobs > 1:
         # each face's textures in a process of its own: ~25 s of one core each, five faces one after another were
@@ -1380,11 +1422,11 @@ def generate(a):
         import multiprocessing
         bntx = os.path.join(a.out, "Common.bntx")
         with concurrent.futures.ProcessPoolExecutor(jobs, mp_context=multiprocessing.get_context("spawn")) as pool:
-            for face in pool.map(draw_face, [(bntx, face, otf, os.path.join(a.out, face, "textures.bin")) for face in drawn]):
+            for face in pool.map(draw_face, [(bntx, face, plain if face == "keyboard" else otf, os.path.join(a.out, face, "textures.bin")) for face in drawn]):
                 print(f"prompts: {face}", file=sys.stderr)
     else:
         for face in drawn:
-            layers = face_layers(textures, tex, face, otf)
+            layers = face_layers(textures, tex, face, plain if face == "keyboard" else otf)
             write_textures(os.path.join(a.out, face, "textures.bin"), face_textures(textures, tex, layers))
             if a.dump:
                 dump(a.dump, face, textures, tex, layers)

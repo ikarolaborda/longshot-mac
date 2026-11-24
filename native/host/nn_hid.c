@@ -588,15 +588,28 @@ static const char *const bind_names[HOS_KEY_N] = {"a", "b", "x", "y", "ls", "rs"
                                                   "minus", "left", "up", "right", "down", "move_up", "move_down",
                                                   "move_left", "move_right", "cam_up", "cam_down", "cam_left",
                                                   "cam_right", "note_l", "note_r", "note_a", "note_y", "note_x", "walk", "toggle_hud",
-                                                  "sprint"};
+                                                  "sprint",
+#ifdef __APPLE__
+        "equipment_set_1", "equipment_set_2", "equipment_set_3",
+#endif
+};
 static const signed char pad_default[HOS_SW_N] = {
     HOS_PAD_EAST, HOS_PAD_SOUTH, HOS_PAD_NORTH, HOS_PAD_WEST, HOS_PAD_LSTICK, HOS_PAD_RSTICK, HOS_PAD_LSHOULDER,
     HOS_PAD_RSHOULDER, HOS_PAD_LTRIGGER, HOS_PAD_RTRIGGER, HOS_PAD_START, HOS_PAD_BACK, HOS_PAD_LEFT, HOS_PAD_UP,
     HOS_PAD_RIGHT, HOS_PAD_DOWN};
 static int is_note_row(int i) { return i >= HOS_KEY_OC_NOTE_L && i <= HOS_KEY_OC_NOTE_X; }
-static int has_pad(int i) { return i < HOS_SW_N || is_note_row(i) || i == HOS_KEY_TOGGLE_HUD || i == HOS_KEY_SPRINT; }
+static int has_pad(int i) {
+#ifdef __APPLE__
+    if (i >= HOS_KEY_SET1 && i <= HOS_KEY_SET3) return 1;
+#endif
+    return i < HOS_SW_N || is_note_row(i) || i == HOS_KEY_TOGGLE_HUD || i == HOS_KEY_SPRINT; }
 /* (the Switch's buttons and Sprint trade gamepad inputs by hos_bind's slot rules; the note rows and the HUD's keep theirs) */
-static int pad_swaps(int i) { return i < HOS_SW_N || i == HOS_KEY_SPRINT; }
+static int pad_swaps(int i) {
+#ifdef __APPLE__
+    if (i >= HOS_KEY_SET1 && i <= HOS_KEY_SET3) return 1;
+#endif
+    return i < HOS_SW_N || i == HOS_KEY_SPRINT;
+}
 #ifndef VK_XBUTTON1
 #define VK_XBUTTON1 0x05
 #define VK_XBUTTON2 0x06
@@ -630,7 +643,11 @@ static const unsigned char key_default[HOS_KEY_N][2] = {
 #else
     {VK_UP, 'I'}, {VK_DOWN, 'K'}, {VK_LEFT, 'J'}, {VK_RIGHT, 'L'},
 #endif
-    {0}, {0}, {0}, {0}, {0}, {VK_CAPITAL}};   /* (the five note rows start unset: oc_pad_word; the HUD's
+    {0}, {0}, {0}, {0}, {0}, {VK_CAPITAL},
+#ifdef __APPLE__
+    [HOS_KEY_SET1] = {'7'}, [HOS_KEY_SET2] = {'8'}, [HOS_KEY_SET3] = {'9'},
+#endif
+};   /* (the five note rows start unset: oc_pad_word; the HUD's
                                                                                   and Sprint too) */
 static volatile LONG toggle_reset, sprint_reset_pending, hud_bind_generation;
 static HoldToggle toggles;
@@ -1429,6 +1446,23 @@ static int flight_jump_shortcut(uint64_t *buttons, int mode, int menu_open, int 
 static void hud_shortcut(int readable, int mouse) {
     static LONG last_generation;
     static int armed;
+#ifdef __APPLE__
+    static unsigned sets_armed;
+    if (!readable) sets_armed = 0;
+    else for (int i = 0; i < 3; i++) {
+        int down = bound_down(HOS_KEY_SET1 + i, mouse);
+        for (int k = 0; k < 2; k++) {
+            int p = sampled_pad(HOS_KEY_SET1 + i, k);
+            if (p >= 0 && p < HOS_PAD_N && ((pad_raw_game & ~pad_after_menu) >> p & 1)) down = 1;
+        }
+        if (down && (sets_armed & (1u << i))) {
+            extern void hos_mac_set_request(int, int);
+            hos_mac_set_request(i, 0);
+        }
+        if (down) sets_armed &= ~(1u << i);
+        else sets_armed |= 1u << i;
+    }
+#endif
     if (!readable) {
         armed = 0;
         return;

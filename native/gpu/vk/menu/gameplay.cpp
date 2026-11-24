@@ -53,6 +53,13 @@ MENU_MODULE(gameplay) {
               .preset_exempt = true,
               .text = [](int v) { return std::string(tx_text_speed(v)); },
               .hint = hn_text_speed}, menu::before("bug_report").order(320))
+        #ifdef __APPLE__
+        .row({.key = "ocarina_staff_size", .label = "Ocarina staff size",
+              .help = "Resize the music staff, the note icons and their background together.",
+              .kind = menu::Kind::Slider, .value = &opts.ocarina_staff_size,
+              .lo = 85, .hi = 125, .step = 5, .preset_exempt = true,
+              .text = [](int v) { return std::string(menu_text::percent_c(v)); }}, menu::before("bug_report").order(332))
+#endif
         .row({.key = "text_size",
               .label = "Text size",
               .help = "How large the text of dialogue, Navi and signs is drawn.",
@@ -61,6 +68,16 @@ MENU_MODULE(gameplay) {
               .preset_exempt = true,
               .text = [](int v) { return std::string(tx_text_size(v)); },
               .hint = hn_text_size}, menu::before("bug_report").order(330))
+#ifdef __APPLE__
+        .row({.key = "dialogue_backdrop",
+              .label = "Dialogue background",
+              .help = "Changes the opacity behind dialogue, signs, and Navi's messages.",
+              .value = &opts.dialogue_backdrop, .lo = 0, .hi = 3, .preset_exempt = true,
+              .text = [](int v) {
+                  static const char* names[] = {"Original", "Light", "Medium", "Strong"};
+                  return std::string(names[(unsigned)v < 4 ? v : 0]);
+              }}, menu::before("bug_report").order(335))
+#endif
         .row({.key = "skip_title_screen",
               .label = "Skip title screen",
               .help = "Starts a launch with the most recent saved game: presses through the title screen and its file list. Does nothing "

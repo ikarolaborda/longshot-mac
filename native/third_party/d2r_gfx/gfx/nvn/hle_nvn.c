@@ -268,6 +268,7 @@ static int cmdlog_env(void) { static int on = -1; if (on < 0) on = getenv("TOTK_
 static int chainlog_env(void) { static int on = -1; if (on < 0) on = getenv("TOTK_CHAIN_LOG") != NULL; return on; }   // once: EndRecording runs per command buffer
 static int poollog_env(void) { static int on = -1; if (on < 0) on = getenv("TOTK_POOL_LOG") != NULL; return on; }
 static void guest_chain(const char *what);
+extern void runtime_game_prompt_pool(const void *, size_t, int) __attribute__((weak_import));
 NVN(nvnMemoryPoolInitialize, NVNboolean, NVNmemoryPool *p, const NVNmemoryPoolBuilder *b) {
     const pool_builder_t *s = (const pool_builder_t *)b; pool_t *o = (pool_t *)p;
     memset(o, 0, sizeof *o);
@@ -284,6 +285,7 @@ NVN(nvnMemoryPoolInitialize, NVNboolean, NVNmemoryPool *p, const NVNmemoryPoolBu
         static _Atomic unsigned said;
         if (atomic_fetch_add(&said, 1) < 4) { LOG("MemoryPoolInitialize 池 %p 没有字节（size=0，flags=%#x）：不建零拷贝缓冲，也不进脏页跟踪", (void *)o->mem, o->flags); guest_chain("empty memory pool"); }
     }
+    if (runtime_game_prompt_pool && o->mem && o->size) runtime_game_prompt_pool(o->mem, o->size, 1);
     if (!o->mem) LOG("【红】MemoryPoolInitialize 池没有存储 flags=%#x size=%#llx", o->flags, o->size);
     OLOG("MemoryPool %p mem=%p size=%#llx flags=%#x", (void *)p, (void *)o->mem, o->size, o->flags);
     if (poollog_env()) LOG("[pool] %p mem=%p..%p size=%#llx flags=%#x game=%p", (void *)p, (void *)o->mem, (void *)(o->mem + o->size), o->size, o->flags, (void *)o->game_mem);
@@ -295,6 +297,7 @@ NVN(nvnMemoryPoolInitialize, NVNboolean, NVNmemoryPool *p, const NVNmemoryPoolBu
 }
 NVN(nvnMemoryPoolFinalize, void, NVNmemoryPool *p) {
     pool_t *o = (pool_t *)p;
+    if (runtime_game_prompt_pool && o->mem && o->size) runtime_game_prompt_pool(o->mem, o->size, 0);
     totk_prompt_remove_pool(o->mem, (size_t)o->size);
     /* The same condition nvnMemoryPoolInitialize registered the pool under: an empty pool (size 0) was given no
        buffer and no dirty range, so its teardown is a no-op — a removal by address could otherwise hit a live

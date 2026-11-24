@@ -1,4 +1,5 @@
 #import <AppKit/AppKit.h>
+#import "mac_equipment.h"
 #include <errno.h>
 #include <stdio.h>
 #include <unistd.h>
@@ -344,6 +345,7 @@ void hos_mac_refresh_screen(void *metalLayer, int sdlMillihertz) {
         static LongshotFrameRate *target;
         if (!root && NSApp.mainMenu) {
             target = [LongshotFrameRate new];
+            hos_mac_sets_install_menu();
             NSMenu *menu = [[NSMenu alloc] initWithTitle:@"Frame Rate"];
             root = [[NSMenuItem alloc] initWithTitle:menu.title action:nil keyEquivalent:@""];
             root.submenu = menu;

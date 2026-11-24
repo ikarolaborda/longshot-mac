@@ -3646,7 +3646,9 @@ def main(a=None):
     # (longshot) the button prompts of other controllers (host/prompts.c): the game's icon font redrawn per controller, with fontTools.
     # Without it the game shows its own icons
     prompts = os.path.join(out, "prompts")
-    if importlib.util.find_spec("fontTools") is None:
+    if MAC:
+        run(PY + [os.path.join(ROOT, "scripts/mac/build_prompts.py"), work, romfs, prompts])
+    elif importlib.util.find_spec("fontTools") is None:
         shutil.rmtree(prompts, ignore_errors=True)
         print("the button prompts of other controllers were not made (no fontTools): the game shows its own", flush=True)
     # (kept when nothing they are made from changed, in a packaged builder too: the stamp has the builder's release, so the

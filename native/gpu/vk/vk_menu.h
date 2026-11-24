@@ -113,6 +113,8 @@ struct Options {
     int trainer_ammo = 0;        // Infinite ammo: sticks, nuts, bombs, bombchus, seeds and arrows refilled
     int input_replay_sync = 1;   // Drift correction (menu/input_recording.cpp): 0 Off, 1 every update, 2 every second, 3 every 5 s
     int fov = 100;        // vertical gameplay field of view, 50..150% of the game's current angle (host/oot_fov.c)
+    int dialogue_backdrop = 0;
+    int ocarina_staff_size = 100;
     int text_size = 0;    // dialogue and signs' text size: 0 the game's, 1 110%, 2 125%, 3 150%, 4 175% (host/oot_text_size.c,
                           // nx2/oot_patches.py; HOS_TEXT_SIZE)
     int camera_speed = 100;   // (longshot) the right stick's camera turn in percent of the game's, 50 to 400 (host/nn_vi.c, nx2/oot_patches.py: HOS_OPT_CAMERA_SPEED, 48)

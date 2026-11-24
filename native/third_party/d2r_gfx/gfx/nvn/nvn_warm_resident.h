@@ -65,10 +65,10 @@ __attribute__((unused)) static int warm_saver_word(const char *word) {
    TITLE_KINDS 9.06 GiB for about 27,000) the town's set is about 50 MB. The newest WARM_PLAYED_MAX rows are kept. */
 #define WARM_PLAYED_FILE "pso_played.tsv"
 #define WARM_PLAYED_MAX 3000
-/* A row the played list takes: render (R), border (B), tile-read (T) and compute (C) rows; not the shader-library (S)
+/* A row the played list takes: render (R), border (B), tile-read (T), mesh (M) and compute (C) rows; not the shader-library (S)
    rows, which the archive's pipelines do not need. */
 __attribute__((unused)) static BOOL warm_played_kind(const char *line) {
-    return line && (line[0] == 'R' || line[0] == 'B' || line[0] == 'T' || line[0] == 'C') && line[1] == '\t' && line[2] && line[2] != '\n';
+    return line && (line[0] == 'R' || line[0] == 'B' || line[0] == 'T' || line[0] == 'M' || line[0] == 'C') && line[1] == '\t' && line[2] && line[2] != '\n';
 }
 /* The played list's rows to keep: those warm_played_kind takes, each once (its last place counts), the newest `max`.
    The file is written again when it held anything else (repeats, other rows, more than `max`). */

@@ -1084,7 +1084,11 @@ const char* const bind_names[HOS_KEY_N] = {"a", "b", "x", "y", "ls", "rs", "l", 
                                            "left", "up", "right", "down", "move_up", "move_down", "move_left",
                                            "move_right", "cam_up", "cam_down", "cam_left", "cam_right",
                                            "note_l", "note_r", "note_a", "note_y", "note_x", "walk", "toggle_hud",
-                                           "sprint"};
+                                           "sprint",
+#ifdef __APPLE__
+        "equipment_set_1", "equipment_set_2", "equipment_set_3",
+#endif
+};
 bool toggle_on(int button);   // (the Controls page's Toggle column: below, with the page)
 void save() {
     // (one writer at a time: the present's thread, the game's (menu_option_set) and the control bridge's, menu_setting_set)
@@ -1176,7 +1180,11 @@ void save() {
             fprintf(f, "sprint_auto_bind=%d\n", sprint_auto);
         for (int i = 0; i < HOS_KEY_N && can_bind(); i++) {   // (the stick's and camera's rows, HOS_KEY_MOVE_*/CAM_*, have no pad_ line; the ocarina note rows, the HUD's and Sprint do)
             if (i < HOS_SW_N || (i >= HOS_KEY_OC_NOTE_L && i <= HOS_KEY_OC_NOTE_X) || i == HOS_KEY_TOGGLE_HUD ||
-                i == HOS_KEY_SPRINT) {
+                i == HOS_KEY_SPRINT
+#ifdef __APPLE__
+                || i >= HOS_KEY_SET1
+#endif
+                ) {
                 const int alternate = host->binding(HOS_BIND_PAD, i, 1);
                 fprintf(f, "pad_%s=%d", bind_names[i], host->binding(HOS_BIND_PAD, i, 0));
                 if (alternate >= 0) fprintf(f, ",%d", alternate);
@@ -1629,7 +1637,11 @@ const Control controls[] = {{HOS_SW_A, "A"}, {HOS_SW_B, "B"}, {HOS_SW_X, "X"}, {
                             {HOS_KEY_OC_NOTE_L, "Ocarina note (L)"},
                             {HOS_KEY_OC_NOTE_R, "Ocarina note (R)"}, {HOS_KEY_OC_NOTE_A, "Ocarina note (A)"},
                             {HOS_KEY_OC_NOTE_Y, "Ocarina note (Y)"}, {HOS_KEY_OC_NOTE_X, "Ocarina note (X)"},
-                            {HOS_KEY_TOGGLE_HUD, "Toggle HUD"}};
+                            {HOS_KEY_TOGGLE_HUD, "Toggle HUD"},
+#ifdef __APPLE__
+                            {HOS_KEY_SET1, "Equipment set 1"}, {HOS_KEY_SET2, "Equipment set 2"}, {HOS_KEY_SET3, "Equipment set 3"},
+#endif
+};
 constexpr int kControls = sizeof controls / sizeof controls[0];   // (then "Reset to defaults")
 // (the stick's and camera's directions and Walk: keys only; the ocarina's note rows and Sprint take a gamepad input too,
 // host/nn_hid.c)

@@ -646,6 +646,8 @@ static const LongshotMetalMenu *metal_menu;
 static int menu_toggle;
 void hos_mac_request_settings(void) { __atomic_store_n(&menu_toggle, 1, __ATOMIC_RELEASE); }
 void hos_mac_tick_settings(void *layer) {
+    extern void hos_mac_equipment_overlay(void *);
+    if (layer) hos_mac_equipment_overlay(layer);
     const LongshotMetalMenu *m = __atomic_load_n(&metal_menu, __ATOMIC_ACQUIRE);
     if (m && layer) m->tick(layer, __atomic_exchange_n(&menu_toggle, 0, __ATOMIC_ACQ_REL));
 }
@@ -672,7 +674,8 @@ int rx_start(void *hwnd) {
     if (r && r->start(hwnd)) {
         vk = r;
 #ifdef __APPLE__
-        if (hwnd && hos_renderer_metal()) start_metal_menu(hwnd);
+        /* A controlled offscreen run uses the same settings and bindings as the window. */
+        if ((hwnd || getenv("HOS_CONTROL")) && hos_renderer_metal()) start_metal_menu(hwnd);
 #endif
         hos_log("rx: renderer: %s (%s)", renderer, dll);
         flush_early();

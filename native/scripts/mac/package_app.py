@@ -150,11 +150,12 @@ def main():
         assets.mkdir()
         for name in GAME_FILES:
             clone(game / name, assets / name)
-        for name in ("longshot_title.txt", "longshot_icon.png"):
+        for name in ("longshot_title.txt", "longshot_icon.png", "prompts"):
             if (game / name).exists():
                 clone(game / name, assets / name)
         metal = assets / "metal/build"
         metal.mkdir(parents=True)
+        clone(Path(__file__).with_name("resources") / "kakariko-mesh.tsv", metal / "kakariko-mesh.tsv")
         for name in METAL_FILES:
             source = game / "metal/build" / name
             if source.exists():

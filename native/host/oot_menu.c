@@ -876,10 +876,51 @@ void hos_oot_menu_tick(Ctx *c, uint64_t screen) {
 }
 #else
 void hos_input_clear_toggles(void);
+#ifdef __APPLE__
+#include "posix/mac_equipment.h"
+#include <string.h>
+static uint64_t mac_focus_screen;
+static int mac_focus_kind;
+static uint64_t mac_menu_ptr(uint64_t at) {
+    const void *p = at >= 0x100000 ? hos_guest_range(at, sizeof(uint64_t)) : NULL;
+    uint64_t v = 0;
+    if (p) memcpy(&v, p, sizeof v);
+    return v;
+}
+static const char *mac_pane_name(uint64_t at) {
+    const char *p = at >= 0x100000 ? hos_guest_range(at, 64) : NULL;
+    return p && memchr(p, 0, 64) ? p : "";
+}
+#endif
 /* Every menu screen's pane-focus hook runs on Linux too, without mouse menu navigation. */
 void hos_oot_menu_focus(Ctx *c, uint64_t screen, uint64_t pane, uint64_t lr) {
     (void)c, (void)screen, (void)pane, (void)lr;
+#ifdef __APPLE__
+    const unsigned char *flags = hos_guest_range(pane + 65, 1);
+    if (flags) {
+        const uint64_t obj = mac_menu_ptr((*flags & 0x20) ? mac_menu_ptr(pane + 32) + 48 : pane + 32);
+        const uint64_t page = mac_menu_ptr(mac_menu_ptr(mac_menu_ptr(obj + 128) + 248) + 24);
+        const char *name = mac_pane_name(page);
+        __atomic_store_n(&mac_focus_kind, !strcmp(name, "PaItemMenu_00") ? 1 : !strcmp(name, "PaEquipmentMenu_00") ? 2 : 0, __ATOMIC_RELAXED);
+        __atomic_store_n(&mac_focus_screen, screen, __ATOMIC_RELEASE);
+        hos_mac_inventory_focus(name, mac_pane_name(mac_menu_ptr(pane + 24)), screen);
+    }
+#endif
     hos_input_clear_toggles();
 }
-void hos_oot_menu_tick(Ctx *c, uint64_t screen) { (void)c; sprint_menu_tick(screen); }
+void hos_oot_menu_tick(Ctx *c, uint64_t screen) { (void)c; sprint_menu_tick(screen);
+#ifdef __APPLE__
+    if (screen && screen == __atomic_load_n(&mac_focus_screen, __ATOMIC_ACQUIRE)) {
+        int kind = __atomic_load_n(&mac_focus_kind, __ATOMIC_RELAXED);
+        if (kind) {
+            /* The pause handler retains the selected item in each page's info panel. Read on its next
+               tick, after the focus change has updated that string. */
+            const uint64_t page = mac_menu_ptr(screen + (kind == 1 ? 0x308 : 0x310));
+            const char *name = mac_pane_name(mac_menu_ptr(page + (kind == 1 ? 0x88 : 0x58)));
+            hos_mac_inventory_selection(name);
+        }
+    }
+    hos_mac_inventory_tick(screen);
+#endif
+}
 #endif

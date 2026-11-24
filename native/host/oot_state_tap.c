@@ -161,6 +161,13 @@ static int state_number(uint64_t mgr, int kind, uint32_t hash, int64_t *v) {
 #ifdef __APPLE__
 /* The HUD reticle enum in the supported game. The slingshot shares Bow.
    Fishing uses its own controls, and neither fishing nor None is a weapon aim. */
+int hos_oot_gamedata_enum(uint32_t hash, uint32_t *value) {
+    const uint64_t mgr = state_u64(state_u64(STATE_GAMEDATA_SLOT));
+    int64_t n;
+    if (!mgr || !state_number(mgr, KIND_ENUM, hash, &n)) return 0;
+    *value = (uint32_t)n;
+    return 1;
+}
 int hos_oot_weapon_reticle(void) {
     const uint64_t mgr = state_u64(state_u64(STATE_GAMEDATA_SLOT));
     int64_t type;

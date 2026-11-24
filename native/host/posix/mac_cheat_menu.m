@@ -1,5 +1,6 @@
 #import <AppKit/AppKit.h>
 #include "../oot_trainer.h"
+#import "mac_equipment.h"
 
 static NSString *trainerPath;
 static NSArray<NSString *> *settingKeys(void) {
@@ -8,6 +9,7 @@ static NSArray<NSString *> *settingKeys(void) {
 
 void hos_mac_trainer_load(const char *directory) {
     @autoreleasepool {
+        hos_mac_sets_load(directory);
         trainerPath = [[[NSString stringWithUTF8String:directory] stringByAppendingPathComponent:@"trainer.json"] copy];
         NSData *data = [NSData dataWithContentsOfFile:trainerPath];
         if (!data) return;

@@ -8308,7 +8308,9 @@ int menu_host_option(int id, int fallback) {
     if (id == HOS_OPT_SPRINT) return opts.sprint;
     if (id == HOS_OPT_SPRINT_TOGGLE)
         return host && host->version >= 40 && host->binding ? host->binding(HOS_BIND_SPRINT_TOGGLE, 0, 0) : 0;
+    if (id == HOS_OPT_OCARINA_STAFF_SIZE) return opts.ocarina_staff_size;
     if (id == HOS_OPT_TEXT_SIZE) return opts.text_size;
+    if (id == HOS_OPT_DIALOGUE_BACKDROP) return opts.dialogue_backdrop;
     if (id == HOS_OPT_CAMERA_SPEED) return opts.camera_speed;
     if (id == HOS_OPT_PROMPTS) return opts.prompts;
     if (id == HOS_OPT_FOV) return opts.fov;

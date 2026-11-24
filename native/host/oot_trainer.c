@@ -213,6 +213,38 @@ static const struct LoanItem loans[] = {
 #include "oot_loan_items.inc"
 };
 
+#ifdef __APPLE__
+/* A direct read outside the inventory hooks. A quest award thus changes the badge even with the loan active. */
+int hos_oot_equipment_status(int index, const char **name) {
+    if ((unsigned)index >= sizeof loans / sizeof *loans) return -1;
+    const struct LoanItem *item = &loans[index];
+    *name = item->name;
+    int64_t acquired;
+    extern int hos_oot_gamedata_bool(uint32_t, int64_t *);
+    if (!hos_oot_gamedata_bool(item->acquired, &acquired)) return 0;
+    return acquired ? 2 : hos_trainer_enabled(OOT_TRAINER_EQUIPMENT);
+}
+int hos_oot_equipment_status_named(const char *name) {
+    for (unsigned i = 0; i < sizeof loans / sizeof *loans; ++i) {
+        if (!strcmp(name, loans[i].name)) {
+            const char *ignored;
+            return hos_oot_equipment_status(i, &ignored);
+        }
+    }
+    return 0;
+}
+int hos_oot_equipment_available(const char *name) {
+    for (unsigned i = 0; i < sizeof loans / sizeof *loans; ++i) {
+        if (strcmp(name, loans[i].name)) continue;
+        const char *ignored;
+        /* Acquisition can stay set after a shield breaks. With loans disabled the
+           pouch decides whether equipment is still available. Bottles have a slot-valid bit. */
+        if (hos_trainer_enabled(OOT_TRAINER_EQUIPMENT)) return 1;
+        return !strncmp(name, "Bottle", 6) && hos_oot_equipment_status(i, &ignored) == 2;
+    }
+    return 0;
+}
+#endif
 void hos_oot_loan_enter(void) { ++loan_depth; }
 void hos_oot_loan_leave(void) { --loan_depth; }
 
