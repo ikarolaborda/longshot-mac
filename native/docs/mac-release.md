@@ -1,3 +1,9 @@
+This Mac release uses the stable Longshot v3.2.0 game code, including the controller trigger, save-loading, first adult night, and high-frame-rate movie fixes. Movies keep their sound timing and 16:9 shape. The upstream release also lists driver fixes specific to Windows and Vulkan. [Upstream release notes](https://git.magicbean.dev/MagicBeanDev/Longshot/releases/tag/v3.2.0)
+
+In the Mac menu bar, open Frame Rate. Match Display follows the screen that contains the game window, up to 240 Hz. You can also choose a game frame limit such as 60, 120, or 144 FPS. The game uses elapsed time for movement and animation.
+
+On Macs that support it, turn on MetalFX Frame Interpolation in the same menu to show extra frames between game frames. This setting starts off and the app remembers your choice. In the LG 240 Hz test on an M5 Max, adult Kakariko averaged 53 game frames per second at the 144 FPS setting. With interpolation on, adult Goron City averaged 62 game frames per second, and Metal displayed about 95 frames per second over a six-second sample. The game clock ran within 1% of real time during steady play. A second game window was open during the tests.
+
 This preview updates an existing Longshot game build for Apple silicon. Unzip the installer, open it, and choose the folder containing your game files. It installs Longshot in Applications. The executable has a local ad hoc signature. Finder may require approval in Privacy & Security.
 
 The Mac build disables no-clip flight. Double-tapping Shift (controller B) used to activate it, letting Q and P move Link vertically. Space still jumps, Q sends L, and P sends R. Page Up and Page Down adjust the debug camera’s height.

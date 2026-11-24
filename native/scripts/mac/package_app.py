@@ -11,7 +11,7 @@ import subprocess
 import tempfile
 
 APP_ID = "dev.longshot.game"
-BACKENDS = ("longshot_vk.dylib", "longshot_mtl.dylib", "libSDL3.0.dylib", "libSDL2-2.0.0.dylib")
+BACKENDS = ("longshot_vk.dylib", "longshot_mtl.dylib", "renhdrum.dylib", "libSDL3.0.dylib", "libSDL2-2.0.0.dylib")
 GAME_FILES = ("romfs", "image.bin", "texts", "longshot_shaders.bin", "longshot_pipeline_states_shipped.bin",
               "longshot_version.txt", "longshot_options.ini", "language.txt")
 METAL_FILES = ("c1_bounded.tsv", "compute-manifest.json", "pipelines", "pool_sources.tsv", "pso_manifest.tsv",

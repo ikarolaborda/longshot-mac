@@ -11,11 +11,6 @@
    "size": 1288,
    "source": "third_party/opus/silk/float/regularize_correlations_FLP.c"
   },
-  "006116f44c3fd498b1abd17f5c6365db8cab5064": {
-   "sha256": "7d6499afc6e1558574ab9226fe7173f30303ae3bb1a9a20f8cb2168ec13b66f6",
-   "size": 22192,
-   "source": "gpu/vk/sirit/src/instructions/arithmetic.cpp"
-  },
   "01475e4c41e47ba00be15f74c83d160f8da373c4": {
    "sha256": "a96c0444ff5e71cea2d146432aca3df98618fab78cb5df3dcc0a9f156c966837",
    "size": 3376,
@@ -36,6 +31,11 @@
    "size": 4424,
    "source": "third_party/opus/silk/float/process_gains_FLP.c"
   },
+  "02a7ce08ab8f0260d25e9b938d37f40be5c2af0b": {
+   "sha256": "93b5dba6ba35366c5378085a95cb7678d4ef8d2ca718ca5adfd262b09ad9d964",
+   "size": 5216,
+   "source": "gpu/vk/eden/shader_recompiler/frontend/maxwell/translate/impl/integer_scaled_add.cpp"
+  },
   "02bb984af1a4466431a0d9f94954732dd80ca846": {
    "sha256": "132a4476da2d8129cc0fc6f1b0dd44ebf35caa8ddcb896ade33cc0233d869bf1",
    "size": 1440,
@@ -51,20 +51,15 @@
    "size": 3176,
    "source": "third_party/opus/silk/float/find_pitch_lags_FLP.c"
   },
-  "06d93d9c3887e9655b8557548efe6ac6f64c6285": {
-   "sha256": "7c2c5c671117f856eec17f73b91d68005727e3dbf2de90b7993a6ba6814817c8",
-   "size": 114224,
-   "source": "gpu/vk/eden/shader_recompiler/ir_opt/verification_pass.cpp"
-  },
-  "071ca76762d05842cfa78c2d6d87b8607f9e977b": {
-   "sha256": "43758f30fe5441eccb073c8065267c238291d7d785a443ae767507051e45ff80",
-   "size": 115416,
-   "source": "gpu/vk/eden/shader_recompiler/frontend/maxwell/translate/impl/half_floating_point_helper.cpp"
-  },
   "0737f03085be20e35db8a9bf7983a53c0709910b": {
    "sha256": "ef1c0a3726d2a08afdbdbba3d0b8363b5800424b5284298be9c71234e227493f",
    "size": 2512,
    "source": "third_party/opus/silk/tables_pulses_per_block.c"
+  },
+  "074383c3a63f6ad0d5cb7043de71ffcfb167fd44": {
+   "sha256": "15b461cab56ab9f8ea55032004ba3514b0ebfbab4c2dfbcd54c660a0d95cdfad",
+   "size": 3496,
+   "source": "gpu/vk/eden/shader_recompiler/frontend/maxwell/translate/impl/double_set_predicate.cpp"
   },
   "0893cec4cbaea0d2438e6fc2ff37cc4f3881f3b7": {
    "sha256": "4afe565a9593a03691e234761154861be5bd8229229de4838d8912482a84d03d",
@@ -76,40 +71,50 @@
    "size": 2272,
    "source": "third_party/opus/silk/stereo_find_predictor.c"
   },
-  "08d2ce77bc68bb31365ce2459979fb46458f294a": {
-   "sha256": "25b949edfacd5c19e3f964fc448f3c2c5c19248a28c2187f0d41ebc6a8366bfd",
-   "size": 2456,
-   "source": "gpu/vk/eden/shader_recompiler/frontend/maxwell/translate/impl/move_register.cpp"
+  "094fe90d156db0417ae4daacc82ddcc120466f83": {
+   "sha256": "52d629861c94a180916a2d42f32acdc7ebd40ca517d5c84b72077daa967187f7",
+   "size": 112272,
+   "source": "gpu/vk/eden/shader_recompiler/frontend/maxwell/translate/impl/find_leading_one.cpp"
   },
   "098a7693a5c7480063b703999c20a5c617b25439": {
    "sha256": "8ba18da0c2e1886fa23b6139f385ad916ab8eaabab4fecf91644b81be8043bed",
    "size": 1344,
    "source": "third_party/opus/silk/bwexpander_32.c"
   },
+  "098b3171363dfe3a20475673fe2968d1ba5e634f": {
+   "sha256": "85f1e56665aef2dd6f9114bd3084d17cc51b3af748fcaa2062e917b6944b8218",
+   "size": 105504,
+   "source": "gpu/vk/eden/shader_recompiler/backend/spirv/emit_spirv_control_flow.cpp"
+  },
   "099025eacc04a5d353c6bbabbefb95ace2942307": {
    "sha256": "bf0f20d9c9cd268e076645a574c8e4c9f050ccaacd4dd599ffccba30e90abcc4",
    "size": 1840,
    "source": "third_party/opus/silk/VQ_WMat_EC.c"
   },
-  "09f23195478bf6b8ad8639fbf10a0c5419213249": {
-   "sha256": "23544cb6c2c8f37d19a9f3941a61dc9b5e240dc9e52ca7f63335277422b69dfd",
-   "size": 105712,
-   "source": "gpu/vk/eden/shader_recompiler/frontend/maxwell/translate/impl/exit_program.cpp"
+  "0a1abad2ae2ad7051539a21cadd7f297394e9025": {
+   "sha256": "a3073ac8954e5106be9012a794870888622886a7fdb45d6e38a0479426e49fb2",
+   "size": 129208,
+   "source": "gpu/vk/eden/shader_recompiler/frontend/maxwell/translate/impl/atomic_operations_global_memory.cpp"
   },
-  "0a88e285ae92e385c01354c1c3d1abf86562bd26": {
-   "sha256": "f8de9ef4a66e0f79a91dea3fabc71872181143ee5520ad677001eb293c3c35c6",
-   "size": 7016,
-   "source": "gpu/vk/sirit/src/instructions/misc.cpp"
+  "0b01c59d59fd6a073d19a0f4057f4a4f3f5108cb": {
+   "sha256": "ef5b89cf07bfa1e91cd52c6709a0733de9b374052c83f9ef8eeb445edbf04c25",
+   "size": 189616,
+   "source": "gpu/vk/eden/shader_recompiler/frontend/maxwell/translate_program.cpp"
+  },
+  "0b1c1218cdd2beb76abd80cef417eb7d0155f86a": {
+   "sha256": "f92f0ae754b98270ae7eec5108a67f60fce1b9c71999d13240cf41bc7355adb9",
+   "size": 260400,
+   "source": "gpu/vk/eden/shader_recompiler/ir_opt/global_memory_to_storage_buffer_pass.cpp"
   },
   "0be14604c75ed0662986e3d76cf318e137818215": {
    "sha256": "867ec3842556b1605dcbb954429b3b070cd05481e574567fa3c7969e44e3293b",
    "size": 6304,
    "source": "third_party/opus/silk/A2NLSF.c"
   },
-  "0c10158f9305925492a2cb01b6b4ec675527f00b": {
-   "sha256": "f9661d30afd9df6ad2d0f218ac5a37966d827c3401f64e6717f69d9758b98b62",
-   "size": 130832,
-   "source": "gpu/vk/eden/shader_recompiler/frontend/maxwell/translate/impl/common_funcs.cpp"
+  "0d1fef1ea86e2aff1d775993eb51bdce81c52cef": {
+   "sha256": "35f7eb064e3d81913d404021445cee3c570c329d85c9a41da5689a61e74735a3",
+   "size": 13288,
+   "source": "gpu/vk/sirit/src/instructions/bit.cpp"
   },
   "0dcb6faa60d2234055e12dbbf494d2382a04b770": {
    "sha256": "03c71c6103c4fe522b8444d49e2ee42134e6033d7c3c5f42927454f8c67c4d0c",
@@ -126,16 +131,6 @@
    "size": 32488,
    "source": "third_party/zstd/lib/decompress/zstd_decompress.c"
   },
-  "0debd0242642757f35bf2f406510bb190b235928": {
-   "sha256": "d80c50eb2c962146f84994891776b84b3e682773900ceb302adbff50f40c2644",
-   "size": 106096,
-   "source": "gpu/vk/eden/shader_recompiler/backend/spirv/emit_spirv_select.cpp"
-  },
-  "0e0686c28c3ef36a2ab6d3a37c74b507586dd4a1": {
-   "sha256": "69f879fae915bfdc3384b328afece9119186f2a151f397e1e7e59dad26b4d858",
-   "size": 28480,
-   "source": "gpu/vk/eden/shader_recompiler/backend/spirv/emit_spirv_floating_point.cpp"
-  },
   "0e8478776d0f7ab4b72bb89d39c53c92525b098f": {
    "sha256": "771cf69ecf5a1879e456cbb0709a33b30cd0e36a27bbff1ee3b7316dc2460e07",
    "size": 736,
@@ -145,16 +140,6 @@
    "sha256": "42bbac24a46b0b7bd45acf3d4be1ab12570daa92e046a6f527826521f5e63092",
    "size": 6624,
    "source": "third_party/opus/src/mlp_data.c"
-  },
-  "0faad317d6b63076ac83b50329f098a15e0b5fb9": {
-   "sha256": "f12c173e436859264ae9f94f527022f4cd782de1bc471f179b7f0238245ef3dc",
-   "size": 112904,
-   "source": "gpu/vk/eden/shader_recompiler/frontend/maxwell/translate/impl/integer_shift_right.cpp"
-  },
-  "106bd0810ffd8980a821927b18e094a849cd6221": {
-   "sha256": "33b073414e4ad7019ad68b6ca6da591fb98929952bbb7719f2e0b240d892f6f8",
-   "size": 167376,
-   "source": "gpu/vk/eden/shader_recompiler/frontend/ir/basic_block.cpp"
   },
   "10c300b0f9735adef28210f60cf8b8380cc4981b": {
    "sha256": "b8c56e1c6b87aaed0019a08301381b83fc7735898782da9fe5b287d1668ef062",
@@ -166,250 +151,215 @@
    "size": 9568,
    "source": "third_party/opus/src/opus_projection_encoder.c"
   },
+  "1199631945d997b70d3112cd65f78c43decac1b7": {
+   "sha256": "0202ea86a4bfe8fff04024849931d17ca69db2a910c8de2032353d8974a6b16e",
+   "size": 109744,
+   "source": "gpu/vk/eden/shader_recompiler/ir_opt/vendor_workaround_pass.cpp"
+  },
   "11cb0f8fb922e7232f36e981c2e6f63ca265b5b0": {
    "sha256": "da46a71cef0607618b14e578ca7148f7f092f14c4a21dcaa28e46b62653dd6f8",
    "size": 1720,
    "source": "third_party/opus/silk/float/scale_copy_vector_FLP.c"
   },
-  "125696384113f5218c8ba4a448505cc94acdb0fc": {
-   "sha256": "24f0ab956266079620c0a80b5a453e69106d274a3273d1c7769479fd9296bb66",
-   "size": 110696,
-   "source": "gpu/vk/eden/shader_recompiler/frontend/maxwell/translate/impl/bitfield_insert.cpp"
+  "12ad6e55c964a7a1d8c6f73cd1195a989c7a6859": {
+   "sha256": "0cbe6781eb6bd6f6b8110a534ef3e781b9591ae84fb6b65d1e1fc9b157b62356",
+   "size": 18464,
+   "source": "gpu/vk/eden/shader_recompiler/backend/spirv/emit_spirv_convert.cpp"
   },
-  "12b7c33080b5312ab847411d5b59933815c06a00": {
-   "sha256": "3a55e88df148e00b4d2971207976ced038942054eea175a6a2ffbb70297d4552",
-   "size": 109304,
-   "source": "gpu/vk/eden/shader_recompiler/frontend/maxwell/translate/impl/condition_code_set.cpp"
+  "12c8be0f46e7d76cbe083b4d628f5cdec0f6cf52": {
+   "sha256": "ed89b2b81a72b80c06957bd39c3478c4c009198715846080ee10056d89202e76",
+   "size": 107128,
+   "source": "gpu/vk/eden/shader_recompiler/frontend/maxwell/indirect_branch_table_track.cpp"
   },
-  "13af04b1e181b0fb933240679611bc4f53afa730": {
-   "sha256": "cf3a86e51b049130e27d5fb53afd9c18716dc1349d61272036804a1e4820405e",
-   "size": 112336,
-   "source": "gpu/vk/eden/shader_recompiler/frontend/maxwell/translate/impl/double_min_max.cpp"
+  "13177c213a43c354a8dc35a250fabcadcfb29dd0": {
+   "sha256": "b1bd174865cfed03d05031c598a58f1010d0dce1b59fb6be7966ba866bb71b6c",
+   "size": 1800,
+   "source": "gpu/vk/eden/shader_recompiler/frontend/maxwell/translate/impl/register_map_nx2.cpp"
+  },
+  "13ead8491081420c56af024031398f8af136b1f9": {
+   "sha256": "b2a2503af85432987000816b0b47711abab2b780f1e75f026070d757e2f567cb",
+   "size": 167040,
+   "source": "gpu/vk/eden/shader_recompiler/backend/spirv/emit_spirv_image.cpp"
+  },
+  "14330497868287514f725c864ca052613f7bb050": {
+   "sha256": "2dc73400151497586cce975def5962f0319fb902133661455db1115344a7d1f0",
+   "size": 121312,
+   "source": "gpu/vk/eden/shader_recompiler/frontend/maxwell/translate/impl/texture_gather_swizzled.cpp"
   },
   "14359f29a1814b6f91b693a9fa01fc99badca3ba": {
    "sha256": "987f8b488509713b19e91f67a1d120713178c4a92a7e72bf851303be66b20abf",
    "size": 1808,
    "source": "third_party/opus/silk/float/k2a_FLP.c"
   },
-  "145a5cc1f8f7a1c80d7c90f94be129f63c3c93d7": {
-   "sha256": "c13ada46704e0b4dd8396c925bf7f72564aa5633eea837f37e6d8cef849eeb80",
-   "size": 3264,
-   "source": "gpu/vk/eden/shader_recompiler/ir_opt/identity_removal_pass.cpp"
-  },
-  "150005e97cc1fa339564ce3313146e88f444b831": {
-   "sha256": "21056bd2b6101ad517bd760bea231cae1e97474c3ed87d04fff241d9fd465d80",
-   "size": 137112,
-   "source": "gpu/vk/eden/shader_recompiler/frontend/maxwell/translate/impl/impl.cpp"
+  "14d7d119f3725f49650f15dbaeec42255711d5f0": {
+   "sha256": "0721feae5150b8f1e4e00d58b81d9889c02c0f073a536110caa1008209e7cb08",
+   "size": 106872,
+   "source": "gpu/vk/eden/shader_recompiler/frontend/maxwell/translate/impl/double_fused_multiply_add.cpp"
   },
   "162d1383357a0356e12252cb694272b780723ee7": {
    "sha256": "acf1083330ab34d9db7265561dd803cb8b84b1e8de001d08445b7aef4a4597cd",
    "size": 15112,
    "source": "third_party/opus/silk/float/pitch_analysis_core_FLP.c"
   },
-  "167bec1f22d71718665276a01cadff7fd92fff58": {
-   "sha256": "3f90093e76689b7276a81cf10e11fb44e76ad77dddf8bf0881b196d0a6ae3547",
-   "size": 433328,
-   "source": "gpu/vk/eden/shader_recompiler/backend/spirv/emit_spirv.cpp"
+  "172048f4c24aae9d9222d83ce4ae5a128ed6f976": {
+   "sha256": "abed2e8c1f8ecb4e3a89263bd2cdb3e597fb1347cfb2d11645a99a51f1da62f3",
+   "size": 122296,
+   "source": "gpu/vk/eden/shader_recompiler/backend/spirv/emit_spirv_memory.cpp"
   },
-  "177c321e1aba3895de0db5bc0bc6735393fa793c": {
-   "sha256": "6467cabb60ba2f0e90a5e4ff048dcc7fbfd19de2efedc094c4ac5f87b69239e9",
-   "size": 121576,
-   "source": "gpu/vk/eden/shader_recompiler/frontend/maxwell/translate/impl/floating_point_fused_multiply_add.cpp"
+  "18244c34a7fcd2f8785b4a5dfbeb88611c9e21ab": {
+   "sha256": "0fec88cc25bf57e8a62c061f8b4620df4ce1112eef6d671601cc88576bdee5e9",
+   "size": 10632,
+   "source": "gpu/vk/sirit/src/instructions/conversion.cpp"
   },
   "196daa0ae03554ea0570eef350d677801cf722f2": {
    "sha256": "ca6241415c780b6359cfbb8c66f5daf7f3baef3f1e505be5701c16fd581db065",
    "size": 2144,
    "source": "third_party/opus/silk/stereo_decode_pred.c"
   },
-  "1a06848805e2c88082ba88b29653c6b35faa53d7": {
-   "sha256": "46871298561fe3f68a2dcecf5d9407d35ae6d650b638d68bd8490129f7a1c030",
-   "size": 167040,
-   "source": "gpu/vk/eden/shader_recompiler/backend/spirv/emit_spirv_image.cpp"
-  },
   "1a666d5ecb9e9cb53ce93382058bceb7d6f7f239": {
    "sha256": "3c47865c5d164b11465c9fca4b867b2f55a79efd344f5582d614e99012f9b7f8",
    "size": 8944,
    "source": "third_party/opus/src/repacketizer.c"
-  },
-  "1ac867d222bf11ed98c29752e3feac91488705cc": {
-   "sha256": "99f8f5ddfa4bfe582cc77d450f8fda4f6789aca17c4b77f23d7ab252497e7fdc",
-   "size": 2808,
-   "source": "gpu/vk/eden/shader_recompiler/frontend/maxwell/translate/impl/output_geometry.cpp"
   },
   "1ada71744c28fad32133bc8fc5a86028376468d4": {
    "sha256": "31cf4310623244a41f7eeeb080540b5cd9e457bf456841bf2516c4473afc7923",
    "size": 38408,
    "source": "third_party/opus/celt/bands.c"
   },
-  "1bb1259da7eef1dcacc490464734eb3cb9a999ba": {
-   "sha256": "faf3ab152b64d09a97ef889201d5defefc7e74b2f7531b26a8864ad0097a9e30",
-   "size": 12336,
-   "source": "gpu/vk/sirit/src/instructions/flow.cpp"
+  "1b4d0b29dc36dd8445ca7946bd79a136d77c2d6e": {
+   "sha256": "f82192cca470ac17415fe252d635fd6f1ddacbf211ab04c2302ab21846c43448",
+   "size": 4960,
+   "source": "gpu/vk/eden/shader_recompiler/frontend/maxwell/translate/impl/half_floating_point_set_predicate.cpp"
+  },
+  "1bf0ccc01a6105a0fdad954a2fe3652c6653cd62": {
+   "sha256": "8176342ac02fca05c73d249448a1f2e63c77845a767cf9858a2ea2b14c53db3b",
+   "size": 133360,
+   "source": "gpu/vk/eden/shader_recompiler/frontend/maxwell/translate/impl/load_store_local_shared.cpp"
+  },
+  "1c3aa4f0edf7b9b5b45f76b6e8963e535773390c": {
+   "sha256": "3241223ebc671445e099bc6cc7634845bc77c42f98f900b2c940475f5449d352",
+   "size": 280776,
+   "source": "third_party/reshade_fx/source/effect_parser_stmt.cpp"
   },
   "1e86793efd1fd676344e373a01479a9df4292bef": {
    "sha256": "cb1703f87c9c0a427fd921a1ff19d98898e0056e08146bfa17342cb9943ed228",
    "size": 8000,
    "source": "third_party/opus/silk/float/encode_frame_FLP.c"
   },
-  "1f15d514f6f0cc42774dac1b40f0cee992f10a5c": {
-   "sha256": "fc34f8ac5e1df3aad9365e03cda093fcd147b0d167cb87614e75e68e9f5440c5",
-   "size": 109464,
-   "source": "gpu/vk/eden/shader_recompiler/frontend/maxwell/translate/impl/integer_compare.cpp"
+  "1ed6e99570d9eff5bf41346bcdbe7a0dd72919ee": {
+   "sha256": "5a77e8f489c247568ef2f1661a34609d061639e9a3e49ac4eab2b93fb0038770",
+   "size": 69120,
+   "source": "gpu/vk/eden/shader_recompiler/ir_opt/ssa_rewrite_pass.cpp"
   },
   "2027ae9d1a23a95f30c03ef503f4ae4d7b6c2c6a": {
    "sha256": "6ba27e4f05b9554c9bf1ba938cb04d3f418b4d5937c4fc3cf0e99af787c1622e",
    "size": 770280,
    "source": "third_party/zbic/zstd.c"
   },
-  "20e3bf6956b3c4f8f6a1fff93b7a0d8415a55697": {
-   "sha256": "0fec88cc25bf57e8a62c061f8b4620df4ce1112eef6d671601cc88576bdee5e9",
-   "size": 10632,
-   "source": "gpu/vk/sirit/src/instructions/conversion.cpp"
+  "203b03f8b0d1edda4d975d35530bf02164e32773": {
+   "sha256": "1f92f59881f49887b7d03b009047f07db6fa1d71fc4cdf5b333a336ab609b208",
+   "size": 105016,
+   "source": "gpu/vk/eden/shader_recompiler/frontend/maxwell/translate/impl/branch_indirect.cpp"
   },
-  "2279d218af3a9f0ee4dabf2bd78c8d09bff6306d": {
-   "sha256": "ed89b2b81a72b80c06957bd39c3478c4c009198715846080ee10056d89202e76",
-   "size": 107128,
-   "source": "gpu/vk/eden/shader_recompiler/frontend/maxwell/indirect_branch_table_track.cpp"
+  "20b1e3bd6d77f72dab26ec0277a11e7fbb3d2614": {
+   "sha256": "6d853db66ae440b449cc6c71e65b3cde377a668da1d64f247a4ec94daf0401c0",
+   "size": 140560,
+   "source": "gpu/vk/eden/shader_recompiler/ir_opt/lower_int64_to_int32.cpp"
+  },
+  "21b3669795a270f63b89ae93983f8601ce3382e8": {
+   "sha256": "99f8f5ddfa4bfe582cc77d450f8fda4f6789aca17c4b77f23d7ab252497e7fdc",
+   "size": 2808,
+   "source": "gpu/vk/eden/shader_recompiler/frontend/maxwell/translate/impl/output_geometry.cpp"
   },
   "231b8a1d9004b61f2d9f16a089fe7ea7fb40f7cf": {
    "sha256": "f9f5ae96855a551488d2adb5c89e8e8b28100a0bc6d10a41c5b03ab42e4e7f9e",
    "size": 6968,
    "source": "third_party/zstd/lib/common/error_private.c"
   },
-  "23c4a9316ab4ab4876dee4d34e33305e5d761944": {
-   "sha256": "59ca267175ad2d7c99b0efc75475c8e8b238c9558a1b6b4aae065e07ded1c984",
-   "size": 1504,
-   "source": "gpu/vk/eden/shader_recompiler/ir_opt/dead_code_elimination_pass.cpp"
+  "2446c738e3fe7dbbaba70ad0f29a1fb6ff6e6743": {
+   "sha256": "6467cabb60ba2f0e90a5e4ff048dcc7fbfd19de2efedc094c4ac5f87b69239e9",
+   "size": 121576,
+   "source": "gpu/vk/eden/shader_recompiler/frontend/maxwell/translate/impl/floating_point_fused_multiply_add.cpp"
   },
   "250c6b7ae19c800912154c79f9ffedf5b4aa78f3": {
    "sha256": "788219a258aa91f9597e7edbeb32707cf45031bd9bd58419c9b738cb767c11f2",
    "size": 4792,
    "source": "third_party/zstd/lib/decompress/zstd_ddict.c"
   },
-  "2590d8f3b3d124b51358d9818c69871f8fd216dd": {
-   "sha256": "17bfe299f458d50038fe9447ac5eb0d698da878e8eb4893eecbbe29b8af38d29",
-   "size": 117824,
-   "source": "gpu/vk/eden/shader_recompiler/frontend/maxwell/translate/impl/texture_query.cpp"
-  },
-  "261c149f71704bb72f4f8c3e97b168f51a050956": {
-   "sha256": "85f1e56665aef2dd6f9114bd3084d17cc51b3af748fcaa2062e917b6944b8218",
-   "size": 105504,
-   "source": "gpu/vk/eden/shader_recompiler/backend/spirv/emit_spirv_control_flow.cpp"
-  },
-  "267fc458e05794179766baa0f667edd94ff028b0": {
-   "sha256": "a487ee8f89eecf31a74e4afcce38ceb41a9c276e4977a69e4961069322503a50",
-   "size": 116880,
-   "source": "gpu/vk/eden/shader_recompiler/frontend/maxwell/translate/impl/integer_add_three_input.cpp"
-  },
-  "26bc11845f8b5ebb6c0bae63d9e5f824000a4cc7": {
-   "sha256": "6d7433edc541fcec4733c3f63ced1d086f126331b624cd8a3526664d58e9aeda",
-   "size": 117328,
-   "source": "gpu/vk/eden/shader_recompiler/ir_opt/position_pass.cpp"
-  },
   "270a5c1ddccf9f364e16b131c087fa73b588a887": {
    "sha256": "172dfaa43f8c62d20267026171f2e34c154cbb8905c58e9c5f8f0c64e05cb468",
    "size": 2256,
    "source": "third_party/opus/silk/LPC_inv_pred_gain.c"
   },
-  "2758523b60f45e3b9319f918e2e898844d1776de": {
-   "sha256": "88c8bede9968a2012d18950c463a024d02b7f5d512db9ad5f85960cbea69a11e",
-   "size": 173744,
-   "source": "gpu/vk/eden/shader_recompiler/ir_opt/collect_shader_info_pass.cpp"
+  "28acf6e9d10fb8a7450fc886de6ae039b95d4e91": {
+   "sha256": "07e4689115e38326f1c8d219b279629bab254608a1be6cd8bcb76b36834db558",
+   "size": 115928,
+   "source": "gpu/vk/eden/shader_recompiler/frontend/maxwell/translate/impl/move_predicate_to_register.cpp"
   },
-  "28b9dc69c3a78a2a76988c454f0b21585585fefb": {
-   "sha256": "3f2372dff51825180f5ace86748ed86baa95279140e1022b1016435eeea179ee",
-   "size": 9832,
-   "source": "gpu/vk/eden/shader_recompiler/frontend/maxwell/decode.cpp"
-  },
-  "293e904103b75768d4e0f19873c961da20f88f7a": {
-   "sha256": "6adf6d6f0541599d30bf3d1b81c3c5a729ecd9e88538c46b5ca919cf50a90fc6",
-   "size": 125792,
-   "source": "gpu/vk/eden/shader_recompiler/frontend/maxwell/translate/impl/surface_atomic_operations.cpp"
+  "29553e1379c4bf9a6722244beac526c06b8a3f83": {
+   "sha256": "597a971dcb73b3f84fa5d66624f25d7c7780d97c3e85b9d49c4ee5ff5eb50aec",
+   "size": 139040,
+   "source": "gpu/vk/eden/shader_recompiler/frontend/maxwell/translate/impl/floating_point_conversion_integer.cpp"
   },
   "2a44f30f7c5b7455c0a4202c304f25d449b7ecaa": {
    "sha256": "74fa05ca8628907f9f209ce15219f7beb7a34b95b929d3d8d586437ca5d4e0d5",
    "size": 3544,
    "source": "third_party/opus/silk/encode_indices.c"
   },
-  "2af9204cac523d7aeeeec19c02b122852eedfc23": {
-   "sha256": "80c8e6ac639d2cac3b66cde527ad576f0bb68943e95bae018bf013194a0abca8",
-   "size": 161984,
-   "source": "gpu/vk/eden/shader_recompiler/frontend/maxwell/structured_control_flow.cpp"
-  },
-  "2dccceaec403ea2fcb6a99fe40c03a4b5fee7fa0": {
-   "sha256": "0522fe4747d9e6b1429cef6b95ed1d291ca29de72a2e951bc439a0cd6a0973c4",
-   "size": 117304,
-   "source": "gpu/vk/eden/shader_recompiler/ir_opt/lower_fp16_to_fp32.cpp"
-  },
-  "2f05e2da39dee9263e6a15a1ad4ea5b85158db62": {
-   "sha256": "8a9fe99740abe41a8684131974f4047d5217fc9ac160616032f8d3ea035ff7fa",
-   "size": 108608,
-   "source": "gpu/vk/eden/shader_recompiler/frontend/maxwell/translate/impl/predicate_set_register.cpp"
+  "2bbec8673c1494de440d8e3a08f2c06bb6e98e57": {
+   "sha256": "76015850c9e3ff3da4824bc0a17f25e82e86c65d81637326cf9b996bfb490d7d",
+   "size": 4392,
+   "source": "gpu/vk/eden/shader_recompiler/frontend/maxwell/translate/impl/warp_shuffle.cpp"
   },
   "2f37bd13f5f03e61690013d162c304a08bba58e3": {
    "sha256": "29a71d20bbfe62c2167a4c97a674fe2038234f37172a2ce553138db5a0251eed",
    "size": 1440,
    "source": "third_party/opus/silk/inner_prod_aligned.c"
   },
-  "2f96170e216f4aef5e8895094080babafc837eb7": {
-   "sha256": "f29eb6301d19b87072909fb4af391f1d5af4c1d8221ccafc122a5b792e12993b",
-   "size": 177784,
-   "source": "gpu/vk/eden/shader_recompiler/ir_opt/constant_propagation_pass.cpp"
+  "30d4e1a1e90b8eea23f14918ad6680b5aadc92d0": {
+   "sha256": "d1ada9f8dc95203b685561fd2ce0c120a0b3e73365ddcf952d2803ee2c9c4254",
+   "size": 110160,
+   "source": "gpu/vk/eden/shader_recompiler/frontend/maxwell/translate/impl/floating_point_compare_and_set.cpp"
   },
   "3188c1ea785670a8831310d195a842fa2c6480c0": {
    "sha256": "f2f0fb4a1dce14cbae6ef38a09d9a3c475ff6f10fb001cc886a9b078fbf74f0d",
    "size": 1344,
    "source": "third_party/opus/silk/float/inner_product_FLP.c"
   },
-  "31bbd363730e6b7c4171179a8b0d915d8be31261": {
-   "sha256": "f464cac062b0289609e929f4d3268857ef92042b2ede670caaa359d95384e99d",
-   "size": 118920,
-   "source": "gpu/vk/eden/shader_recompiler/frontend/maxwell/translate/impl/texture_gradient.cpp"
+  "3207092413c13308af7ef28aab778b4041ac70e6": {
+   "sha256": "564353fe2310e2b0c9635876aa3885298c67ca2e776274049e391e68e0cc929c",
+   "size": 106336,
+   "source": "gpu/vk/eden/shader_recompiler/frontend/maxwell/translate/impl/double_add.cpp"
   },
-  "330cd325552333c44ca3a6bd9fc6bfc251ea0de3": {
+  "34ea97fedce74222ec8bd3f445de732f5375b1d6": {
    "sha256": "3589189814f50e3cd8e0472fb6e254fe99fd99c003af28275b51f9b4ad6d93ed",
    "size": 5776,
    "source": "gpu/vk/sirit/src/instructions/annotation.cpp"
-  },
-  "33f41d0aa3ee34df490669a294f9f26562aef82d": {
-   "sha256": "3b259d842cbfa8b4726c4fa34c4e69d839e0c29d13d0bea8e242506f991ec393",
-   "size": 260304,
-   "source": "gpu/vk/eden/shader_recompiler/ir_opt/global_memory_to_storage_buffer_pass.cpp"
   },
   "3705652a1dcaa12f5995183e23dac2969a32c7fa": {
    "sha256": "d03711951309dcf88247404a14934e310f725ebdf39d2ab81ced14f783d68af6",
    "size": 17144,
    "source": "third_party/opus/src/mapping_matrix.c"
   },
-  "3882f47f0b6591431e2400a508bf9a93c7fff23c": {
-   "sha256": "a9342894007ddd303ce9a63e66833ad6646706984acc2a4fa486fcb5295a6bf5",
-   "size": 118496,
-   "source": "gpu/vk/eden/shader_recompiler/frontend/maxwell/translate/impl/atomic_operations_shared_memory.cpp"
+  "37f90696ef4fdc2c1d4d042fc84e542f9c1b06a2": {
+   "sha256": "a4722eb30b4edec669de3ee67a2aee032c3eb9eea62450c71b5aa00b6d2f75c9",
+   "size": 109824,
+   "source": "gpu/vk/eden/shader_recompiler/frontend/maxwell/translate/impl/floating_point_compare.cpp"
   },
   "38d6f93148ecba75aa7ffabaf25e587cbc836d81": {
    "sha256": "12d14e8b81cd9e05432c801174d0db25d23da1290ceae0744307b1461252c372",
    "size": 362976,
    "source": "third_party/imgui/imgui_widgets.cpp"
   },
-  "39a36e29c9a138c2c6d9f3c6e589d0f88d2d0b60": {
-   "sha256": "d1ada9f8dc95203b685561fd2ce0c120a0b3e73365ddcf952d2803ee2c9c4254",
-   "size": 110160,
-   "source": "gpu/vk/eden/shader_recompiler/frontend/maxwell/translate/impl/floating_point_compare_and_set.cpp"
+  "3a700bebba6a61b37d0b387662bcfb5a16b3aa46": {
+   "sha256": "7d471d3083b043bbc38ceac92aadf6ec0e408e1121839549f7cdf25a9a5e4572",
+   "size": 108696,
+   "source": "gpu/vk/eden/shader_recompiler/frontend/maxwell/translate/impl/vote.cpp"
   },
   "3b4b25095c5d0793be1bdd2c5addb542819da1bd": {
    "sha256": "1bab82e3bf7475376f6cd24ca42380693fe101719f0f9cbae75fc26c817089d1",
    "size": 1888,
    "source": "third_party/opus/silk/stereo_encode_pred.c"
-  },
-  "3bf2c97f2e66b88138d1250661d99c504f7a0ec6": {
-   "sha256": "a3073ac8954e5106be9012a794870888622886a7fdb45d6e38a0479426e49fb2",
-   "size": 129208,
-   "source": "gpu/vk/eden/shader_recompiler/frontend/maxwell/translate/impl/atomic_operations_global_memory.cpp"
-  },
-  "3cca35587e8bbb1d5295216a5fe8a996a7f738f4": {
-   "sha256": "021d9a1ec404263f12eac6c345a2bbee34b4ecc4c42446897fc1910b65e736aa",
-   "size": 111760,
-   "source": "gpu/vk/eden/shader_recompiler/ir_opt/geometry_compaction_pass.cpp"
   },
   "3d1b6d32bffcd2f4e3d1c861d7d651fbc1cc71fd": {
    "sha256": "99b7e0e46ac03ba0d7fc1cf1fad995c12985262e84e44434206498a1df3b206c",
@@ -421,25 +371,20 @@
    "size": 8112,
    "source": "third_party/opus/celt/cwrs.c"
   },
-  "3e13bcc0f74b3f52a2c3e6531e2dd224764e7d54": {
-   "sha256": "843cd8a593dd4c8e30f8794fc4c3fa14f250d6f1b37ca0506c87e3fde2205208",
-   "size": 114824,
-   "source": "gpu/vk/eden/shader_recompiler/frontend/maxwell/translate/impl/integer_add.cpp"
-  },
   "3eb057da78017ea03b4c9d76068b6581f0c6fa20": {
    "sha256": "2692dcbb58084793f722ef97773cb07046176c702ce529b3036fc5b7aafd30af",
    "size": 840,
    "source": "third_party/zstd/lib/common/debug.c"
   },
+  "3f375bf6d645532f48f80c5a52d1aa8a09e25f01": {
+   "sha256": "53a8b20c59ef5e89189efb3ef7b6e381132293ef4ceef7864142852ac944aea1",
+   "size": 133336,
+   "source": "gpu/vk/eden/shader_recompiler/frontend/maxwell/translate/impl/surface_load_store.cpp"
+  },
   "3f71c9897e5d7cd2e4ac1a5ba91c9487bcf76e76": {
    "sha256": "bed89e03f77035d7072203b05b9b5db63de09f16b17d22989e91c4638f5fee58",
    "size": 3536,
    "source": "third_party/opus/silk/decode_indices.c"
-  },
-  "3f736d4c35a608acec72a8e6f65ad52b90ac6bb6": {
-   "sha256": "eb4c3c9e3182762e485b7c2008f9347629e73d2a2e45816e2a3d05a245cc9e22",
-   "size": 113504,
-   "source": "gpu/vk/eden/shader_recompiler/frontend/maxwell/translate/impl/integer_compare_and_set.cpp"
   },
   "3f7df391a85250685ca45b5b646b5c4313b2a904": {
    "sha256": "f6d4fafafe21c697697050ee31527c552d6f77918424ef76798eb710deac063c",
@@ -456,95 +401,55 @@
    "size": 1320,
    "source": "third_party/opus/silk/float/autocorrelation_FLP.c"
   },
-  "415ec057638ba802436b8c30bf4e2e043a849b38": {
-   "sha256": "69005b54176f4b9027ddc7c79af4219dd53df76b5e43864a2553cf7336a0ee01",
-   "size": 108544,
-   "source": "gpu/vk/eden/shader_recompiler/frontend/maxwell/translate/impl/attribute_memory_to_physical.cpp"
+  "415d057e0f4152fd771d1f9289a3a84d77ceef23": {
+   "sha256": "c13ada46704e0b4dd8396c925bf7f72564aa5633eea837f37e6d8cef849eeb80",
+   "size": 3264,
+   "source": "gpu/vk/eden/shader_recompiler/ir_opt/identity_removal_pass.cpp"
   },
-  "416d9dac212f68a9d6a3a92a556882494dedb370": {
-   "sha256": "37c6d6e6270c909939f492e2e8e020ed3fde320d41ffde605bff258bc94df882",
-   "size": 121376,
-   "source": "gpu/vk/eden/shader_recompiler/backend/spirv/emit_spirv_memory.cpp"
+  "4255e2183317eb90f051f89c2267ae86954593e5": {
+   "sha256": "1a1d0df0f9c5cdaf50a2a7849288be1dce9f4c443fdc96a7e5fe3f82cd7a29e7",
+   "size": 114320,
+   "source": "gpu/vk/eden/shader_recompiler/frontend/maxwell/translate/impl/integer_to_integer_conversion.cpp"
   },
-  "4207d0982c21fbf448812ba4350fb600033c6f4c": {
-   "sha256": "49289980924fe00b7c67125c7b3b7df778936f991b622ebc33246bb5b19a0fb8",
-   "size": 105624,
-   "source": "gpu/vk/eden/shader_recompiler/frontend/maxwell/translate/impl/floating_point_range_reduction.cpp"
+  "4295d6a5a27e4e299d65789cae0f91438b287903": {
+   "sha256": "6dd09f5ccb52bf854aa19f6c431477da4a0c78f90cfd734c7b6949a5b889fdf1",
+   "size": 107760,
+   "source": "gpu/vk/eden/shader_recompiler/frontend/ir/patch.cpp"
   },
-  "43a145511e0a8d7545df52c4f196b5f369cabc71": {
-   "sha256": "c6c9e99ff4fead017428d2d237054920111ac64d4bb8052d89c1c3b0ea6020d8",
-   "size": 124360,
-   "source": "gpu/vk/eden/shader_recompiler/frontend/maxwell/opcodes.cpp"
+  "462147d2deca1514e9237761d9ecd0ac2fad61dc": {
+   "sha256": "3c577b362513d71a621101348649772f97773a68e6fe1bcc85a6939abcfcef03",
+   "size": 111016,
+   "source": "gpu/vk/eden/shader_recompiler/frontend/ir/value.cpp"
   },
-  "43e7e3a9c8a1afaef8ec490630ad96d41c45dde0": {
-   "sha256": "adeeb5fc06d323c94c2f025a4fbd3963437fe856475509ca05770f53c6ccb448",
-   "size": 110512,
-   "source": "gpu/vk/eden/shader_recompiler/frontend/maxwell/translate/impl/video_minimum_maximum.cpp"
-  },
-  "45f7349f21294d8856ddba1266fdc0ebfa1c9a00": {
-   "sha256": "ca616cc5bfc9a2d793823d0a852ff0f7cfe61ebac7895a345b1872fafcd27d2f",
-   "size": 125488,
-   "source": "gpu/vk/eden/shader_recompiler/frontend/maxwell/translate/impl/floating_point_conversion_floating_point.cpp"
-  },
-  "473ac4aceb677c10d9649650118a249b8b7f4505": {
-   "sha256": "a4d195bf1aacae6d621dbf4577c444c2e5b3b4cea272fd4b7fe1e91b31edc91e",
-   "size": 105376,
-   "source": "gpu/vk/eden/shader_recompiler/frontend/maxwell/translate/impl/floating_point_swizzled_add.cpp"
-  },
-  "49321297268276b01de340d7045cd0184917834b": {
-   "sha256": "63e448a4f15498af470669cae2e18e77de38341d2b4c74df6a62a13c08433cd0",
-   "size": 113904,
-   "source": "gpu/vk/eden/shader_recompiler/frontend/maxwell/translate/impl/integer_funnel_shift.cpp"
+  "4a6d26e429d6cf6ff99c6e8148cefe88ee35ef02": {
+   "sha256": "ca5e970a799737018ad15ac37d8837cb2cb26e2b39ce1b0b29bc2338d7987ef0",
+   "size": 23584,
+   "source": "gpu/vk/sirit/src/instructions/atomic.cpp"
   },
   "4aeb2a75fe9790ab1445e568c10155a354fb6873": {
    "sha256": "85f53dca86d2d19ae8d867cb16877b232c083375b18bd0811a7a8b431e168f60",
    "size": 12768,
    "source": "third_party/opus/silk/enc_API.c"
   },
-  "4bcbb3f402e89609c7f0d95740e23abf4e3d480e": {
-   "sha256": "56527026f0279bd2a47958b777d5326c5b8e05a92769085e8457bb53f2142670",
-   "size": 2160,
-   "source": "gpu/vk/eden/shader_recompiler/frontend/maxwell/translate/impl/predicate_set_predicate.cpp"
-  },
-  "4bd7123b5fbc6038f552f0dbd56e504439abf482": {
-   "sha256": "76015850c9e3ff3da4824bc0a17f25e82e86c65d81637326cf9b996bfb490d7d",
-   "size": 4392,
-   "source": "gpu/vk/eden/shader_recompiler/frontend/maxwell/translate/impl/warp_shuffle.cpp"
-  },
   "4d6f85fd50b3694a74273fe6ce436e8c840eca38": {
    "sha256": "df891078aef9cc9bf0e9b76523871a1d0439b96be540db1cd0a3f702d2159740",
    "size": 284080,
    "source": "third_party/imgui/imgui_draw.cpp"
   },
-  "4d9e123e5497ac8f534cf9382720a61f5b8d455b": {
-   "sha256": "306068739b61f0622fbecaa626383696d80c2acb328d2e71ab59482808f4d1cd",
-   "size": 113304,
-   "source": "gpu/vk/eden/shader_recompiler/frontend/maxwell/translate/impl/move_register_to_predicate.cpp"
-  },
-  "4dbd6c988666f43effcba8146884f1f97dbccc40": {
-   "sha256": "1ac2b78f34423f0c0670d1b9a15a72a6d6be5c5df7e60e67609fa60be2871de7",
-   "size": 107120,
-   "source": "gpu/vk/eden/shader_recompiler/backend/spirv/emit_spirv_undefined.cpp"
-  },
-  "4dce787a1f6a8d1e186bb5ae40332e8841d2c448": {
-   "sha256": "946d456ca46bafd0e0402b6b90869441371c1eb029c4d9fd129bda52bfd68e65",
-   "size": 30760,
-   "source": "gpu/vk/sirit/src/sirit.cpp"
-  },
-  "4e01bfd95294450ed283d1c9144a731b3301007b": {
-   "sha256": "ca5e970a799737018ad15ac37d8837cb2cb26e2b39ce1b0b29bc2338d7987ef0",
-   "size": 23584,
-   "source": "gpu/vk/sirit/src/instructions/atomic.cpp"
+  "4dca3e6498c0b46740e207eaa21392cd4e181244": {
+   "sha256": "43758f30fe5441eccb073c8065267c238291d7d785a443ae767507051e45ff80",
+   "size": 115416,
+   "source": "gpu/vk/eden/shader_recompiler/frontend/maxwell/translate/impl/half_floating_point_helper.cpp"
   },
   "4eb00d60ca1ccb50c0e87b0b9d77c8f2ad8ec934": {
    "sha256": "81c4150b7bfb26e71fe202351fbbcdfb2a2a696b7b7ee2f239fd75e68a13eae2",
    "size": 1328,
    "source": "third_party/opus/celt/entcode.c"
   },
-  "4f9a65d26d9acd718a10fafdc9e5273d0571d178": {
-   "sha256": "b706d28b71c655d39789a3e5bcf0dac6d1cbeb4dcb2f3de65ab970751f2a6f6e",
-   "size": 10696,
-   "source": "gpu/vk/eden/shader_recompiler/frontend/ir/program.cpp"
+  "4f63b7a514be11ea6a3c0cf19ccdcb81c6dc9c86": {
+   "sha256": "adeeb5fc06d323c94c2f025a4fbd3963437fe856475509ca05770f53c6ccb448",
+   "size": 110512,
+   "source": "gpu/vk/eden/shader_recompiler/frontend/maxwell/translate/impl/video_minimum_maximum.cpp"
   },
   "4fbbcd79fe0dd7fd103725cb5fc9ba8a2dd746b7": {
    "sha256": "fbf629ce278860cdb00f4ed3fdb6d7af4bb3fdc944870433b19f8add25a06d88",
@@ -571,15 +476,15 @@
    "size": 44288,
    "source": "third_party/zstd/lib/decompress/zstd_decompress_block.c"
   },
-  "51885bafa5e052301599f3b3e10b2dc3273e6a5f": {
-   "sha256": "dbb08e80830b29328527ed197858b93174eb3e546df02f10f5ef27889fd1b56f",
-   "size": 110736,
-   "source": "gpu/vk/eden/shader_recompiler/frontend/maxwell/translate/impl/half_floating_point_set.cpp"
+  "53e625ceae4226d33f39eaecdee2c954d744a00a": {
+   "sha256": "7c2c5c671117f856eec17f73b91d68005727e3dbf2de90b7993a6ba6814817c8",
+   "size": 114224,
+   "source": "gpu/vk/eden/shader_recompiler/ir_opt/verification_pass.cpp"
   },
-  "544307213dadb024522c2d427479c8df675959ac": {
-   "sha256": "dd7e14104f0452da0564f17c4bdc3915afe81d48826cb74b5afcc9986efe9c38",
-   "size": 107032,
-   "source": "gpu/vk/eden/shader_recompiler/frontend/ir/condition.cpp"
+  "549d26791dc1443c0989085a3bb5991326ec736e": {
+   "sha256": "74768633224e74b56f348f90eb764e6b5e2b5718ef1b322acc9330f6badf8fff",
+   "size": 153800,
+   "source": "gpu/vk/eden/shader_recompiler/backend/spirv/emit_spirv_atomic.cpp"
   },
   "54bd78584b7ca9273799076bab5f3372b63d1ae9": {
    "sha256": "8bf9ca2ec74c8fe2ba9127b0bfd1a6d2c02b6d8a928554876280e8c61758e065",
@@ -591,25 +496,15 @@
    "size": 6552,
    "source": "third_party/zstd/lib/common/fse_decompress.c"
   },
-  "56a664c6fda41be64428bac3479287c9b5cc82d7": {
-   "sha256": "5a77e8f489c247568ef2f1661a34609d061639e9a3e49ac4eab2b93fb0038770",
-   "size": 69120,
-   "source": "gpu/vk/eden/shader_recompiler/ir_opt/ssa_rewrite_pass.cpp"
-  },
-  "571ff4a10ad7269f95df23884dbf05bed223e0ee": {
-   "sha256": "6d67fdbd63bccef082f09a05facd838d7217d0e99675162c0bc8689da58bbf82",
-   "size": 112456,
-   "source": "gpu/vk/eden/shader_recompiler/frontend/maxwell/translate/impl/integer_minimum_maximum.cpp"
+  "5806c40be3ae184eb08e3988e18aa409fae0ca60": {
+   "sha256": "946d456ca46bafd0e0402b6b90869441371c1eb029c4d9fd129bda52bfd68e65",
+   "size": 30760,
+   "source": "gpu/vk/sirit/src/sirit.cpp"
   },
   "58f417e24272dbfa0e8f39251438e0c5f3172bbb": {
    "sha256": "50ced854eebf3f9a27f0c30f00caee7ee96c9d75ee5726def4c2c8eb558c6a90",
    "size": 8944,
    "source": "third_party/opus/silk/stereo_LR_to_MS.c"
-  },
-  "592b56e9bf5b87dc203acd006e7bcb34ad284356": {
-   "sha256": "ebca0733d7c71909a94243984cc85660ac4be9782fdc73f6875150dcdaf220ac",
-   "size": 1504,
-   "source": "gpu/vk/eden/shader_recompiler/ir_opt/dual_vertex_pass.cpp"
   },
   "598fb4b0e88114729e8d96e6307244c9520c3f4a": {
    "sha256": "8c71c2c4ce5bb36146b9375aa2a97efea8941e4d7d16cbcd67013dcec951ab25",
@@ -626,10 +521,15 @@
    "size": 6640,
    "source": "third_party/opus/celt/rate.c"
   },
-  "5adfd1875c21189f04addaff10790452ef11be30": {
-   "sha256": "c1b50351e4d7e8a4463f4bb9760473ece983a0cb7da7d7a63e886debcb3c158a",
-   "size": 16616,
-   "source": "gpu/vk/eden/shader_recompiler/backend/spirv/emit_spirv_integer.cpp"
+  "5c331ec2edc4db6baa6c246476a3bb914248fd78": {
+   "sha256": "33b073414e4ad7019ad68b6ca6da591fb98929952bbb7719f2e0b240d892f6f8",
+   "size": 167376,
+   "source": "gpu/vk/eden/shader_recompiler/frontend/ir/basic_block.cpp"
+  },
+  "5c7dd904c0a95aae02d2c8c4343862550c9bde82": {
+   "sha256": "ff3e3e09ed4eef9b1b4caba6b215212da849373c94379d1208fb2d075d0261b5",
+   "size": 144608,
+   "source": "gpu/vk/eden/shader_recompiler/frontend/maxwell/translate/impl/load_store_attribute.cpp"
   },
   "5ce08ee14b12a9f770c31888f16f2ad03039b0e7": {
    "sha256": "038c0142fb14f7d7554a605c925e4c55773096ad84271289fbec96c349b77cfe",
@@ -641,11 +541,6 @@
    "size": 14896,
    "source": "third_party/opus/celt/kiss_fft.c"
   },
-  "5ee6781e4db542e1929ecdb290442d5f845aec9e": {
-   "sha256": "a70ff036c47155ff7f276f9dc0ca8abb74adea601d00799a843925d5708af5b5",
-   "size": 126064,
-   "source": "gpu/vk/eden/shader_recompiler/frontend/maxwell/translate/impl/texture_gather.cpp"
-  },
   "5f302ac7db4134849a7f96ec0addd0774b564ae5": {
    "sha256": "fdf04b46e8d22f7661b3a511636c8b847e4463577dd27515f814968643213724",
    "size": 2184,
@@ -656,85 +551,40 @@
    "size": 7288,
    "source": "third_party/opus/celt/celt_lpc.c"
   },
-  "5f80f448c53eba0330987854717c842e1c0d49a8": {
-   "sha256": "bca0efc469cbfb7b5c66e85c9154a4d297754e671eb298e2f9940019af1bd0da",
-   "size": 118120,
-   "source": "gpu/vk/eden/shader_recompiler/frontend/maxwell/translate/impl/texture_mipmap_level.cpp"
-  },
-  "5fb83e4036707e351fe48667054272dc1d14d421": {
-   "sha256": "ac097f878b79f137684f882284a3e1b97c78099c28269bf3b682c08ac3ba45fe",
-   "size": 112016,
-   "source": "gpu/vk/eden/shader_recompiler/frontend/maxwell/translate/impl/move_special_register.cpp"
-  },
-  "5fc142467d0688849ddb299d259570193105aed3": {
-   "sha256": "f09371ab0a659a66f379e98f00db79f7fdb186012e11d68e70a3591d7f28b79e",
-   "size": 109264,
-   "source": "gpu/vk/eden/shader_recompiler/frontend/maxwell/translate/impl/pixel_load.cpp"
-  },
-  "5fda3291356011fbf5511170d4d3daaeda661b7d": {
-   "sha256": "50d69f19af0a706c0201a29bbd8f0d15ce0aeb7a3b0e4808236893eafb5ead47",
-   "size": 118608,
-   "source": "gpu/vk/eden/shader_recompiler/backend/spirv/emit_spirv_special.cpp"
-  },
   "606689a0bb1d51c58b224eca6242fb13247a613e": {
    "sha256": "b331d7bb0071177b97fbd09c29a6b6f597d019ef5b04d97631dc3672caa1ba40",
    "size": 1600,
    "source": "third_party/opus/silk/sigm_Q15.c"
   },
-  "60ecc30cac92b8623317b11a851a5e939ce6d60e": {
-   "sha256": "564353fe2310e2b0c9635876aa3885298c67ca2e776274049e391e68e0cc929c",
-   "size": 106336,
-   "source": "gpu/vk/eden/shader_recompiler/frontend/maxwell/translate/impl/double_add.cpp"
-  },
-  "620b486d9b6a58ff57b6d58763f646d5d3847857": {
-   "sha256": "1a1d0df0f9c5cdaf50a2a7849288be1dce9f4c443fdc96a7e5fe3f82cd7a29e7",
-   "size": 114320,
-   "source": "gpu/vk/eden/shader_recompiler/frontend/maxwell/translate/impl/integer_to_integer_conversion.cpp"
+  "610cc6ec89f3c87759f904066b1d3743dced84b0": {
+   "sha256": "8431444ec9342faaa28445df316700f9f3345c60d30ec03ae3194263ae2d927a",
+   "size": 132384,
+   "source": "gpu/vk/eden/shader_recompiler/frontend/maxwell/translate/impl/texture_fetch_swizzled.cpp"
   },
   "6269b712d88f551182f5030f9fdcb4c3e27a4f87": {
    "sha256": "de8365ec15f1d224e6bfdf4446ecd4381c48126ac67f867b1385ddf965cabe9b",
    "size": 2216,
    "source": "third_party/opus/silk/gain_quant.c"
   },
-  "6338d7ce61a914725d218572e60bab9e9542809d": {
-   "sha256": "a2f507f9df97ccaf8f2ee83a9d6280150d9cdaaa5a855e1ec14d41fd523bea1b",
-   "size": 112408,
-   "source": "gpu/vk/eden/shader_recompiler/frontend/maxwell/translate/impl/floating_point_min_max.cpp"
-  },
-  "63b92e0344aa75b15c45e848fb9bb126489c6711": {
-   "sha256": "44fb0833973d014cd449592ae92dd8620a260f99f9261603928b2efd42cc7359",
-   "size": 2648,
-   "source": "gpu/vk/eden/shader_recompiler/frontend/maxwell/translate/impl/integer_popcount.cpp"
-  },
   "641c4cbc1fefd5066e53716e36e29a14f8cbacda": {
    "sha256": "f1cd94ce080d60eeb16c5cab7b60bb6c96790dc113f4712c2dd01a7b4c6db925",
    "size": 5312,
    "source": "third_party/opus/celt/celt.c"
-  },
-  "647252065ac4200f75b78b8f807d7da8f3b87e16": {
-   "sha256": "8176342ac02fca05c73d249448a1f2e63c77845a767cf9858a2ea2b14c53db3b",
-   "size": 133360,
-   "source": "gpu/vk/eden/shader_recompiler/frontend/maxwell/translate/impl/load_store_local_shared.cpp"
   },
   "64f0d81ac3616fa78dc2b604fa342f86d43c47b4": {
    "sha256": "1199f44cb13e7e3a26b8b8df100187bdea9705d7a66d086ed7223d26adb7b797",
    "size": 3624,
    "source": "third_party/opus/silk/resampler.c"
   },
-  "653a2dc7d00f02f3d9ec984baff755d02dbee11c": {
-   "sha256": "93b5dba6ba35366c5378085a95cb7678d4ef8d2ca718ca5adfd262b09ad9d964",
-   "size": 5216,
-   "source": "gpu/vk/eden/shader_recompiler/frontend/maxwell/translate/impl/integer_scaled_add.cpp"
+  "64fd7e3cd23f451b5cafd329d9bb63f670aa61d6": {
+   "sha256": "b14d4f037bf15a76a174869709944e6e68a9c1267affa88073a5e8a4043a1b53",
+   "size": 113088,
+   "source": "gpu/vk/eden/shader_recompiler/frontend/maxwell/translate/impl/half_floating_point_fused_multiply_add.cpp"
   },
   "66317f2d1e5ba0fd19279db31edd16df17fafdd0": {
    "sha256": "61187c7ff6d63ff6bc1a7669f142fa053fbeb12396ff7e03eb79d028099044c3",
    "size": 1824,
    "source": "third_party/opus/silk/float/warped_autocorrelation_FLP.c"
-  },
-  "67d391d840d1e833d201dba34f553dad1b9d44ac": {
-   "sha256": "ab66882399ce4f46107fa10382f7b44026fdfe2c12165389c592e4dbdd99d4b4",
-   "size": 117992,
-   "source": "gpu/vk/eden/shader_recompiler/ir_opt/rescaling_pass.cpp"
   },
   "68b610149262174e63240789afd7d329874ebf36": {
    "sha256": "ff7dac75e94f036d196b1fe812037cfcb22c94ee9316731941a79870bc6500f6",
@@ -746,20 +596,20 @@
    "size": 2128,
    "source": "third_party/opus/silk/LP_variable_cutoff.c"
   },
-  "68e871f159b8067310bd2a2336ccf617c1641edc": {
-   "sha256": "c302f5f13458a5c06f5343b5b773fc89b4856ac5c4f6a0ce12ac6cdf1abf2d45",
-   "size": 109744,
-   "source": "gpu/vk/eden/shader_recompiler/ir_opt/vendor_workaround_pass.cpp"
+  "6a34cf0a3b9bf11f62fbe50f465f6f1bbb86cc55": {
+   "sha256": "5507e9d7909e0566c586551b0f614638ddaf90db29a0746968c9784932492d95",
+   "size": 117976,
+   "source": "gpu/vk/eden/shader_recompiler/ir_opt/rescaling_pass.cpp"
   },
-  "69c3d8927fd965162c7ee00b0150221e39e39534": {
-   "sha256": "ff3e3e09ed4eef9b1b4caba6b215212da849373c94379d1208fb2d075d0261b5",
-   "size": 144608,
-   "source": "gpu/vk/eden/shader_recompiler/frontend/maxwell/translate/impl/load_store_attribute.cpp"
+  "6b287a5052e4d5c0bf1fdf74de9915de5114c48b": {
+   "sha256": "fc88abd13c98aa2196352eeb0f87bd58942725def770654434a877a652cb0f8f",
+   "size": 122504,
+   "source": "gpu/vk/eden/shader_recompiler/ir_opt/lower_fp64_to_fp32.cpp"
   },
-  "6adecb0660f5dc95c3dc66af7da4b13a16ec3ea3": {
-   "sha256": "2dc73400151497586cce975def5962f0319fb902133661455db1115344a7d1f0",
-   "size": 121312,
-   "source": "gpu/vk/eden/shader_recompiler/frontend/maxwell/translate/impl/texture_gather_swizzled.cpp"
+  "6bbc41298a89bc2ae8299e845877704f3010616b": {
+   "sha256": "a66613f690f0a54f0e44fe67382cb5d10c230dbd6d9a3af9d992ff808bd6ff9d",
+   "size": 353400,
+   "source": "gpu/vk/eden/shader_recompiler/backend/spirv/spirv_emit_context.cpp"
   },
   "6ca7b34280c16b56299210867766de5700ade3c9": {
    "sha256": "f626779b6261ad568f233c7c326712c6ec1b64afed7ba294d8b5431691b8b2f0",
@@ -771,20 +621,10 @@
    "size": 1336,
    "source": "third_party/opus/celt/mathops.c"
   },
-  "6d68c77ead043dd4fad430de5b81025cfbaac89a": {
-   "sha256": "53a8b20c59ef5e89189efb3ef7b6e381132293ef4ceef7864142852ac944aea1",
-   "size": 133336,
-   "source": "gpu/vk/eden/shader_recompiler/frontend/maxwell/translate/impl/surface_load_store.cpp"
-  },
   "6d7e79e4b7d4364c268f74ce6498ddf49b496c19": {
    "sha256": "82ee4085132bc76956ef0b1d243a0b9d3504624dd96c1a13f6dd8a1c0f6ba5b5",
    "size": 2576,
    "source": "third_party/opus/silk/float/corrMatrix_FLP.c"
-  },
-  "6ea420559f34014629835558358c5dca419d50c2": {
-   "sha256": "1f4bfd0c3cd08e12986358ed80a3e7ab6975deab1a1ccc9006b69f960c9bb8e4",
-   "size": 135456,
-   "source": "gpu/vk/eden/shader_recompiler/frontend/maxwell/translate/impl/integer_floating_point_conversion.cpp"
   },
   "6ebdd255c88b4f3e150d34a56a2c1139500b4a31": {
    "sha256": "6946fe939642ab26b5dea4ec5a5d08f7947a7ecd03f2bb4e178ed0c4cad289cf",
@@ -796,45 +636,70 @@
    "size": 3768,
    "source": "third_party/opus/silk/tables_NLSF_CB_WB.c"
   },
-  "6fbdc77275826d09affc2c5a9ab3e4d6d6ea0ee9": {
-   "sha256": "10dc1f60c170af2e90776aa7ae0d0b3028b99a8236192601cdb76f00cbb1e471",
-   "size": 140520,
-   "source": "gpu/vk/eden/shader_recompiler/ir_opt/lower_int64_to_int32.cpp"
+  "6f3f9f55fed65f54004c1a1afc81d97e93437685": {
+   "sha256": "e548702ff1a439b1087d8cc62fc7f26778c73b1661d14d23df155a194476ebf6",
+   "size": 106256,
+   "source": "gpu/vk/eden/shader_recompiler/frontend/maxwell/translate/impl/double_multiply.cpp"
+  },
+  "6fe45235ad24368cc209bc18f759cb3f0ab7a561": {
+   "sha256": "f12c173e436859264ae9f94f527022f4cd782de1bc471f179b7f0238245ef3dc",
+   "size": 112904,
+   "source": "gpu/vk/eden/shader_recompiler/frontend/maxwell/translate/impl/integer_shift_right.cpp"
+  },
+  "708a708ad0d632b593222406065021fe96effa21": {
+   "sha256": "6adf6d6f0541599d30bf3d1b81c3c5a729ecd9e88538c46b5ca919cf50a90fc6",
+   "size": 125792,
+   "source": "gpu/vk/eden/shader_recompiler/frontend/maxwell/translate/impl/surface_atomic_operations.cpp"
   },
   "721fbcd0d5ba5ea5c79d1ede9dcdfaf73897202a": {
    "sha256": "c5e4d56eb17c4d36ce0f9512bbdc9576e7d608ba15941791b44d420dff85b2db",
    "size": 3896,
    "source": "third_party/opus/celt/entdec.c"
   },
+  "7282a2c514fffba960f60d696e3318f1671c072e": {
+   "sha256": "3f2372dff51825180f5ace86748ed86baa95279140e1022b1016435eeea179ee",
+   "size": 9832,
+   "source": "gpu/vk/eden/shader_recompiler/frontend/maxwell/decode.cpp"
+  },
   "745082a6e7d3b8470184f41063142bdb1eb42143": {
    "sha256": "22bfd0e69a7b660210c03a525d8e7a6b3d7407dc5fa36a5d89131e92db74d867",
    "size": 3392,
    "source": "third_party/opus/silk/resampler_down2_3.c"
+  },
+  "7459dce444dc7ecd3905f5789a87e39e274c2d67": {
+   "sha256": "35cd37cd09bcaacf6ae76232272d2ab35e5755c10e30cc3a592b95b4c2f4a694",
+   "size": 106616,
+   "source": "gpu/vk/eden/shader_recompiler/frontend/ir/post_order.cpp"
   },
   "75332fa4e443f30f1fb63127270364822347b844": {
    "sha256": "97a8958729a5a473f18392f5cc54a3821fbd862329cf6d352fb62a02bd972aa7",
    "size": 2320,
    "source": "third_party/opus/silk/decoder_set_fs.c"
   },
-  "75fff99f03e229302c12cdc334c5d46b390596ea": {
-   "sha256": "a458a4a7b22f54607743261624f47b6dce0b328abbd599e435fbc33fa3bd37b0",
-   "size": 744,
-   "source": "gpu/vk/sirit/src/stream.cpp"
+  "76af330b3cd31f61f26420d48c6e8b3405213b93": {
+   "sha256": "93e0940a516d457b46b8a9be3b1c6b77502c05128c8c08cbfe53c52802a60fd1",
+   "size": 3520,
+   "source": "gpu/vk/eden/shader_recompiler/frontend/maxwell/translate/impl/floating_point_set_predicate.cpp"
   },
-  "76cffc2bb8e874d3bc11a74a02430e43c2a80032": {
-   "sha256": "e96daa8e6f61d25d40845e26c1645a31bb2d855b1923108e4bd331a3d894bbd3",
-   "size": 186688,
-   "source": "gpu/vk/eden/shader_recompiler/frontend/maxwell/control_flow.cpp"
+  "7743ecf0d0d89786447c8b519afb7a26c7a6e639": {
+   "sha256": "a2f507f9df97ccaf8f2ee83a9d6280150d9cdaaa5a855e1ec14d41fd523bea1b",
+   "size": 112408,
+   "source": "gpu/vk/eden/shader_recompiler/frontend/maxwell/translate/impl/floating_point_min_max.cpp"
   },
-  "78afec9ed5408a68dd824dbfdb37bc7829f2c7f2": {
-   "sha256": "644d40862d00b93db81bc8df9bb3b76df8d66d6425f4c1e433a73bfd24c9a675",
-   "size": 123008,
-   "source": "gpu/vk/eden/shader_recompiler/frontend/maxwell/translate/impl/load_constant.cpp"
+  "78fc3d423487bd526599fbcee7d58e48dbc1c771": {
+   "sha256": "ebca0733d7c71909a94243984cc85660ac4be9782fdc73f6875150dcdaf220ac",
+   "size": 1504,
+   "source": "gpu/vk/eden/shader_recompiler/ir_opt/dual_vertex_pass.cpp"
   },
-  "7a7f7f7ec03b9909ab07bdb243318af5002ce860": {
-   "sha256": "35cd37cd09bcaacf6ae76232272d2ab35e5755c10e30cc3a592b95b4c2f4a694",
-   "size": 106616,
-   "source": "gpu/vk/eden/shader_recompiler/frontend/ir/post_order.cpp"
+  "79dd43dabddbdf0ccc8b69a08c568723a72bb27a": {
+   "sha256": "25b949edfacd5c19e3f964fc448f3c2c5c19248a28c2187f0d41ebc6a8366bfd",
+   "size": 2456,
+   "source": "gpu/vk/eden/shader_recompiler/frontend/maxwell/translate/impl/move_register.cpp"
+  },
+  "79f0a3c2de9ae970410b8882c923e4c3dcf17861": {
+   "sha256": "d4caeb0f9aaceb5965b1742d4aeb63ce545be9282f6730fa1503015264b970e8",
+   "size": 117328,
+   "source": "gpu/vk/eden/shader_recompiler/ir_opt/position_pass.cpp"
   },
   "7ad20887d8e484471f492b3640033dc160cf1a3a": {
    "sha256": "55cae637b0e78631497835d322bc94a2e81cf456900ff607c0e287cffaceeac4",
@@ -846,65 +711,65 @@
    "size": 5480,
    "source": "third_party/opus/celt/mdct.c"
   },
-  "7c55178119110b7fcc1bd619a81374a069a5322f": {
-   "sha256": "8885c90cfb8f81715f69a154556a5926863973650a37f71d0d36faac5c0f3997",
-   "size": 112328,
-   "source": "gpu/vk/eden/shader_recompiler/frontend/maxwell/translate/impl/floating_point_add.cpp"
+  "7c84551d18c88d3f416ee8a0246584c56a54f6f1": {
+   "sha256": "87fc2939692fbfef58d80ce54274ac9405c88e8f6571b94e380a329abdcb5cb4",
+   "size": 2840,
+   "source": "gpu/vk/eden/shader_recompiler/ir_opt/conditional_barrier_pass.cpp"
   },
-  "7cb1cc8fe678a433843933afaee581e3958031e6": {
-   "sha256": "93e0940a516d457b46b8a9be3b1c6b77502c05128c8c08cbfe53c52802a60fd1",
-   "size": 3520,
-   "source": "gpu/vk/eden/shader_recompiler/frontend/maxwell/translate/impl/floating_point_set_predicate.cpp"
+  "7d083ea9e9e327d67d385713e5caa5ae46cb4e0f": {
+   "sha256": "488bd6c6ea417c47bda56f937d2539723d4194aef223f964a97db7514f99e6e5",
+   "size": 9248,
+   "source": "gpu/vk/sirit/src/instructions/derivatives.cpp"
   },
-  "7dc3c695fa230b74289f74af54731444e29235da": {
-   "sha256": "fe806c889814038b4840a59f6ad91684eba90bd22e7b2e7475f03e003b2fa9a1",
-   "size": 331784,
-   "source": "gpu/vk/eden/shader_recompiler/backend/spirv/spirv_emit_context.cpp"
+  "7e78da35a30ee4487f4c0acda7457f8676a166ee": {
+   "sha256": "7f94e503641849719c5370528df401a2c3017751b16f818b977984dc85b37d20",
+   "size": 111032,
+   "source": "gpu/vk/eden/shader_recompiler/frontend/maxwell/translate/impl/floating_point_multi_function.cpp"
   },
-  "7f9fb5ed9570f49c63373153977dea06c6c487d1": {
-   "sha256": "b2345c3b104a7e9b733efa2f3cb589ef7d0c6bb7b0e41d98d768558023f5925b",
-   "size": 145032,
-   "source": "gpu/vk/eden/shader_recompiler/frontend/ir/microinstruction.cpp"
-  },
-  "80d8a4235b6f3fb8f1dd72d74953196464813ac4": {
-   "sha256": "bb711ea51a385a76236cf22ee26c1229c81f8f86ab1cced97c781eb1d9fa1fd6",
-   "size": 108648,
-   "source": "gpu/vk/eden/shader_recompiler/frontend/maxwell/translate/impl/video_helper.cpp"
-  },
-  "813ca7b799fe430d3c39da4cb660f28f0adfe8d8": {
-   "sha256": "b1bd174865cfed03d05031c598a58f1010d0dce1b59fb6be7966ba866bb71b6c",
-   "size": 1800,
-   "source": "gpu/vk/eden/shader_recompiler/frontend/maxwell/translate/impl/register_map_nx2.cpp"
+  "7e905b3eef32e12b7bac26ec35129151bc0b77f0": {
+   "sha256": "3a55e88df148e00b4d2971207976ced038942054eea175a6a2ffbb70297d4552",
+   "size": 109304,
+   "source": "gpu/vk/eden/shader_recompiler/frontend/maxwell/translate/impl/condition_code_set.cpp"
   },
   "81471751eea2abb023bb0b44eebae73bd25b4323": {
    "sha256": "fd62989ebb4f87dbad40e9ef5beadbcd9c576b464d9ab1e9aacc679f0c9184a4",
    "size": 1928,
    "source": "third_party/opus/silk/float/find_LTP_FLP.c"
   },
-  "82ff73cd666f789f093fb242c43c499ff8182aa6": {
-   "sha256": "8431444ec9342faaa28445df316700f9f3345c60d30ec03ae3194263ae2d927a",
-   "size": 132384,
-   "source": "gpu/vk/eden/shader_recompiler/frontend/maxwell/translate/impl/texture_fetch_swizzled.cpp"
+  "82178818199863701c2c63cdb8b8f2655a4b89e3": {
+   "sha256": "ca616cc5bfc9a2d793823d0a852ff0f7cfe61ebac7895a345b1872fafcd27d2f",
+   "size": 125488,
+   "source": "gpu/vk/eden/shader_recompiler/frontend/maxwell/translate/impl/floating_point_conversion_floating_point.cpp"
   },
   "83b40e6b292717b0e87c226dba39ed396987d0ea": {
    "sha256": "c0923ec4f6a48546a66d53c3f7bfbe822befba5e630485794794198e9bdb9aa7",
    "size": 2576,
    "source": "third_party/opus/silk/quant_LTP_gains.c"
   },
-  "83c82844f83050481a73ff9dbd243fbe82d66271": {
-   "sha256": "5925fb914019d14f45806925b27c612f56024a37a85b45005d5ba171307823c7",
-   "size": 106824,
-   "source": "gpu/vk/eden/shader_recompiler/frontend/maxwell/translate/impl/video_multiply_add.cpp"
-  },
-  "8467b30ca6ab72862e3e6b13eb253eff8aa76283": {
-   "sha256": "0721feae5150b8f1e4e00d58b81d9889c02c0f073a536110caa1008209e7cb08",
-   "size": 106872,
-   "source": "gpu/vk/eden/shader_recompiler/frontend/maxwell/translate/impl/double_fused_multiply_add.cpp"
+  "83b526222f134831e306a6b47037603a8364f88e": {
+   "sha256": "e32585ab47508bf06e956bc41e2a123a83ebb8e63ecdb5797cffc6c5c5fb81dd",
+   "size": 110496,
+   "source": "gpu/vk/eden/shader_recompiler/frontend/maxwell/translate/impl/internal_stage_buffer_entry_read.cpp"
   },
   "8469178e81314c20cb11de3f5c7c4150d207e433": {
    "sha256": "5c7651cc91a4ea4d97186daaa5c578610e3786ac705500e0a46d2f64ea257443",
    "size": 6544,
    "source": "third_party/opus/src/opus.c"
+  },
+  "84eb2c60d6a21e32e30aa0d0c8e2db0897702794": {
+   "sha256": "d17585a6a3de17af3115089cf01cb831b4153ed46c5c537a523286a369957804",
+   "size": 435424,
+   "source": "gpu/vk/eden/shader_recompiler/backend/spirv/emit_spirv.cpp"
+  },
+  "84f1309d625ea6d156204d68d768ba7caa10d087": {
+   "sha256": "44fb0833973d014cd449592ae92dd8620a260f99f9261603928b2efd42cc7359",
+   "size": 2648,
+   "source": "gpu/vk/eden/shader_recompiler/frontend/maxwell/translate/impl/integer_popcount.cpp"
+  },
+  "855e2a3498c3c50d81dd71e5ba87449a945e27c9": {
+   "sha256": "0e5e7ea622a2a2ee73c656300839e40db04ff67397db6e31c22e8c011fa8852c",
+   "size": 45600,
+   "source": "gpu/vk/eden/shader_recompiler/frontend/ir/opcodes.cpp"
   },
   "8565e26d6a4d7dd34674c1aff10fc222ef7e075f": {
    "sha256": "74671fda0b9728bacb750c1e8598174d1f13a968a0757b3720b9fe29e9f150c6",
@@ -916,105 +781,110 @@
    "size": 10232,
    "source": "third_party/opus/src/mlp.c"
   },
-  "8719dca36bfca29f73b273496dfbb95dadba42cc": {
-   "sha256": "2d98c1566184cc1701a30633a46519f55a4d729657cda0e4e786c916aa1183f2",
-   "size": 12984,
-   "source": "gpu/vk/eden/shader_recompiler/backend/spirv/emit_spirv_shared_memory.cpp"
+  "861abc83b5b9eb415a9a2dbd032daea2164b21b1": {
+   "sha256": "cf3a86e51b049130e27d5fb53afd9c18716dc1349d61272036804a1e4820405e",
+   "size": 112336,
+   "source": "gpu/vk/eden/shader_recompiler/frontend/maxwell/translate/impl/double_min_max.cpp"
   },
-  "8a186781abb7afb3344a95e35cc0e4aa92d0db64": {
-   "sha256": "4e93b80e1079adb9bf5ba08c498cb675ddb5cebee0faaa68590683790a9a91d2",
-   "size": 287232,
-   "source": "gpu/vk/eden/shader_recompiler/ir_opt/texture_pass.cpp"
+  "8a5a45c55130abf13c806f98e13073bc3540f7db": {
+   "sha256": "c3e603fc92bbfec53b62b60518deb500bd9df7af0f23470f98859251d998cde1",
+   "size": 150776,
+   "source": "gpu/vk/eden/shader_recompiler/backend/spirv/emit_spirv_mesh.cpp"
   },
-  "8ae1d20f349875b6054c21723ca4a0bb96a2726e": {
-   "sha256": "003f5289fd6edbefbe9219aa16a580bdb2b3ec53c604d6888e05a8a37eb0b6f2",
-   "size": 14896,
-   "source": "gpu/vk/sirit/src/instructions/memory.cpp"
+  "8a5abd2f95ab40e461642660c3343411663533cb": {
+   "sha256": "afb5520ed2df82ff0ce419131c2dee67f560ab9915793f2500c6927287ff5fe9",
+   "size": 5344,
+   "source": "gpu/vk/eden/shader_recompiler/frontend/maxwell/translate/impl/half_floating_point_add.cpp"
+  },
+  "8b4407f77f100832f038d945b408b1db8cc3f77d": {
+   "sha256": "e3736fd1d6c5d12895533969650d0ae95e8f570d982b191cb3b1feeaa12b2e46",
+   "size": 110144,
+   "source": "gpu/vk/eden/shader_recompiler/frontend/maxwell/translate/impl/double_compare_and_set.cpp"
   },
   "8b4e3c098f734b8593cb8ff2464adc1cf5f8201e": {
    "sha256": "cc4a56478bf56f23b03ae0b6d97224cf057d15fe981d5b86ca8a8e7204f6065e",
    "size": 4408,
    "source": "third_party/zstd/lib/common/entropy_common.c"
   },
-  "8b93dba125ff05c2bb8504630b364cb0265469b7": {
-   "sha256": "6dd09f5ccb52bf854aa19f6c431477da4a0c78f90cfd734c7b6949a5b889fdf1",
-   "size": 107760,
-   "source": "gpu/vk/eden/shader_recompiler/frontend/ir/patch.cpp"
+  "8bf5ced11a83573c252bfa8ff41618a298210f99": {
+   "sha256": "6cc341fb04b4552a3a2b3c5bff0faa88020467a902bc0f638af102e0ad32ecdd",
+   "size": 16496,
+   "source": "gpu/vk/sirit/src/instructions/group.cpp"
+  },
+  "8ecbde13a892a3ad6af8c7b35deae772ccd7865d": {
+   "sha256": "c430bc190bd331c4eb7f66d9047f361321d92cfe46c8c5eb3302f4bc6ef292cb",
+   "size": 62208,
+   "source": "third_party/reshade_fx/source/effect_expression.cpp"
+  },
+  "8f119ab1f26dd7d92eaad6229dced42fdddf3367": {
+   "sha256": "0cc6110bcd45314548f084c4d26e5187ce4fdf41430d9e416c2fe2a1ed80779c",
+   "size": 2016,
+   "source": "gpu/vk/eden/shader_recompiler/backend/spirv/emit_spirv_logical.cpp"
   },
   "8f731b337d3eac027abe0049c16c50f19d84f030": {
    "sha256": "6952da14e76e27fceb2051279ce5ab1fde821fe1a252b43d6c363b4f3bb0184c",
    "size": 11624,
    "source": "third_party/opus/silk/NSQ_del_dec.c"
   },
-  "8fef0924c984ecb7c0a7bdf8b370992d1c6bb013": {
-   "sha256": "1bdfb81393b1da45ae642c72db500c34245b34c18da1313078c20d098b3ed266",
-   "size": 3416,
-   "source": "gpu/vk/eden/shader_recompiler/frontend/maxwell/translate/impl/integer_set_predicate.cpp"
-  },
-  "90bad85d84cf05a0a7d9daac5d9b9761108adbba": {
-   "sha256": "bbee16a6a4d8be20450ec927673558d65b36e21343c4e101dc64ea7d998cfb20",
-   "size": 29208,
-   "source": "gpu/vk/sirit/src/instructions/logical.cpp"
+  "903e88cfab454c9a56befda564f33cb7c7cd42f5": {
+   "sha256": "ac097f878b79f137684f882284a3e1b97c78099c28269bf3b682c08ac3ba45fe",
+   "size": 112016,
+   "source": "gpu/vk/eden/shader_recompiler/frontend/maxwell/translate/impl/move_special_register.cpp"
   },
   "9187957043af3fdc3a56ca3c64190ba52ffaeea8": {
    "sha256": "f094361bee48421e0aa8e8655493cd26f7e9af4ba0f5d13698e9effada334347",
    "size": 2312,
    "source": "third_party/opus/silk/tables_other.c"
   },
-  "92ef82d152fb516dae0178f40cf929be88606797": {
-   "sha256": "8c8ebb267a6bfbc492afa9fff854ba47598dc17162946789ce2555fd8acae3e9",
-   "size": 45528,
-   "source": "gpu/vk/eden/shader_recompiler/frontend/ir/opcodes.cpp"
+  "92ca9f7fe5ea626365e1ca3684d299d59b20be90": {
+   "sha256": "2cd36d651cf0049c8d69304013996959516c2496170d94c9649c822739e96ae6",
+   "size": 177808,
+   "source": "gpu/vk/eden/shader_recompiler/ir_opt/constant_propagation_pass.cpp"
   },
   "9362f1fd31f33b0d0037388a56de0cadc2064a1f": {
    "sha256": "88e17fda113788a4c5a0ca79177d0c55b14d7d8707119f160a4cbaf8987aab62",
    "size": 61624,
    "source": "third_party/imgui/backends/imgui_impl_vulkan.cpp"
   },
-  "9394cd98ca8a91bb59f85959f4bff451b0c2db98": {
-   "sha256": "6823c9bec8127b4db50352ff95f1a28116b90b2dd592994ac3dc2e538ee487a6",
-   "size": 109256,
-   "source": "gpu/vk/eden/shader_recompiler/frontend/maxwell/translate/impl/logic_operation.cpp"
+  "95b3826b25ae368e517b17f823f2d22e14fccf67": {
+   "sha256": "59ca267175ad2d7c99b0efc75475c8e8b238c9558a1b6b4aae065e07ded1c984",
+   "size": 1504,
+   "source": "gpu/vk/eden/shader_recompiler/ir_opt/dead_code_elimination_pass.cpp"
   },
-  "9436e105e5ec4343ef1fbd0e8531528d77d1a25e": {
-   "sha256": "467e33742d62afd8f1ed8a21b25e819bf8fd9bdf63ba3fe5b23858174c32ab10",
-   "size": 150696,
-   "source": "gpu/vk/eden/shader_recompiler/backend/spirv/emit_spirv_warp.cpp"
-  },
-  "9577c1f8ef4cc2c30cbfa8b99043467716b9b3b2": {
-   "sha256": "7f94e503641849719c5370528df401a2c3017751b16f818b977984dc85b37d20",
-   "size": 111032,
-   "source": "gpu/vk/eden/shader_recompiler/frontend/maxwell/translate/impl/floating_point_multi_function.cpp"
+  "962a057b3a9d98a7c6b8f6044d11c8f7fc615c7c": {
+   "sha256": "a458a4a7b22f54607743261624f47b6dce0b328abbd599e435fbc33fa3bd37b0",
+   "size": 744,
+   "source": "gpu/vk/sirit/src/stream.cpp"
   },
   "965cf03d789b95ddb06174524ab41d3313bad81b": {
    "sha256": "87f884b06e401cd5108e91b6aafac7b9a22f90654c6854b8ca053fe40606c446",
    "size": 3312,
    "source": "third_party/opus/silk/float/residual_energy_FLP.c"
   },
+  "966a28b69e2b1d8e8a7fa7548f16219ac657e5eb": {
+   "sha256": "fc34f8ac5e1df3aad9365e03cda093fcd147b0d167cb87614e75e68e9f5440c5",
+   "size": 109464,
+   "source": "gpu/vk/eden/shader_recompiler/frontend/maxwell/translate/impl/integer_compare.cpp"
+  },
   "968be06bd18ac644675305c09eb1a267ed982aaa": {
    "sha256": "d463afd15cf98b41c43012bc24dec98cc860648554c2c1db69b8ffcfc55342f3",
    "size": 5432,
    "source": "third_party/opus/silk/decode_core.c"
   },
-  "983636acb4d45ac765e17670d8dac77f5b362590": {
-   "sha256": "3ff569284fc086fa233254418862583b81a225f7ed1cfeafbc1b59b435845b96",
-   "size": 120608,
-   "source": "gpu/vk/eden/shader_recompiler/frontend/maxwell/translate/impl/load_store_memory.cpp"
+  "989955ffbb5c00b1ec85669be5a86a4b0134be9d": {
+   "sha256": "003f5289fd6edbefbe9219aa16a580bdb2b3ec53c604d6888e05a8a37eb0b6f2",
+   "size": 14896,
+   "source": "gpu/vk/sirit/src/instructions/memory.cpp"
   },
-  "9864a2f07461633489aaacd47fdf31857e8ecc4d": {
-   "sha256": "2cc0158c78d957e54d5e034f8a59239c387f74efdbe712aee83c15027b15ecc5",
-   "size": 35288,
-   "source": "gpu/vk/sirit/src/instructions/image.cpp"
+  "991110b77602ec0fa08f16b021a3f07e1012f594": {
+   "sha256": "5ef5289c5d5f7ae26b7e4c201bb10304c17cc76d746b63f91dfa4f725d579500",
+   "size": 174000,
+   "source": "gpu/vk/eden/shader_recompiler/ir_opt/collect_shader_info_pass.cpp"
   },
-  "996a1ad36ac1ec8cdb9066188d6ad952298e9f96": {
-   "sha256": "52d629861c94a180916a2d42f32acdc7ebd40ca517d5c84b72077daa967187f7",
-   "size": 112272,
-   "source": "gpu/vk/eden/shader_recompiler/frontend/maxwell/translate/impl/find_leading_one.cpp"
-  },
-  "9a09cf7702cfd9b126155f4ba37aa0658a2f72ef": {
-   "sha256": "65316c0618f024fbafa54ded91bf78f08fb66b7020289259fb92da9f8b7f9008",
-   "size": 111632,
-   "source": "gpu/vk/eden/shader_recompiler/frontend/maxwell/translate/impl/matrix_multiply_nx2.cpp"
+  "9a568809cd499a7b1385f1e31ca9f7d744ee2473": {
+   "sha256": "a9342894007ddd303ce9a63e66833ad6646706984acc2a4fa486fcb5295a6bf5",
+   "size": 118496,
+   "source": "gpu/vk/eden/shader_recompiler/frontend/maxwell/translate/impl/atomic_operations_shared_memory.cpp"
   },
   "9ae47677b856bb9c249addc9f0af1475fff9160d": {
    "sha256": "3473a3db02b305048947d5daf99a98a1d201312511e71aa6ae049e7491e5eaca",
@@ -1026,45 +896,55 @@
    "size": 2928,
    "source": "third_party/opus/silk/sort.c"
   },
-  "9b5e2385addfbe00a0b01d37702353e366543733": {
-   "sha256": "931ed564e6b63d358d9f7d392e1c0993c2bd5038c789e358bbefa5a8c0c5a69d",
-   "size": 115344,
-   "source": "gpu/vk/eden/shader_recompiler/frontend/maxwell/translate/impl/not_implemented.cpp"
+  "9b6934db440f083447b5774580aaaab2e7b3972b": {
+   "sha256": "cd0c2a6f4d15b09ed6a731a789fc5f09de259d3e270dfa35707d049827dbb545",
+   "size": 115024,
+   "source": "gpu/vk/eden/shader_recompiler/frontend/maxwell/translate/impl/load_effective_address.cpp"
   },
   "9b7c7fe3562209e03738a3fb8fe3fd3da836dce6": {
    "sha256": "8141a767c370dcbb582c8cd3e6e77f91dfd41f6b5dba9b8340d96811882b0a0d",
    "size": 1304,
    "source": "third_party/opus/silk/ana_filt_bank_1.c"
   },
-  "9ba0f37fe2eb85bbe6114c7493ec6a4d623845ea": {
-   "sha256": "488bd6c6ea417c47bda56f937d2539723d4194aef223f964a97db7514f99e6e5",
-   "size": 9248,
-   "source": "gpu/vk/sirit/src/instructions/derivatives.cpp"
-  },
   "9bd3f780b72be86572f7bcc6226a3a8f9e980a2d": {
    "sha256": "d37c6c0cde74f2bb1f973754ba49c9e4416542bdd3de5b276a3aecc6c5a19199",
    "size": 4816,
    "source": "third_party/opus/silk/stereo_MS_to_LR.c"
   },
-  "9c8948c6d78fa123df7c6bb53c8ea7d71b41c5e2": {
-   "sha256": "a617a9fd0176bdbf41bd43fffe75f4421bbfd449b6cc70a8525d7a4e36b04f29",
-   "size": 15792,
-   "source": "gpu/vk/sirit/src/instructions/group.cpp"
+  "9c065ac3923fcf4f02af780d2d1d02af32afdaeb": {
+   "sha256": "1ac2b78f34423f0c0670d1b9a15a72a6d6be5c5df7e60e67609fa60be2871de7",
+   "size": 107120,
+   "source": "gpu/vk/eden/shader_recompiler/backend/spirv/emit_spirv_undefined.cpp"
   },
-  "9ddf184f697b58321789370c4fbb802f312476ba": {
-   "sha256": "35f7eb064e3d81913d404021445cee3c570c329d85c9a41da5689a61e74735a3",
-   "size": 13288,
-   "source": "gpu/vk/sirit/src/instructions/bit.cpp"
+  "9e01fd39706b585da486ec0d1636f9159793c594": {
+   "sha256": "dbb08e80830b29328527ed197858b93174eb3e546df02f10f5ef27889fd1b56f",
+   "size": 110736,
+   "source": "gpu/vk/eden/shader_recompiler/frontend/maxwell/translate/impl/half_floating_point_set.cpp"
   },
-  "9e33d8c18603d2e88ae6b4faf44d4c6454e58ead": {
-   "sha256": "9157a969c86ef85ab12536900b20509b04d208c0c2f0481030a401db5d5303fa",
-   "size": 146296,
-   "source": "gpu/vk/eden/shader_recompiler/frontend/maxwell/translate/translate.cpp"
+  "9e5e50b873f5a9fe1cfe3461f95fa67f2751f3c3": {
+   "sha256": "46721e9bfa13805272355505aa3707efa0424c3102669f0fcfaca8305a94eea1",
+   "size": 127008,
+   "source": "gpu/vk/eden/shader_recompiler/backend/spirv/emit_spirv_image_atomic.cpp"
+  },
+  "9f54847797e57ef3887236aa67822d849be43c46": {
+   "sha256": "6c841ccff079dd0b048d139cda7bc138fbb94133f6e8062bb33c6e3ba17226d6",
+   "size": 24968,
+   "source": "gpu/vk/sirit/src/instructions/arithmetic.cpp"
+  },
+  "9f926e89b14ada8d6b58064092b147587f7b8ce4": {
+   "sha256": "1adaa30e302f505031057eef1aa45756ac1ed21dbd4c127b2e16db9f0a0c2e25",
+   "size": 4824,
+   "source": "gpu/vk/sirit/src/instructions/barrier.cpp"
   },
   "9fc386663e80d3c84ad45660292f5ed2204090db": {
    "sha256": "1aeaa8a307601ae860ed1da0b1e338d6e6557046a0b5d0fff5a8eb18bf51f704",
    "size": 5784,
    "source": "third_party/opus/silk/NSQ.c"
+  },
+  "a058f3770ad589f472f14ac2760776f9615e57fc": {
+   "sha256": "5431f71341850f28a59b03f4de8c1ff1cd841a4b3df36f3bdbaaf5e7e22811de",
+   "size": 113384,
+   "source": "gpu/vk/eden/shader_recompiler/frontend/maxwell/translate/impl/integer_short_multiply_add.cpp"
   },
   "a0e9101bb5553fe46e424cbff4051b90698afe3e": {
    "sha256": "ae926552e9e41e4ed9a344375635c50b289d654ec6f1e42fdc163b4949d31a79",
@@ -1076,15 +956,30 @@
    "size": 108688,
    "source": "third_party/imgui/imgui_tables.cpp"
   },
-  "a1a124ef0cd7bf4137eb9947f0fe09f7667ea11e": {
-   "sha256": "5f13c1542ee22421572fceda83b7cf5ce0fcf510a3628a49b66270d10f8973d0",
-   "size": 5336,
-   "source": "gpu/vk/sirit/src/instructions/function.cpp"
+  "a0fd3c3801ba6cb8917819fa1419221648bd8ac4": {
+   "sha256": "feca608a085c5efa5281ae26379b8693e31b5a70c0f5263794dfef6165e2d59d",
+   "size": 108168,
+   "source": "gpu/vk/eden/shader_recompiler/backend/spirv/emit_spirv_bitwise_conversion.cpp"
   },
   "a1df778123ac2d1fc07f9fbcc0b26f119603cde9": {
    "sha256": "c5d2e9995f570320f0e09ce747908a7adf814347861b8e0919418e10780e0466",
    "size": 1568,
    "source": "third_party/opus/silk/init_decoder.c"
+  },
+  "a20785d45bb8ceac35e6db3db0e11cdc3ef94fe7": {
+   "sha256": "644d40862d00b93db81bc8df9bb3b76df8d66d6425f4c1e433a73bfd24c9a675",
+   "size": 123008,
+   "source": "gpu/vk/eden/shader_recompiler/frontend/maxwell/translate/impl/load_constant.cpp"
+  },
+  "a222aa2372462ea3a372ec419110e943c016ac9f": {
+   "sha256": "1f4bfd0c3cd08e12986358ed80a3e7ab6975deab1a1ccc9006b69f960c9bb8e4",
+   "size": 135456,
+   "source": "gpu/vk/eden/shader_recompiler/frontend/maxwell/translate/impl/integer_floating_point_conversion.cpp"
+  },
+  "a2262bc997e949002a36cfe5288093c82b98a66d": {
+   "sha256": "1e55b7365f629444ee832efdc883067ab0fe68e506ec9c4d4c1fdde70c8fdaa4",
+   "size": 145056,
+   "source": "gpu/vk/eden/shader_recompiler/frontend/ir/microinstruction.cpp"
   },
   "a2751b87c7795d504bba4f343c9bdfafed96a599": {
    "sha256": "db2471544a7c23b4d36620d31e274a6e66446b1d9037a982c9f5b457821b1bf7",
@@ -1095,6 +990,16 @@
    "sha256": "a6068e45b96217b43ce38d168a6d30df4a62977c61b6e619d5342793ac91373f",
    "size": 1840,
    "source": "third_party/opus/silk/interpolate.c"
+  },
+  "a3f217eb0725649ccf239236d8ce8c36c8febfda": {
+   "sha256": "6d67fdbd63bccef082f09a05facd838d7217d0e99675162c0bc8689da58bbf82",
+   "size": 112456,
+   "source": "gpu/vk/eden/shader_recompiler/frontend/maxwell/translate/impl/integer_minimum_maximum.cpp"
+  },
+  "a685c90877775d8df73af4e2bb5113da498441c0": {
+   "sha256": "bca0efc469cbfb7b5c66e85c9154a4d297754e671eb298e2f9940019af1bd0da",
+   "size": 118120,
+   "source": "gpu/vk/eden/shader_recompiler/frontend/maxwell/translate/impl/texture_mipmap_level.cpp"
   },
   "a6b697da43cc5af3bb47ad90763df6ef01421ef3": {
    "sha256": "5d53b0ebbf58abc78c95cca66cd1ac7059c45d4b30eb4d48ec54bf6409399697",
@@ -1111,15 +1016,20 @@
    "size": 5968,
    "source": "third_party/opus/silk/CNG.c"
   },
-  "a8f5dd272ae5a11e16ae6a2743641e5b2e6457bc": {
-   "sha256": "afb5520ed2df82ff0ce419131c2dee67f560ab9915793f2500c6927287ff5fe9",
-   "size": 5344,
-   "source": "gpu/vk/eden/shader_recompiler/frontend/maxwell/translate/impl/half_floating_point_add.cpp"
+  "a7206addda854e389555de877fe882ceed3433a4": {
+   "sha256": "fb5a8ab7800055cc08009699338d88a2daf071823d0f28ee1d0068818d6e1f93",
+   "size": 122632,
+   "source": "gpu/vk/eden/shader_recompiler/frontend/maxwell/translate/impl/floating_point_multiply.cpp"
   },
-  "aa69a92e541f5130e32e7f2e8ed5722a2e0b82c7": {
-   "sha256": "5431f71341850f28a59b03f4de8c1ff1cd841a4b3df36f3bdbaaf5e7e22811de",
-   "size": 113384,
-   "source": "gpu/vk/eden/shader_recompiler/frontend/maxwell/translate/impl/integer_short_multiply_add.cpp"
+  "a7e971d6dc4aa1403b16c431694355167cd7b6ad": {
+   "sha256": "24f0ab956266079620c0a80b5a453e69106d274a3273d1c7769479fd9296bb66",
+   "size": 110696,
+   "source": "gpu/vk/eden/shader_recompiler/frontend/maxwell/translate/impl/bitfield_insert.cpp"
+  },
+  "a81d0a644336a75e316b70fcbb98a6966ba7e15e": {
+   "sha256": "5f13c1542ee22421572fceda83b7cf5ce0fcf510a3628a49b66270d10f8973d0",
+   "size": 5336,
+   "source": "gpu/vk/sirit/src/instructions/function.cpp"
   },
   "ab18fe4bc69598bfcc2cdee2ef854542228aa87e": {
    "sha256": "f81536172b863545752d1ae873379cfbe274b7ddc2ee267f1e1a602a7bd75a3b",
@@ -1136,11 +1046,6 @@
    "size": 1232,
    "source": "third_party/opus/silk/bwexpander.c"
   },
-  "abda79ac10d1f4b25b43b1b59ae38310f0f03a20": {
-   "sha256": "36557e56382c71209c8d6a618e463e113522e488d19aa03189f8e3de0328a842",
-   "size": 16120,
-   "source": "gpu/vk/sirit/src/instructions/constant.cpp"
-  },
   "ac4317689aeee4a1d5c6eb1180d0807d92b6c2ef": {
    "sha256": "7fc348d769b2ebdf21158cc020bc828b88fb04c25d8571e699f82b7fb8678273",
    "size": 17592,
@@ -1151,25 +1056,35 @@
    "size": 1128,
    "source": "third_party/opus/silk/log2lin.c"
   },
-  "ac9b310207db071095fe5ce13930a8bb17d26e51": {
-   "sha256": "a4722eb30b4edec669de3ee67a2aee032c3eb9eea62450c71b5aa00b6d2f75c9",
-   "size": 109824,
-   "source": "gpu/vk/eden/shader_recompiler/frontend/maxwell/translate/impl/floating_point_compare.cpp"
-  },
   "ad48fbcd5e10f4a4ba22e6941969a1ff3a117f00": {
    "sha256": "e0ecafad4d7ee08341d5c097774d5f30410f69d94875c5207794a924f35895e3",
    "size": 3536,
    "source": "third_party/opus/src/extensions.c"
   },
-  "af423d94dd583dc5338ca9f53669e9f02d26de17": {
-   "sha256": "7a513c36ca2ebc332dd72533cda21a0ffdd0e2c3a0659b02f2c6fe13ee95b816",
-   "size": 111064,
-   "source": "gpu/vk/eden/shader_recompiler/frontend/maxwell/translate/impl/bitfield_extract.cpp"
+  "ae06b990dee00c5126322ade323197bebb1e0010": {
+   "sha256": "bb711ea51a385a76236cf22ee26c1229c81f8f86ab1cced97c781eb1d9fa1fd6",
+   "size": 108648,
+   "source": "gpu/vk/eden/shader_recompiler/frontend/maxwell/translate/impl/video_helper.cpp"
   },
   "b05c6fd2799d6627f9f76db0472e38a1ab327c1f": {
    "sha256": "d579d6d1ff41b2b79fa630cb7e5f39f83725815b9ece309c286962fdd8cf9337",
    "size": 1224,
    "source": "third_party/opus/silk/NLSF_unpack.c"
+  },
+  "b108039a6c22ae59bf1c7c4d48f35cb25f10fa5e": {
+   "sha256": "ef6051694537a445a6d4a6c8dded2cf8e177ce9bad8ac0828eb4a17fac4980a3",
+   "size": 69960,
+   "source": "third_party/reshade_fx/source/effect_lexer.cpp"
+  },
+  "b13f5e5436458d52ea8bf9e260e9ede9ce6a01f5": {
+   "sha256": "23544cb6c2c8f37d19a9f3941a61dc9b5e240dc9e52ca7f63335277422b69dfd",
+   "size": 105712,
+   "source": "gpu/vk/eden/shader_recompiler/frontend/maxwell/translate/impl/exit_program.cpp"
+  },
+  "b1442e305a5d80438a8bc6948de81bc553198365": {
+   "sha256": "15e469494db28cb2eccbf4bdaaf03001254d979f88a1356f0b2782470e7b5d6e",
+   "size": 237832,
+   "source": "gpu/vk/eden/shader_recompiler/backend/spirv/emit_spirv_warp.cpp"
   },
   "b26b35bc6901c38c5913e8d1b0956e0caea128fe": {
    "sha256": "55126dd2dd25ee0e571883860baa2bf43d9f3c9d66de14c2f87489bd3338fbdb",
@@ -1181,13 +1096,8 @@
    "size": 1944,
    "source": "third_party/opus/silk/code_signs.c"
   },
-  "b483cfd39d6fb78a5046492db6a0e82917680dcf": {
-   "sha256": "eb6443df6fad4a52a5c9cda3eedd21400c8dcae71934493ddbb0a8bab5ac09ad",
-   "size": 25400,
-   "source": "gpu/vk/sirit/src/instructions/type.cpp"
-  },
-  "b500bbc8ea3dd909f197eed03ab8a569a036a54a": {
-   "sha256": "b052a99691409297044114c0823ece59f13eeae8680c9e73b44ea16f649f1beb",
+  "b52fe2ace47a14eafba94ab058e92b0e596bcc05": {
+   "sha256": "9644fd325ce54662984b4e6e78a699910668482661cb2759cb3de201019b69af",
    "size": 175392,
    "source": "gpu/vk/eden/shader_recompiler/backend/spirv/emit_spirv_context_get_set.cpp"
   },
@@ -1196,105 +1106,105 @@
    "size": 968,
    "source": "third_party/opus/silk/tables_gain.c"
   },
-  "b61b3f3c643402805c790fa98d5442f0ba552398": {
-   "sha256": "0cbe6781eb6bd6f6b8110a534ef3e781b9591ae84fb6b65d1e1fc9b157b62356",
-   "size": 18464,
-   "source": "gpu/vk/eden/shader_recompiler/backend/spirv/emit_spirv_convert.cpp"
+  "b610c42c8f9adbb0d9d3f244191e893a44369960": {
+   "sha256": "46c7c39e059d259f658312e5f7167651f4ee4e10e402716f346eaf0f72aaba21",
+   "size": 563328,
+   "source": "third_party/reshade_fx/source/effect_symbol_table.cpp"
   },
-  "b62356422a5d27eb257df3cfb5c11ad36fe22b65": {
-   "sha256": "1f92f59881f49887b7d03b009047f07db6fa1d71fc4cdf5b333a336ab609b208",
-   "size": 105016,
-   "source": "gpu/vk/eden/shader_recompiler/frontend/maxwell/translate/impl/branch_indirect.cpp"
-  },
-  "b6c613530a11a007c08ca2ee4e4b38d97c669be8": {
-   "sha256": "22f649b1c37f9cdb563b183a9b99a3318b154478db6a59f68df9cab35d79adbc",
-   "size": 128904,
-   "source": "gpu/vk/eden/shader_recompiler/frontend/maxwell/translate/impl/logic_operation_three_input.cpp"
+  "b6963389f6ef4c1fee15ea80b288d029e1a964ce": {
+   "sha256": "f464cac062b0289609e929f4d3268857ef92042b2ede670caaa359d95384e99d",
+   "size": 118920,
+   "source": "gpu/vk/eden/shader_recompiler/frontend/maxwell/translate/impl/texture_gradient.cpp"
   },
   "b7bfafc9cf55b223c049bf31bd97b096bc52325d": {
    "sha256": "242078737b342fc27728cc4e9d76a17595e66c363327172842cc650aa5dc1170",
    "size": 2728,
    "source": "third_party/opus/silk/LPC_analysis_filter.c"
   },
-  "b80277047f14b1b0e93190fcc03eb3a2b897c5b4": {
-   "sha256": "07e4689115e38326f1c8d219b279629bab254608a1be6cd8bcb76b36834db558",
-   "size": 115928,
-   "source": "gpu/vk/eden/shader_recompiler/frontend/maxwell/translate/impl/move_predicate_to_register.cpp"
+  "b805e0ee398d5def03b8d72634e34c3f3c8b730d": {
+   "sha256": "65316c0618f024fbafa54ded91bf78f08fb66b7020289259fb92da9f8b7f9008",
+   "size": 111632,
+   "source": "gpu/vk/eden/shader_recompiler/frontend/maxwell/translate/impl/matrix_multiply_nx2.cpp"
   },
-  "b99f62242c8276cb356e25141e9deffe66c3b7ed": {
-   "sha256": "161cd42117f7e882fd356a8b41c3b6b0c4aba3e23d2632747db2927398cd92ee",
-   "size": 5248,
-   "source": "gpu/vk/eden/shader_recompiler/frontend/ir/type.cpp"
+  "b8b773cdae60ff37b8f224dedf575d92f86e0e0b": {
+   "sha256": "36557e56382c71209c8d6a618e463e113522e488d19aa03189f8e3de0328a842",
+   "size": 16120,
+   "source": "gpu/vk/sirit/src/instructions/constant.cpp"
   },
   "bb26855f07b63b01f1a5b5ce46e22ce805e0335b": {
    "sha256": "f0fc8df49ab2c55f010b1f1dc3c626b6bb2f78ebab7042c536916ba5b7efd607",
    "size": 2168,
    "source": "third_party/opus/silk/resampler_private_up2_HQ.c"
   },
-  "bc0963e6b2c47acde96e73da19499c0e1ac8e003": {
-   "sha256": "15b461cab56ab9f8ea55032004ba3514b0ebfbab4c2dfbcd54c660a0d95cdfad",
-   "size": 3496,
-   "source": "gpu/vk/eden/shader_recompiler/frontend/maxwell/translate/impl/double_set_predicate.cpp"
+  "bb5e7ba77d842818e8889e905419f07c600e7317": {
+   "sha256": "f6ce332f93fc3b92cba0bf61e2e479dc265d790c7f37e5a36764c8eb5a2ffb2f",
+   "size": 108232,
+   "source": "gpu/vk/eden/shader_recompiler/frontend/maxwell/translate/impl/select_source_with_predicate.cpp"
   },
-  "c059af89cacd5fe5bb7ff966c6e93e8bc794a4ba": {
-   "sha256": "e06ee0925ad166509200a8e3670f8c806d5750165203c4dd994f7dac775f9493",
-   "size": 7008,
-   "source": "gpu/vk/sirit/src/instructions/debug.cpp"
+  "bbafe371898fb6699ea4cb9eedeff3daf61bd7f6": {
+   "sha256": "3cd3fae722df80abf04d118a77ba746c1f3251426a8fb6a562cf762a6b367eb0",
+   "size": 109296,
+   "source": "gpu/vk/eden/shader_recompiler/frontend/maxwell/translate/impl/video_set_predicate.cpp"
   },
-  "c0965ba51e296f3a204583502955582bab08268c": {
-   "sha256": "a31924819e5e68c6f26d74143840e58d256c3f81e63bb3c4b52df852860d9eba",
-   "size": 111992,
-   "source": "gpu/vk/eden/shader_recompiler/frontend/maxwell/translate/impl/half_floating_point_multiply.cpp"
+  "bf202118a48faeff7f607c2c6aeb91104b20aa2c": {
+   "sha256": "eb6443df6fad4a52a5c9cda3eedd21400c8dcae71934493ddbb0a8bab5ac09ad",
+   "size": 25400,
+   "source": "gpu/vk/sirit/src/instructions/type.cpp"
   },
-  "c0e9b755f5e3df27c9222fb7e963bf9c4c075077": {
-   "sha256": "52ae60680a9745bce93c50e5c8903636be4160488867a5c142a3f47ff03f3464",
-   "size": 23488,
-   "source": "gpu/vk/sirit/src/instructions/extension.cpp"
-  },
-  "c17a092f53b69ef73b735b9dd7480a4499dc3a52": {
-   "sha256": "b14d4f037bf15a76a174869709944e6e68a9c1267affa88073a5e8a4043a1b53",
-   "size": 113088,
-   "source": "gpu/vk/eden/shader_recompiler/frontend/maxwell/translate/impl/half_floating_point_fused_multiply_add.cpp"
-  },
-  "c19ed83d6e3fad425fb612f478a0255a62775aa0": {
-   "sha256": "f832ff70727f2ca7d67699f84b2425ef2262f8a504fdc9eab0fb8643d7c4cc6f",
-   "size": 1784,
-   "source": "gpu/vk/eden/shader_recompiler/ir_opt/layer_pass.cpp"
-  },
-  "c201cec49eec0fd4ce698152931ba55bd9373d75": {
-   "sha256": "87fc2939692fbfef58d80ce54274ac9405c88e8f6571b94e380a329abdcb5cb4",
-   "size": 2840,
-   "source": "gpu/vk/eden/shader_recompiler/ir_opt/conditional_barrier_pass.cpp"
+  "bf50d28fe2cc202553c1c71b5337169bd9c52659": {
+   "sha256": "f1da1b32c8bd8aaf53f596a381dba98771e51ceec36065a9900c681efa645f9a",
+   "size": 2656,
+   "source": "gpu/vk/eden/shader_recompiler/backend/spirv/emit_spirv_barriers.cpp"
   },
   "c22e81a5afc3e78fb6c78ae76f947e09ad769558": {
    "sha256": "a49578b75c73fa97aa5c5af0cf8f43fd2a855b7b148fc7e2304d1e7478f68ec3",
    "size": 4296,
    "source": "third_party/opus/silk/NLSF2A.c"
   },
+  "c2afb46dbf8b089537ce6956932f470afe29c9a2": {
+   "sha256": "49289980924fe00b7c67125c7b3b7df778936f991b622ebc33246bb5b19a0fb8",
+   "size": 105624,
+   "source": "gpu/vk/eden/shader_recompiler/frontend/maxwell/translate/impl/floating_point_range_reduction.cpp"
+  },
   "c32b36d9cb227df76aa2ed06bc82c84c4e11c9db": {
    "sha256": "f569940d12c9fe166340ce6b1aa4324b286572c1b72d2994bd9044f0c27b2a9f",
    "size": 1376,
    "source": "third_party/opus/silk/init_encoder.c"
   },
-  "c4a8f793d051c64a4ab677ddd6a163f1c7e7475d": {
-   "sha256": "3d800871a03bd004e84678634d080d254a4e2ea0a4cbdf8b9ee2fb104de22008",
-   "size": 147448,
-   "source": "gpu/vk/eden/shader_recompiler/backend/spirv/emit_spirv_mesh.cpp"
+  "c41f24c6248d8a016d8d8db1aa30094f2784dd71": {
+   "sha256": "931ed564e6b63d358d9f7d392e1c0993c2bd5038c789e358bbefa5a8c0c5a69d",
+   "size": 115344,
+   "source": "gpu/vk/eden/shader_recompiler/frontend/maxwell/translate/impl/not_implemented.cpp"
+  },
+  "c48d40a916a13bd3a7bcc06d3c1ec9f53948fb3a": {
+   "sha256": "591199ee66c7ee9f67f5fea8eb14f1de9f8ae5b5b27dbddd43043be509c95456",
+   "size": 128568,
+   "source": "gpu/vk/eden/shader_recompiler/frontend/maxwell/translate/impl/texture_load_swizzled.cpp"
+  },
+  "c499125e70cf6853bf04ba455cfd8dd682cec2b6": {
+   "sha256": "e96daa8e6f61d25d40845e26c1645a31bb2d855b1923108e4bd331a3d894bbd3",
+   "size": 186688,
+   "source": "gpu/vk/eden/shader_recompiler/frontend/maxwell/control_flow.cpp"
   },
   "c56230c1588a14adf700db5649afa982f3c74345": {
    "sha256": "ed9d0d13899d4cbbce3e0dacf70b84af23ce069d5f07435cec0a9799b56c05e0",
    "size": 5192,
    "source": "third_party/opus/silk/control_codec.c"
   },
-  "c5a38fe864f8894255b4352fe2fa6a1decf05b33": {
-   "sha256": "1adaa30e302f505031057eef1aa45756ac1ed21dbd4c127b2e16db9f0a0c2e25",
-   "size": 4824,
-   "source": "gpu/vk/sirit/src/instructions/barrier.cpp"
-  },
   "c6a56aefdac920e24f6cff11f0a0bb37f79953c8": {
    "sha256": "57c6effaccec1488e2d05f6b9b9c725d9eef0fd8b9bcdddea86bb78028040369",
    "size": 13400,
    "source": "third_party/opus/celt/vq.c"
+  },
+  "c9c1d0ffb3a080112d4ca689d72748e40324d8e0": {
+   "sha256": "22f649b1c37f9cdb563b183a9b99a3318b154478db6a59f68df9cab35d79adbc",
+   "size": 128904,
+   "source": "gpu/vk/eden/shader_recompiler/frontend/maxwell/translate/impl/logic_operation_three_input.cpp"
+  },
+  "c9da89aae62e263efce233fef168cf2c93977294": {
+   "sha256": "1bdfb81393b1da45ae642c72db500c34245b34c18da1313078c20d098b3ed266",
+   "size": 3416,
+   "source": "gpu/vk/eden/shader_recompiler/frontend/maxwell/translate/impl/integer_set_predicate.cpp"
   },
   "ca180c74600e819b1b831c915c9a495471ba9a51": {
    "sha256": "78b3082f7f16cd879ea4084886ca3ad2940fd817538fa328453bd01656cea85f",
@@ -1316,25 +1226,25 @@
    "size": 2736,
    "source": "third_party/opus/silk/tables_LTP.c"
   },
-  "cbf056b149a7affdb7694ee31a8acc43c21585c4": {
-   "sha256": "c3393aba5801eee4d89d67d35d38006e07db96ba400697ca0e4521ee27fcb2f5",
-   "size": 188776,
-   "source": "gpu/vk/eden/shader_recompiler/frontend/maxwell/translate_program.cpp"
+  "cb2e8329130f3ba57ab169fd3f6ef4a1781ab101": {
+   "sha256": "1ce4c396be6bd2dda9f577461bace351b0cf5a1baff6d327964064e791041822",
+   "size": 112480,
+   "source": "gpu/vk/eden/shader_recompiler/frontend/maxwell/translate/impl/integer_shift_left.cpp"
   },
-  "cc6183cc5999e0fd850cd1a75342666de52d6572": {
-   "sha256": "f1da1b32c8bd8aaf53f596a381dba98771e51ceec36065a9900c681efa645f9a",
-   "size": 2656,
-   "source": "gpu/vk/eden/shader_recompiler/backend/spirv/emit_spirv_barriers.cpp"
+  "cc6bb76af00a51539b5ad03fc15c5c43aac6e49d": {
+   "sha256": "bbee16a6a4d8be20450ec927673558d65b36e21343c4e101dc64ea7d998cfb20",
+   "size": 29208,
+   "source": "gpu/vk/sirit/src/instructions/logical.cpp"
   },
-  "ccbf941c09a2ea2335de6c08c0a9f400bce7dbd6": {
-   "sha256": "3c577b362513d71a621101348649772f97773a68e6fe1bcc85a6939abcfcef03",
-   "size": 111016,
-   "source": "gpu/vk/eden/shader_recompiler/frontend/ir/value.cpp"
+  "cf865831b3eefc64c181e97cd7fdab68be93e37f": {
+   "sha256": "1da09be7d09f1bb436fad88856a49b3c269763d7e0a7deeb050dc7103276a8b7",
+   "size": 16616,
+   "source": "gpu/vk/eden/shader_recompiler/backend/spirv/emit_spirv_integer.cpp"
   },
-  "cdb95747347162bd57547c1c3f256a25cabe1905": {
-   "sha256": "e548702ff1a439b1087d8cc62fc7f26778c73b1661d14d23df155a194476ebf6",
-   "size": 106256,
-   "source": "gpu/vk/eden/shader_recompiler/frontend/maxwell/translate/impl/double_multiply.cpp"
+  "d03262ec8a19142b1b2dbb16d2ab2dd7b5e133b3": {
+   "sha256": "a70ff036c47155ff7f276f9dc0ca8abb74adea601d00799a843925d5708af5b5",
+   "size": 126064,
+   "source": "gpu/vk/eden/shader_recompiler/frontend/maxwell/translate/impl/texture_gather.cpp"
   },
   "d07299bc3aaea311ef78d0edc0b292ea2e195a39": {
    "sha256": "99ee671cbc6808cf83bed082371246021b47180ac2e39bcef23dde8e7c7d5e57",
@@ -1356,50 +1266,80 @@
    "size": 6008,
    "source": "third_party/opus/silk/encode_pulses.c"
   },
+  "d1e6d3a8ab24858d0ddd0561a031ffc104d70623": {
+   "sha256": "289e24bd15638c88559d62c579ae49e7a0055f28699f90cdd0e6c7a718815009",
+   "size": 348600,
+   "source": "third_party/reshade_fx/source/effect_codegen_spirv.cpp"
+  },
+  "d23b108c206d657a0c0c197ba894dacd2705573f": {
+   "sha256": "3ff569284fc086fa233254418862583b81a225f7ed1cfeafbc1b59b435845b96",
+   "size": 120608,
+   "source": "gpu/vk/eden/shader_recompiler/frontend/maxwell/translate/impl/load_store_memory.cpp"
+  },
   "d27859f9ea37bbbbcff842c39ceb894aff564811": {
    "sha256": "645d061502f06aab2878b7d33e0cf874b8bee3cf012340042fd734c0fc0217c5",
    "size": 3104,
    "source": "third_party/opus/silk/tables_NLSF_CB_NB_MB.c"
   },
-  "d27cdfe0cad32881e84af2910a45e458d01c34f6": {
-   "sha256": "7d471d3083b043bbc38ceac92aadf6ec0e408e1121839549f7cdf25a9a5e4572",
-   "size": 108696,
-   "source": "gpu/vk/eden/shader_recompiler/frontend/maxwell/translate/impl/vote.cpp"
+  "d46e5c479da7ad43521499f8ce0d6a4169f35aaa": {
+   "sha256": "dd7e14104f0452da0564f17c4bdc3915afe81d48826cb74b5afcc9986efe9c38",
+   "size": 107032,
+   "source": "gpu/vk/eden/shader_recompiler/frontend/ir/condition.cpp"
   },
-  "d444bd56c88b6795ab5c7899f5639099bf3977e1": {
-   "sha256": "fb5a8ab7800055cc08009699338d88a2daf071823d0f28ee1d0068818d6e1f93",
-   "size": 122632,
-   "source": "gpu/vk/eden/shader_recompiler/frontend/maxwell/translate/impl/floating_point_multiply.cpp"
+  "d6175c159e267de7b299e861aa8469ca27c0429f": {
+   "sha256": "69005b54176f4b9027ddc7c79af4219dd53df76b5e43864a2553cf7336a0ee01",
+   "size": 108544,
+   "source": "gpu/vk/eden/shader_recompiler/frontend/maxwell/translate/impl/attribute_memory_to_physical.cpp"
   },
-  "d551a57d3f8b2f02eb147e144915183c9d352e8d": {
-   "sha256": "feca608a085c5efa5281ae26379b8693e31b5a70c0f5263794dfef6165e2d59d",
-   "size": 108168,
-   "source": "gpu/vk/eden/shader_recompiler/backend/spirv/emit_spirv_bitwise_conversion.cpp"
+  "d6201fd46d84957b44160d69873e099823208134": {
+   "sha256": "f832ff70727f2ca7d67699f84b2425ef2262f8a504fdc9eab0fb8643d7c4cc6f",
+   "size": 1784,
+   "source": "gpu/vk/eden/shader_recompiler/ir_opt/layer_pass.cpp"
   },
-  "d61e01b63105e421195a59d1867f66877674479c": {
-   "sha256": "3cd3fae722df80abf04d118a77ba746c1f3251426a8fb6a562cf762a6b367eb0",
-   "size": 109296,
-   "source": "gpu/vk/eden/shader_recompiler/frontend/maxwell/translate/impl/video_set_predicate.cpp"
+  "d6249d6d1406350af3fedd821117d6a7d1772705": {
+   "sha256": "2517446d1dcbea6ebf3ced77d6c400ee2837833a435b4e62690054184ccf8b93",
+   "size": 107936,
+   "source": "gpu/vk/eden/shader_recompiler/frontend/maxwell/translate/impl/barrier_operations.cpp"
   },
-  "d6b038126770d73212f930023d76527000269ee4": {
-   "sha256": "c367c01a35f71dc06b203c9c83f917718653196af5f2c8550cdd721c258e0ed6",
-   "size": 120552,
-   "source": "gpu/vk/eden/shader_recompiler/frontend/maxwell/translate/impl/texture_load.cpp"
+  "d6ab26e8a64a7cd50857e789e446b185bfeff6ac": {
+   "sha256": "6823c9bec8127b4db50352ff95f1a28116b90b2dd592994ac3dc2e538ee487a6",
+   "size": 109256,
+   "source": "gpu/vk/eden/shader_recompiler/frontend/maxwell/translate/impl/logic_operation.cpp"
+  },
+  "d6f98ec27e5bdd781452178cd68a6492f8cc65de": {
+   "sha256": "c40d391378fa33a69d740c144474a69039f853bb257ae6565d963559eb579074",
+   "size": 287296,
+   "source": "gpu/vk/eden/shader_recompiler/ir_opt/texture_pass.cpp"
   },
   "d9079ef14007cfc0ca5ce2ecdf10bcf4c4802a67": {
    "sha256": "c940f02b2680bb8c2970f360e0fa85095b4e99ccf972b3ad0016d688c8f472c2",
    "size": 1744,
    "source": "third_party/opus/silk/decode_pitch.c"
   },
+  "d911c20b54a4ae058db03b4cb78f1c5d27552d83": {
+   "sha256": "f09371ab0a659a66f379e98f00db79f7fdb186012e11d68e70a3591d7f28b79e",
+   "size": 109264,
+   "source": "gpu/vk/eden/shader_recompiler/frontend/maxwell/translate/impl/pixel_load.cpp"
+  },
   "d9668a314970484ead0bb7079b66b507eb1c3f32": {
    "sha256": "03d0dc27b45f067fb5e012f688655645efb67f31d79ce0c489e7df8a88999d97",
    "size": 3104,
    "source": "third_party/opus/silk/decode_parameters.c"
   },
+  "db424730aeb605ed7d12b6b4dbe9b04e76f4f100": {
+   "sha256": "161cd42117f7e882fd356a8b41c3b6b0c4aba3e23d2632747db2927398cd92ee",
+   "size": 5248,
+   "source": "gpu/vk/eden/shader_recompiler/frontend/ir/type.cpp"
+  },
   "dbe9174b418d59aaa7ceb392f80a2a9e0ee90761": {
    "sha256": "82884073f86e88ec01b3ef14035c74d24647f095188b08126a2f03449ed73f82",
    "size": 5256,
    "source": "third_party/opus/silk/shell_coder.c"
+  },
+  "dc034e75cb285052d88999381c3a1d7e79e24c67": {
+   "sha256": "843cd8a593dd4c8e30f8794fc4c3fa14f250d6f1b37ca0506c87e3fde2205208",
+   "size": 114824,
+   "source": "gpu/vk/eden/shader_recompiler/frontend/maxwell/translate/impl/integer_add.cpp"
   },
   "dc18c714df34fdf8de4afd53c3c094b603dc9ea0": {
    "sha256": "8a0fa65649a69a6be2790124591b58e3e94fd88cdde280133b399ba70ce3d9a0",
@@ -1421,45 +1361,85 @@
    "size": 1096,
    "source": "third_party/opus/silk/lin2log.c"
   },
-  "dee3a0f14c21c70bf89dd6262037b925bb549c78": {
-   "sha256": "ec82cbe8b85c5a24c54fce486c4f19e6e40b2638705c682eb0c172f281a49fdb",
-   "size": 272456,
-   "source": "gpu/vk/eden/shader_recompiler/frontend/ir/ir_emitter.cpp"
+  "de30b4a955dfa26b355df95680d57f6a2e4e1f46": {
+   "sha256": "9c56f88db8db28b5442f3df646e7ddd440a143e912c3e61bb20b7537ab5d327a",
+   "size": 28912,
+   "source": "gpu/vk/eden/shader_recompiler/backend/spirv/emit_spirv_floating_point.cpp"
   },
-  "df3fa0dec302d566eab7c71829005cc84fa5a5f2": {
-   "sha256": "0cc6110bcd45314548f084c4d26e5187ce4fdf41430d9e416c2fe2a1ed80779c",
-   "size": 2016,
-   "source": "gpu/vk/eden/shader_recompiler/backend/spirv/emit_spirv_logical.cpp"
+  "de3abe4893f5293be6867f95037d73cf182158f4": {
+   "sha256": "e06ee0925ad166509200a8e3670f8c806d5750165203c4dd994f7dac775f9493",
+   "size": 7008,
+   "source": "gpu/vk/sirit/src/instructions/debug.cpp"
   },
-  "df98afdba8e6ef95ae7a22e02921a2a4f8136f35": {
-   "sha256": "cd0c2a6f4d15b09ed6a731a789fc5f09de259d3e270dfa35707d049827dbb545",
-   "size": 115024,
-   "source": "gpu/vk/eden/shader_recompiler/frontend/maxwell/translate/impl/load_effective_address.cpp"
+  "e075509055f2884f95151272c9302cb2568cf894": {
+   "sha256": "8885c90cfb8f81715f69a154556a5926863973650a37f71d0d36faac5c0f3997",
+   "size": 112328,
+   "source": "gpu/vk/eden/shader_recompiler/frontend/maxwell/translate/impl/floating_point_add.cpp"
   },
-  "e0a0c3348eb008017215d639f70fa8f52c70f809": {
-   "sha256": "03f4f7ad89d2d886c152bfefcff879d1579628a024609b90e7549aa757bdf88a",
-   "size": 126056,
-   "source": "gpu/vk/eden/shader_recompiler/frontend/maxwell/translate/impl/texture_fetch.cpp"
+  "e0d3108476260a3201254eea359f8772bc09d466": {
+   "sha256": "63e448a4f15498af470669cae2e18e77de38341d2b4c74df6a62a13c08433cd0",
+   "size": 113904,
+   "source": "gpu/vk/eden/shader_recompiler/frontend/maxwell/translate/impl/integer_funnel_shift.cpp"
+  },
+  "e0f22aaee15a10731fd20115d43d092fa07ae8e4": {
+   "sha256": "56527026f0279bd2a47958b777d5326c5b8e05a92769085e8457bb53f2142670",
+   "size": 2160,
+   "source": "gpu/vk/eden/shader_recompiler/frontend/maxwell/translate/impl/predicate_set_predicate.cpp"
   },
   "e14bee82a543ddc5f7c10b29f04080db1efc585e": {
    "sha256": "50b6ae345ea3584de378b97dcb89fc2593a6d4c1fc0b8da4978f0587dc9f9f11",
    "size": 1376,
    "source": "third_party/opus/silk/check_control_input.c"
   },
+  "e1e7fcb9d5578f00492ed0fc4cde9f6ae8cafd9b": {
+   "sha256": "a487ee8f89eecf31a74e4afcce38ceb41a9c276e4977a69e4961069322503a50",
+   "size": 116880,
+   "source": "gpu/vk/eden/shader_recompiler/frontend/maxwell/translate/impl/integer_add_three_input.cpp"
+  },
   "e2447dd915c2b172367453e6620e82ab7336715b": {
    "sha256": "e460a9752807e1017e93c38aa70ab7bc648018632273241482d00d858b3033ff",
    "size": 1248,
    "source": "third_party/opus/silk/resampler_down2.c"
   },
-  "e2c349d17b8b6fa99f56b4558c846b8a1a428d42": {
-   "sha256": "2517446d1dcbea6ebf3ced77d6c400ee2837833a435b4e62690054184ccf8b93",
-   "size": 107936,
-   "source": "gpu/vk/eden/shader_recompiler/frontend/maxwell/translate/impl/barrier_operations.cpp"
-  },
   "e2f3eb7dd9474cfd9e06ed3f08c654704d9e7d84": {
    "sha256": "5d45ba62e67c0c221acdbc5675d5922773d26adc25cad00c2944c465142789fb",
    "size": 2600,
    "source": "third_party/opus/silk/float/schur_FLP.c"
+  },
+  "e3a4479b6938893ecbe50bafef7febb47439bb5b": {
+   "sha256": "1cf2c9ca4c7da5f30e871e09231b255dfec0ac3f1a6eeaef14ae663eea47b30f",
+   "size": 117304,
+   "source": "gpu/vk/eden/shader_recompiler/ir_opt/lower_fp16_to_fp32.cpp"
+  },
+  "e3c8d16e488436f5a22d48f31eb557b5e9fb6dc1": {
+   "sha256": "f8de9ef4a66e0f79a91dea3fabc71872181143ee5520ad677001eb293c3c35c6",
+   "size": 7016,
+   "source": "gpu/vk/sirit/src/instructions/misc.cpp"
+  },
+  "e3eb8be8f0f9cebfff0fdfe52e5b444b9f3734fc": {
+   "sha256": "df6a398826d8cfa06f815e5d9b9bea6458da4276a69e0e9238a710bab4d73423",
+   "size": 272456,
+   "source": "gpu/vk/eden/shader_recompiler/frontend/ir/ir_emitter.cpp"
+  },
+  "e41ced1f122e7c64aa9d82e28b95d464680a8960": {
+   "sha256": "5925fb914019d14f45806925b27c612f56024a37a85b45005d5ba171307823c7",
+   "size": 106824,
+   "source": "gpu/vk/eden/shader_recompiler/frontend/maxwell/translate/impl/video_multiply_add.cpp"
+  },
+  "e4edf4bbe3ad9f84c9c1b7d184609211c86dd9c3": {
+   "sha256": "c367c01a35f71dc06b203c9c83f917718653196af5f2c8550cdd721c258e0ed6",
+   "size": 120552,
+   "source": "gpu/vk/eden/shader_recompiler/frontend/maxwell/translate/impl/texture_load.cpp"
+  },
+  "e53dc4b8f1a0cfd50c8e02d7409e9c6ce2c77443": {
+   "sha256": "333f818180fc4701c9eb3138c6994142a806ca2ad604c379c6da992d4e689674",
+   "size": 111760,
+   "source": "gpu/vk/eden/shader_recompiler/ir_opt/geometry_compaction_pass.cpp"
+  },
+  "e5f18e9447f3ca295b6df76ed229c85f651398b2": {
+   "sha256": "b706d28b71c655d39789a3e5bcf0dac6d1cbeb4dcb2f3de65ab970751f2a6f6e",
+   "size": 10696,
+   "source": "gpu/vk/eden/shader_recompiler/frontend/ir/program.cpp"
   },
   "e712d82572fa1bcb9854a17054cc9e693eae30af": {
    "sha256": "517d73e88f9135bb9ae950ec59f3b651ab2a7d2c7a2356f4630c2b9f5f101590",
@@ -1476,70 +1456,115 @@
    "size": 2032,
    "source": "third_party/opus/silk/sum_sqr_shift.c"
   },
-  "e9fe4b20babbc06d005b1c6644a7e9662df325ac": {
-   "sha256": "e32585ab47508bf06e956bc41e2a123a83ebb8e63ecdb5797cffc6c5c5fb81dd",
-   "size": 110496,
-   "source": "gpu/vk/eden/shader_recompiler/frontend/maxwell/translate/impl/internal_stage_buffer_entry_read.cpp"
+  "e9c1183e7fecc0dc53a1fdd96d1cc150af237919": {
+   "sha256": "f9661d30afd9df6ad2d0f218ac5a37966d827c3401f64e6717f69d9758b98b62",
+   "size": 130832,
+   "source": "gpu/vk/eden/shader_recompiler/frontend/maxwell/translate/impl/common_funcs.cpp"
   },
-  "ebedbc9e0c6aac3f1572bdab7faf91fd2aaa6510": {
-   "sha256": "591199ee66c7ee9f67f5fea8eb14f1de9f8ae5b5b27dbddd43043be509c95456",
-   "size": 128568,
-   "source": "gpu/vk/eden/shader_recompiler/frontend/maxwell/translate/impl/texture_load_swizzled.cpp"
+  "ea1be58c41ad2fd95c45db9118cb615690a03d9d": {
+   "sha256": "8a9fe99740abe41a8684131974f4047d5217fc9ac160616032f8d3ea035ff7fa",
+   "size": 108608,
+   "source": "gpu/vk/eden/shader_recompiler/frontend/maxwell/translate/impl/predicate_set_register.cpp"
+  },
+  "ea54cd94ac2f6ccb132713a74d529f8738f7dceb": {
+   "sha256": "a4d195bf1aacae6d621dbf4577c444c2e5b3b4cea272fd4b7fe1e91b31edc91e",
+   "size": 105376,
+   "source": "gpu/vk/eden/shader_recompiler/frontend/maxwell/translate/impl/floating_point_swizzled_add.cpp"
+  },
+  "ea8b743014501929cd2ae919d6d259669718a7fb": {
+   "sha256": "c6c9e99ff4fead017428d2d237054920111ac64d4bb8052d89c1c3b0ea6020d8",
+   "size": 124360,
+   "source": "gpu/vk/eden/shader_recompiler/frontend/maxwell/opcodes.cpp"
+  },
+  "eb7da603dd7c9863c5a8ebfe311fac233cf86eb9": {
+   "sha256": "363e033944e71e5318f9ecd21874c4934e4a7bdf298620e0f19043721d14a41c",
+   "size": 114472,
+   "source": "gpu/vk/eden/shader_recompiler/backend/spirv/emit_spirv_composite.cpp"
+  },
+  "eba0face70cbf937ff94acc6c8acd0fb91d6d5be": {
+   "sha256": "21056bd2b6101ad517bd760bea231cae1e97474c3ed87d04fff241d9fd465d80",
+   "size": 137112,
+   "source": "gpu/vk/eden/shader_recompiler/frontend/maxwell/translate/impl/impl.cpp"
+  },
+  "ec235819121c3979565bcda001c172155e349463": {
+   "sha256": "faf3ab152b64d09a97ef889201d5defefc7e74b2f7531b26a8864ad0097a9e30",
+   "size": 12336,
+   "source": "gpu/vk/sirit/src/instructions/flow.cpp"
+  },
+  "ed789c4fccfbfe0a23ed09da88c1a9a4a1465c08": {
+   "sha256": "d80c50eb2c962146f84994891776b84b3e682773900ceb302adbff50f40c2644",
+   "size": 106096,
+   "source": "gpu/vk/eden/shader_recompiler/backend/spirv/emit_spirv_select.cpp"
+  },
+  "ef59619692b11be5c3725780de39fda4c11ada64": {
+   "sha256": "80c8e6ac639d2cac3b66cde527ad576f0bb68943e95bae018bf013194a0abca8",
+   "size": 161984,
+   "source": "gpu/vk/eden/shader_recompiler/frontend/maxwell/structured_control_flow.cpp"
+  },
+  "ef6221e657497721363b50397c467a41495e9a31": {
+   "sha256": "9157a969c86ef85ab12536900b20509b04d208c0c2f0481030a401db5d5303fa",
+   "size": 146296,
+   "source": "gpu/vk/eden/shader_recompiler/frontend/maxwell/translate/translate.cpp"
   },
   "f00180589cd4a9e78cb0ed3620d0ba2aacd82de4": {
    "sha256": "21eaff5530263cdc4094c3ab79d46adc0d6f29134e4e67160755b7f4a9f74668",
    "size": 1408,
    "source": "third_party/opus/silk/control_audio_bandwidth.c"
   },
-  "f0c2eceaa434a69a3fed1b44ff6e90f5fcf7a8bc": {
-   "sha256": "514232670a41e2f2ce3a1dc1550d7bf2002a29e91d5fb242e506efda7f6dd560",
-   "size": 153800,
-   "source": "gpu/vk/eden/shader_recompiler/backend/spirv/emit_spirv_atomic.cpp"
+  "f013ae757c550886b1c47e83467d6bd8052a50ac": {
+   "sha256": "eb4c3c9e3182762e485b7c2008f9347629e73d2a2e45816e2a3d05a245cc9e22",
+   "size": 113504,
+   "source": "gpu/vk/eden/shader_recompiler/frontend/maxwell/translate/impl/integer_compare_and_set.cpp"
   },
   "f100c8b919c9220994cb3bf0f03641d2dc442852": {
    "sha256": "9ca16dbe67b4d2ad4b87aff761a82dcf0b57a4fe66fc70e24435610e3737638e",
    "size": 2008,
    "source": "third_party/opus/silk/control_SNR.c"
   },
+  "f11033c0ad193f918492d53c33ca2165c8d2c1f1": {
+   "sha256": "d693288eae8c31748a288134fe57e4bea542f22319dd8693432e6b127a3d137c",
+   "size": 12984,
+   "source": "gpu/vk/eden/shader_recompiler/backend/spirv/emit_spirv_shared_memory.cpp"
+  },
   "f1e421a89a36805403581b697b2393eca5bd1e80": {
    "sha256": "75a862053a0e0dc7df2afef9c21607510c5e2209721aeba5e7ae3ffebeb7a92a",
    "size": 1432,
    "source": "third_party/opus/silk/pitch_est_tables.c"
-  },
-  "f27b98ee7f923c9fd414cea5bb8f42f11b476f3c": {
-   "sha256": "363e033944e71e5318f9ecd21874c4934e4a7bdf298620e0f19043721d14a41c",
-   "size": 114472,
-   "source": "gpu/vk/eden/shader_recompiler/backend/spirv/emit_spirv_composite.cpp"
   },
   "f360639f8e50a81b670e32af5a93c3f043ac8fe6": {
    "sha256": "1e3539b51f796d4eb1483668b5d73586b07d92b8edb49f77beb5f04785c4e718",
    "size": 1320,
    "source": "third_party/opus/silk/NLSF_VQ_weights_laroia.c"
   },
+  "f4010e3d137f0c5c03c4326809de21720b245d2a": {
+   "sha256": "a31924819e5e68c6f26d74143840e58d256c3f81e63bb3c4b52df852860d9eba",
+   "size": 111992,
+   "source": "gpu/vk/eden/shader_recompiler/frontend/maxwell/translate/impl/half_floating_point_multiply.cpp"
+  },
   "f42a3150a916e4b68d1c9eb7612857865cc2fb0e": {
    "sha256": "b7fcf6de5a39bd05a064954c27c17f262b7759067f172aabd1972496aa9651f8",
    "size": 2544,
    "source": "third_party/opus/silk/float/sort_FLP.c"
   },
-  "f4940f24a19bf27b6f92d017cfe47925db1f6cb9": {
-   "sha256": "597a971dcb73b3f84fa5d66624f25d7c7780d97c3e85b9d49c4ee5ff5eb50aec",
-   "size": 139040,
-   "source": "gpu/vk/eden/shader_recompiler/frontend/maxwell/translate/impl/floating_point_conversion_integer.cpp"
+  "f6912d74ee48fd4aa8102c14d71934433ca74edd": {
+   "sha256": "293543f0ec1f2d9215d0f7b262dcba124bd9ea5e340616dcf79ef20fa0e1c86f",
+   "size": 133864,
+   "source": "third_party/reshade_fx/source/effect_parser_exp.cpp"
   },
-  "f49f870eaef42eb5a87748dbe44105836d7bdc1d": {
-   "sha256": "e3736fd1d6c5d12895533969650d0ae95e8f570d982b191cb3b1feeaa12b2e46",
-   "size": 110144,
-   "source": "gpu/vk/eden/shader_recompiler/frontend/maxwell/translate/impl/double_compare_and_set.cpp"
+  "f745499561f93d4dc051929ea9722e5ec2ce3395": {
+   "sha256": "2cc0158c78d957e54d5e034f8a59239c387f74efdbe712aee83c15027b15ecc5",
+   "size": 35288,
+   "source": "gpu/vk/sirit/src/instructions/image.cpp"
   },
-  "f89113e6b093da2758ea09d42afddfc5fead412f": {
-   "sha256": "9fe6cfb128cd482c020c86d52d66d5fbdb8c370744e148ef840ad64a3eb13cae",
-   "size": 122504,
-   "source": "gpu/vk/eden/shader_recompiler/ir_opt/lower_fp64_to_fp32.cpp"
+  "f74ed0a7505280cbafa34c7dd0d5ea1c8f1f2215": {
+   "sha256": "52ae60680a9745bce93c50e5c8903636be4160488867a5c142a3f47ff03f3464",
+   "size": 23488,
+   "source": "gpu/vk/sirit/src/instructions/extension.cpp"
   },
-  "f920fb1e33a912e5495887219b69f42b3a9e5a5b": {
-   "sha256": "1ce4c396be6bd2dda9f577461bace351b0cf5a1baff6d327964064e791041822",
-   "size": 112480,
-   "source": "gpu/vk/eden/shader_recompiler/frontend/maxwell/translate/impl/integer_shift_left.cpp"
+  "f88b9e3259d7bcd9967ca2e69549210484cbcae8": {
+   "sha256": "7a513c36ca2ebc332dd72533cda21a0ffdd0e2c3a0659b02f2c6fe13ee95b816",
+   "size": 111064,
+   "source": "gpu/vk/eden/shader_recompiler/frontend/maxwell/translate/impl/bitfield_extract.cpp"
   },
   "f957bdbf9a724c4ee4f99d57e4ca3062ec5c4ae7": {
    "sha256": "2e2883a27378f4fd6a1e24ba8778964a08086580c347e6ab0ccc63de26e98eba",
@@ -1551,25 +1576,30 @@
    "size": 2304,
    "source": "third_party/opus/silk/float/find_LPC_FLP.c"
   },
-  "fbe436fa08d1bd77b242a872a24653d62e3df3a1": {
-   "sha256": "f82192cca470ac17415fe252d635fd6f1ddacbf211ab04c2302ab21846c43448",
-   "size": 4960,
-   "source": "gpu/vk/eden/shader_recompiler/frontend/maxwell/translate/impl/half_floating_point_set_predicate.cpp"
+  "fb6776b584313ada782e182c8e4eb3c8c4362dd9": {
+   "sha256": "03f4f7ad89d2d886c152bfefcff879d1579628a024609b90e7549aa757bdf88a",
+   "size": 126056,
+   "source": "gpu/vk/eden/shader_recompiler/frontend/maxwell/translate/impl/texture_fetch.cpp"
   },
-  "fc63a32f927ccb67c8485cfa4988ae3e1794d698": {
-   "sha256": "f6ce332f93fc3b92cba0bf61e2e479dc265d790c7f37e5a36764c8eb5a2ffb2f",
-   "size": 108232,
-   "source": "gpu/vk/eden/shader_recompiler/frontend/maxwell/translate/impl/select_source_with_predicate.cpp"
+  "fc048c2f19321cad6c64731b6061dc4bccfe52ae": {
+   "sha256": "c6719b51699256f1b60d7d163ac9dee9803d27ba81cf7c4fed6f912ec76e22ff",
+   "size": 118608,
+   "source": "gpu/vk/eden/shader_recompiler/backend/spirv/emit_spirv_special.cpp"
+  },
+  "fc1734adae25772da2aef79e1d40af955a1f1bd7": {
+   "sha256": "306068739b61f0622fbecaa626383696d80c2acb328d2e71ab59482808f4d1cd",
+   "size": 113304,
+   "source": "gpu/vk/eden/shader_recompiler/frontend/maxwell/translate/impl/move_register_to_predicate.cpp"
   },
   "fd337920eb13fed41addff48224d03480a83fd6e": {
    "sha256": "7c25a49441d848f40416f6e497f244b3bb81fcbc6ccb6bfa9ae317592827a1a1",
    "size": 11280,
    "source": "third_party/opus/celt/quant_bands.c"
   },
-  "fdb8ac56df0aae07ef5bf40a30757a79d1357e04": {
-   "sha256": "2bfe17055cba104056c1cc9f72c06b6bd2fdf454d9eaa196022b2860d88b56f2",
-   "size": 127008,
-   "source": "gpu/vk/eden/shader_recompiler/backend/spirv/emit_spirv_image_atomic.cpp"
+  "fddcef9d7c60345f06688d48968d1898975b76dc": {
+   "sha256": "17bfe299f458d50038fe9447ac5eb0d698da878e8eb4893eecbbe29b8af38d29",
+   "size": 117824,
+   "source": "gpu/vk/eden/shader_recompiler/frontend/maxwell/translate/impl/texture_query.cpp"
   },
   "ffb028b703d7bb651aecdbd423da2ce8e2c2dd8a": {
    "sha256": "0f1f7a5a0f18da6b5b8a06df77602d6e80e7fe92c7126c35c78efc0ae0a26213",

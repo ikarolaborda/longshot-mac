@@ -11,6 +11,7 @@
 #import <Foundation/Foundation.h>
 #import <Metal/Metal.h>
 #import <QuartzCore/CAMetalLayer.h>
+#include <limits.h>
 #include <stdatomic.h>
 #include <pthread.h>
 #include <stdarg.h>
@@ -260,8 +261,7 @@ static int option(int id) {
     case 7: return 100;            /* mouse sensitivity, percent */
     case HOS_OPT_VOLUME: return 100;
     case 48: return 100;           /* camera turn speed, percent */
-    case HOS_OPT_FPS_CAP: return 0;   /* (60, the game's own limiter and step; HOS_FPS_MAX=<n> raises it) */
-    default: return 0;
+    default: return INT_MIN;   /* The caller supplies the game default for options outside this renderer. */
     }
 }
 static void option_set(int id, int value) {

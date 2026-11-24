@@ -5,6 +5,8 @@
 #include <pthread.h>
 #include <stdatomic.h>
 #import <QuartzCore/CAMetalLayer.h>
+#import <MetalFX/MetalFX.h>
+#import "../../third_party/d2r_gfx/gfx/nvn/totk_mfx.h"
 
 /* The installed app owns immutable resources. The renderer writes logs, options
    and caches into the per-user runtime. Loose developer builds keep their layout. */
@@ -58,6 +60,7 @@ int hos_mac_bundle_setup(void) {
         setenv("XDG_DATA_HOME", profile.fileSystemRepresentation, 0);
         setenv("LONGSHOT_BUNDLE_RUNTIME", runtime.fileSystemRepresentation, 1);
         setenv("TOTK_NATIVE_DIR", metalDir.fileSystemRepresentation, 0);
+        setenv("TOTK_UNCAPPED_HZ", "display", 0);
         if ([fm fileExistsAtPath:[metalDir stringByAppendingPathComponent:@"shader-service"]])
             setenv("RX_RENDERER", "metal", 0);
         return chdir(runtime.fileSystemRepresentation) == 0;
@@ -140,4 +143,92 @@ int hos_metal_frame_info(int64_t *p, int64_t *d, int *w, int *h) {
     *w = atomic_load(&drawableWidth);
     *h = atomic_load(&drawableHeight);
     return *w > 0 && *h > 0;
+}
+
+/* The SDL event thread owns the game window. The render and pacing threads
+   only read the last published rate, including when the window changes screens. */
+static _Atomic int displayHz;
+static _Atomic int selectedHz = -1;
+int front_display_hz(void) { return atomic_load(&displayHz); }
+
+int hos_mac_frame_cap(int configured) {
+    int display = front_display_hz();
+    if (display < 30) display = 60;
+    int choice = atomic_load(&selectedHz);
+    if (choice < 0) choice = configured == 60 ? 0 : configured;
+    return choice > 0 && choice < display ? choice : display;
+}
+
+@interface LongshotFrameRate : NSObject
+- (void)choose:(NSMenuItem *)sender;
+@end
+@implementation LongshotFrameRate
+- (void)choose:(NSMenuItem *)sender {
+    NSInteger hz = sender.tag;
+    [NSUserDefaults.standardUserDefaults setInteger:hz forKey:@"MetalFrameRate"];
+    atomic_store(&selectedHz, (int)hz);
+    for (NSMenuItem *item in sender.menu.itemArray) {
+        if (item.action == @selector(choose:)) item.state = item == sender ? NSControlStateValueOn : NSControlStateValueOff;
+    }
+}
+- (void)toggleInterpolation:(NSMenuItem *)sender {
+    BOOL enabled = mfx_requested() == MFX_OFF;
+    mfx_set(enabled ? MFX_MAX : MFX_OFF);
+    [NSUserDefaults.standardUserDefaults setBool:enabled forKey:@"MetalFrameInterpolation"];
+    sender.state = enabled ? NSControlStateValueOn : NSControlStateValueOff;
+}
+@end
+
+void hos_mac_refresh_screen(void *metalLayer, int sdlMillihertz) {
+    if (!metalLayer) return;
+    @autoreleasepool {
+        CAMetalLayer *layer = (__bridge CAMetalLayer *)metalLayer;
+        NSScreen *screen = nil;
+        for (CALayer *l = layer; l && !screen; l = l.superlayer) {
+            if ([l.delegate isKindOfClass:NSView.class]) screen = [(NSView *)l.delegate window].screen;
+        }
+        if (!screen) screen = NSApp.mainWindow.screen ?: NSScreen.mainScreen;
+        int hz = (sdlMillihertz + 500) / 1000;
+        if (screen) {
+            CGDirectDisplayID display = [screen.deviceDescription[@"NSScreenNumber"] unsignedIntValue];
+            CGDisplayModeRef mode = CGDisplayCopyDisplayMode(display);
+            double fixed = mode ? CGDisplayModeGetRefreshRate(mode) : 0;
+            if (mode) CGDisplayModeRelease(mode);
+            hz = fixed > 1 ? (int)lround(fixed) : (int)screen.maximumFramesPerSecond;
+        }
+        atomic_store(&displayHz, hz > 240 ? 240 : hz >= 30 ? hz : 60);
+        static NSMenuItem *root;
+        static LongshotFrameRate *target;
+        if (!root && NSApp.mainMenu) {
+            target = [LongshotFrameRate new];
+            NSMenu *menu = [[NSMenu alloc] initWithTitle:@"Frame Rate"];
+            root = [[NSMenuItem alloc] initWithTitle:menu.title action:nil keyEquivalent:@""];
+            root.submenu = menu;
+            [NSApp.mainMenu addItem:root];
+            NSNumber *saved = [NSUserDefaults.standardUserDefaults objectForKey:@"MetalFrameRate"];
+            extern int hos_ini_option(const char *, int);
+            static const int legacy[] = {0,90,120,144,165,240,0};
+            int row = hos_ini_option("frame_rate_cap",0);
+            int choice = saved ? saved.intValue : row == -1 ? 30 : row >= 0 && row < 7 ? legacy[row] : 0;
+            NSArray<NSNumber *> *choices = @[@0,@30,@60,@90,@120,@144,@165,@240];
+            if (![choices containsObject:@(choice)]) choice = 0;
+            atomic_store(&selectedHz, choice);
+            for (NSNumber *rate in choices) {
+                NSString *title = rate.intValue ? [NSString stringWithFormat:@"%@ FPS",rate] : @"Match Display";
+                NSMenuItem *item = [menu addItemWithTitle:title action:@selector(choose:) keyEquivalent:@""];
+                item.target = target;
+                item.tag = rate.integerValue;
+                item.state = item.tag == choice ? NSControlStateValueOn : NSControlStateValueOff;
+            }
+            if (@available(macOS 26.0, *)) {
+                if ([MTLFXFrameInterpolatorDescriptor supportsMetal4FX:MTLCreateSystemDefaultDevice()]) {
+                    [menu addItem:NSMenuItem.separatorItem];
+                    NSMenuItem *item = [menu addItemWithTitle:@"MetalFX Frame Interpolation" action:@selector(toggleInterpolation:) keyEquivalent:@""];
+                    item.target = target;
+                    if (!getenv("TOTK_MFX") && [NSUserDefaults.standardUserDefaults boolForKey:@"MetalFrameInterpolation"]) mfx_set(MFX_MAX);
+                    item.state = mfx_requested() == MFX_OFF ? NSControlStateValueOff : NSControlStateValueOn;
+                }
+            }
+        }
+    }
 }

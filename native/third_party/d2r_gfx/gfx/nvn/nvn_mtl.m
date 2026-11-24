@@ -22445,7 +22445,9 @@ static void cadence_note(double tt, int interp) {
     if (n == N) {
         hz = mtl_display_hz(); if (hz <= 0) hz = 60;
         double a[N]; memcpy(a, iv, sizeof a); qsort(a, N, sizeof *a, dcmp_mtl);
-        double tick = 1000.0 / hz; int held = 0; for (int i = 0; i < N; i++) held += a[i] > 1.5 * tick;
+        double tick = 1000.0 / hz, elapsed_ms = 0; int held = 0;
+        for (int i = 0; i < N; i++) { held += a[i] > 1.5 * tick; elapsed_ms += a[i]; }
+        MLOG("Metal presented %.1f FPS on a %d Hz display (%d of %d frames interpolated)", N * 1000.0 / elapsed_ms, hz, ni, N);
         MLOG("上屏节奏（近 %d 张，至帧 %llu，显示器 %d Hz）：间隔 p50 %.2f / p95 %.2f / 最大 %.2f ms；多停一次刷新以上 %d 次（%.1f%%）；其中补帧 %d 张；系统丢弃 %llu 张",
              N, (unsigned long long)atomic_load(&g_cur_frame), hz, a[N / 2], a[N * 95 / 100], a[N - 1], held, 100.0 * held / N, ni, (unsigned long long)dropped);
         n = ni = 0; dropped = 0;
@@ -23033,7 +23035,10 @@ static void link_sync(void) {   // 游戏出图线程每帧调：把节拍对象
     int want = g_dm_present_link;
     if (want < 0 || want > 2) { g_dm_present_link = applied == 3 ? 1 : applied; return; }
     if (want && mtl_fps_target() == 30) want = 3;   // 省电模式：显示节拍 30 Hz | Power-saving mode: display link at 30 Hz
-    if (want == applied) return;
+    static int appliedDisplayHz;
+    int displayHz = want == 1 ? front_display_hz() : 0;
+    if (want == applied && displayHz == appliedDisplayHz) return;
+    appliedDisplayHz = displayHz;
     g_link_mode = want;
     if (!g_link_started) {
         if (!want) { applied = 0; return; }

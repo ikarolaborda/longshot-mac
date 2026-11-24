@@ -14,7 +14,7 @@
 // less than 7 GB of video memory), M, L, or NVIDIA's default (0). RX_VK_DLSS_PRESET=<letter> (or 0) over it.
 // RX_VK_DLSS_LOG=1: NGX's own log in ours.
 //
-// NVIDIA's NGX SDK is not part of Longshot (NVIDIA's license): a local build fetches it (scripts/ngx_sdk.py) and builds with
+// NVIDIA's NGX SDK is not part of Longshot (NVIDIA's license): a local build fetches it (scripts/fetch.py dlss) and builds with
 // LONGSHOT_NGX_SDK, which compiles this file with LONGSHOT_NGX. Without it only the stubs at the end are here.
 // NGX's core is the driver's (Windows: _nvngx.dll, which NVIDIA's loader finds in the driver's own folder; Linux:
 // libnvidia-ngx.so). It is never put beside the game: a copy there would be loaded in place of the driver's.
@@ -100,8 +100,9 @@ struct State {
     bool feature_aa = false;
     uint64_t features_made = 0;      // (how many times: a feature made again in play costs a stall, so each says why)
     // (the preset, output and HDR a creation failed for: not tried again each frame, but once any of them changes, so the
-    // menu's DLSS rows bring DLSS back without a restart. 0: none failed)
-    uint64_t refused = 0;
+    // menu's DLSS rows bring DLSS back without a restart. Out of video memory is often temporary, so that one is tried
+    // again after a bounded interval (dlss_checks::retry). 0: none failed)
+    dlss_checks::retry::Refusal refusal;
     // (the last evaluation's result, and how many times in a row it failed that way: what its log line is spaced by)
     NVSDK_NGX_Result eval_result = NVSDK_NGX_Result_Success;
     uint64_t eval_repeats = 0;
@@ -174,14 +175,14 @@ std::wstring wide(const fs::path& p) {
 #endif
 
 #ifdef _WIN32
-constexpr const char* kRuntime = "nvngx_dlss.dll";   // (DLSS's runtime, as scripts/ngx_sdk.py fetches it)
+constexpr const char* kRuntime = "nvngx_dlss.dll";   // (DLSS's runtime, as scripts/fetch.py dlss fetches it)
 constexpr const fs::path::value_type* kRuntimeName = L"nvngx_dlss.dll";
 #else
 constexpr const char* kRuntime = "libnvidia-ngx-dlss.so";
 constexpr const fs::path::value_type* kRuntimeName = "libnvidia-ngx-dlss.so";
 #endif
 #ifdef _WIN32
-constexpr const char* kFgRuntime = "nvngx_dlssg.dll";   // (DLSS Frame Generation's runtime, as scripts/ngx_sdk.py fetches it)
+constexpr const char* kFgRuntime = "nvngx_dlssg.dll";   // (DLSS Frame Generation's runtime, as scripts/fetch.py dlss fetches it)
 constexpr const fs::path::value_type* kFgRuntimeName = L"nvngx_dlssg.dll";
 #else
 constexpr const char* kFgRuntime = "libnvidia-ngx-dlssg.so";
@@ -286,7 +287,7 @@ bool ngx_init() {
 #endif
                 }
         if (needs_driver) logf("vk: NVIDIA DLSS: needs NVIDIA's driver %u.%u or newer", major, minor);
-        else if (!runtime) logf("vk: NVIDIA DLSS: not available: no %s in %s (scripts/ngx_sdk.py fetches it)", kRuntime, where.c_str());
+        else if (!runtime) logf("vk: NVIDIA DLSS: not available: no %s in %s (scripts/fetch.py dlss fetches it)", kRuntime, where.c_str());
         else if (!loadable)
             logf("vk: NVIDIA DLSS: not available: %s is only in folders whose path is not all ASCII (%s), and NVIDIA's NGX on "
                  "Linux loads it only from one that is: put it in $XDG_DATA_HOME/longshot/ngx, or RX_VK_DLSS_DIR=<an ASCII folder>",
@@ -355,7 +356,12 @@ int prepare(VkCommandBuffer cmd, uint32_t rw, uint32_t rh, uint32_t ow, uint32_t
     static const NVSDK_NGX_PerfQuality_Value scaled[] = {NVSDK_NGX_PerfQuality_Value_MaxQuality, NVSDK_NGX_PerfQuality_Value_DLAA,
                                                         NVSDK_NGX_PerfQuality_Value_Balanced, NVSDK_NGX_PerfQuality_Value_MaxPerf,
                                                         NVSDK_NGX_PerfQuality_Value_UltraPerformance};
-    const bool aa = rw == ow && rh == oh;
+    // (longshot, RX_VK_DLSS_PREWARM, on by default) DLSS, not DLAA (native_aa false), at a full-size frame: the scaled mode whose range holds
+    // the full size too (MaxQuality's, 1280x720 to 2560x1440 at a 2560x1440 output), DLAA's only where none does. The first
+    // frames after a load are full size at the Render resolution's Auto, and a DLAA-mode feature made for them was made again
+    // 17 frames later once the game's size dropped ("the render size 2382x1340 left its range": 119 ms, then 29.5 ms more)
+    const bool full = rw == ow && rh == oh;
+    const bool aa = dlss_checks::dlaa_feature(full, native_aa, temporal_prewarm_on());
     NVSDK_NGX_PerfQuality_Value mode = NVSDK_NGX_PerfQuality_Value_DLAA;
     unsigned max_w = ow, max_h = oh, min_w = ow, min_h = oh;   // (DLAA: the render size is the output's, one size)
     unsigned create_w = ow, create_h = oh;
@@ -373,7 +379,9 @@ int prepare(VkCommandBuffer cmd, uint32_t rw, uint32_t rh, uint32_t ow, uint32_t
         }
         dlss_checks::ModeRange took;
         const int k = dlss_checks::mode_for(rw, rh, ow, oh, ranges, n, &took);
-        if (k < 0) {   // (the size in the log; the feature kept for the sizes it takes, not let go and made again)
+        if (k < 0 && full) {
+            // (no scaled mode holds the full size: DLAA's, as before RX_VK_DLSS_PREWARM)
+        } else if (k < 0) {   // (the size in the log; the feature kept for the sizes it takes, not let go and made again)
             // (vk_temporal.cpp's fail() logs a reason again only when its pointer changes: two buffers, the other one for a
             // new size, so each refused size is logged once, by fail() as any reason)
             static char refused[2][112];
@@ -386,17 +394,23 @@ int prepare(VkCommandBuffer cmd, uint32_t rw, uint32_t rh, uint32_t ow, uint32_t
             }
             return *fail = refused[at], 0;
         }
-        mode = which[k], max_w = took.max_w, max_h = took.max_h, min_w = took.min_w, min_h = took.min_h;
-        create_w = optimal[k][0], create_h = optimal[k][1];
-        if (took.max_w != ranges[k].max_w || took.max_h != ranges[k].max_h || took.min_w != ranges[k].min_w ||
-            took.min_h != ranges[k].min_h)
+        if (k >= 0) mode = which[k], max_w = took.max_w, max_h = took.max_h, min_w = took.min_w, min_h = took.min_h;
+        if (k >= 0) create_w = optimal[k][0], create_h = optimal[k][1];
+        if (k >= 0 && (took.max_w != ranges[k].max_w || took.max_h != ranges[k].max_h || took.min_w != ranges[k].min_w ||
+                       took.min_h != ranges[k].min_h))
             logf("vk: NVIDIA DLSS: the render size %ux%u is a little outside quality mode %d's range (%ux%u to %ux%u): taken by "
                  "it (a rounded size)", rw, rh, (int)mode, ranges[k].min_w, ranges[k].min_h, ranges[k].max_w, ranges[k].max_h);
     }
     // (the quality mode with them: the Render resolution row asks for another feature of the same output)
     const uint64_t key = (uint64_t)ow << 44 ^ (uint64_t)oh << 24 ^ (uint64_t)((int)mode & 7) << 8 ^ (uint64_t)preset << 1 ^
                          (hdr ? 1 : 0) ^ 1ull << 63;
-    if (s.refused == key) return *fail = "its feature was not made", 0;
+    // (a refusal for this key: kept, unless it was out of video memory and its retry is due)
+    const dlss_checks::retry::Verdict refused = dlss_checks::retry::verdict(s.refusal, key, texture_frame_no());
+    if (refused == dlss_checks::retry::Verdict::Wait || refused == dlss_checks::retry::Verdict::Ended)
+        return *fail = "its feature was not made", 0;
+    if (refused == dlss_checks::retry::Verdict::Try)
+        logf("vk: NVIDIA DLSS: its feature is tried again (%u of %u) after it was refused for want of video memory",
+             s.refusal.tries + 1, dlss_checks::retry::kMaxTries);
     if (s.feature) {   // (the old one, once a new one is to be made)
         NVSDK_NGX_Handle* old = s.feature;
         temporal_later([old] { NVSDK_NGX_VULKAN_ReleaseFeature(old); });
@@ -422,21 +436,38 @@ int prepare(VkCommandBuffer cmd, uint32_t rw, uint32_t rh, uint32_t ow, uint32_t
                               (hdr ? NVSDK_NGX_DLSS_Feature_Flags_IsHDR | NVSDK_NGX_DLSS_Feature_Flags_AutoExposure : 0);
     const auto t0 = std::chrono::steady_clock::now();
     ::mkwvk::rec::boundary(::mkwvk::rec::B_DIRECT);   // (NGX records into cmd itself: what this thread recorded through vk_work.h reaches cmd first)
-    const NVSDK_NGX_Result r = NGX_VULKAN_CREATE_DLSS_EXT(cmd, 1, 1, &s.feature, s.params, &cp);
+    NVSDK_NGX_Result r = NGX_VULKAN_CREATE_DLSS_EXT(cmd, 1, 1, &s.feature, s.params, &cp);
     const double made_ms = std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - t0).count();
-    note_work();   // (NGX's own commands, which vk_work.h does not see: the next full_barrier is not left out)
+    note_other_work();   // (NGX's own commands, which vk_work.h does not see: the next full_barrier is not left out)
+    // (RX_VK_DLSS_FAIL_CREATE=<result>[:<times>]: a test's forced creation result, so the out-of-video-memory retry can
+    // run on any GPU; 0xBAD0000D is NVSDK_NGX_Result_FAIL_OutOfGPUMemory. A feature the real call made is let go.)
+    if (const char* fail = getenv("RX_VK_DLSS_FAIL_CREATE"); fail && *fail) {
+        static unsigned long long tried = 0;
+        char* end = nullptr;
+        const unsigned long long result = strtoull(fail, &end, 0);
+        const unsigned long long times = end && *end == ':' ? strtoull(end + 1, nullptr, 0) : ~0ull;
+        if (tried++ < times) {
+            if (s.feature) NVSDK_NGX_VULKAN_ReleaseFeature(s.feature);
+            s.feature = nullptr;
+            r = (NVSDK_NGX_Result)result;
+        }
+    }
     if (NVSDK_NGX_FAILED(r) || !s.feature) {
         logf("vk: NVIDIA DLSS: its feature was not made (%#x) for %ux%u -> %ux%u", (unsigned)r, max_w, max_h, ow, oh);
         s.feature = nullptr;
-        // (a transient one too, out of video memory while menu switches had old features still waiting to be let go: the
-        // game's upscale until a DLSS setting changes, not for the rest of the run)
-        s.refused = key;
+        // (out of video memory while menu switches had old features still waiting to be let go is often temporary: tried
+        // again after a bounded interval. Any other failure, or the last of them, keeps the game's upscale until a DLSS
+        // setting changes)
+        const bool out_of_memory = r == NVSDK_NGX_Result_FAIL_OutOfGPUMemory;
+        if (dlss_checks::retry::failed(s.refusal, key, out_of_memory, texture_frame_no()) && out_of_memory)
+            logf("vk: NVIDIA DLSS: its feature was not made %u times for want of video memory: DLSS stays off until a DLSS "
+                 "setting changes", s.refusal.tries);
         return *fail = "its feature was not made", 0;
     }
     s.feature_rw = max_w, s.feature_rh = max_h, s.feature_ow = ow, s.feature_oh = oh, s.min_rw = min_w, s.min_rh = min_h;
     s.feature_preset = preset;
     s.feature_hdr = hdr;
-    s.refused = 0;
+    dlss_checks::retry::made(s.refusal);
     s.feature_aa = mode == NVSDK_NGX_PerfQuality_Value_DLAA;
     s.features_made++;
     logf("vk: NVIDIA DLSS: feature create size %ux%u (recommended), input resources %ux%u", create_w, create_h, max_w, max_h);
@@ -474,7 +505,7 @@ bool evaluate(VkCommandBuffer cmd, const TemporalFrame& f) {
     }
     ::mkwvk::rec::boundary(::mkwvk::rec::B_DIRECT);   // (NGX records into cmd itself: what this thread recorded through vk_work.h reaches cmd first)
     const NVSDK_NGX_Result r = NGX_VULKAN_EVALUATE_DLSS_EXT(cmd, s.feature, s.params, &ep);
-    note_work();   // (as at its creation: the barrier after it, and the game's next one, are recorded)
+    note_other_work();   // (as at its creation: the barrier after it, and the game's next one, are recorded)
     if (NVSDK_NGX_FAILED(r)) {
         // (the chain tries again at the next frame, kEngine's retry: one that keeps failing says so when its result changes
         // and every 600th time, as the chain's own reason does, not on every frame)
@@ -489,12 +520,22 @@ bool evaluate(VkCommandBuffer cmd, const TemporalFrame& f) {
         return false;
     }
     s.eval_result = NVSDK_NGX_Result_Success;
+    {
+        VkMemoryBarrier2 b{VK_STRUCTURE_TYPE_MEMORY_BARRIER_2};
+        b.srcStageMask = VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT | VK_PIPELINE_STAGE_2_TRANSFER_BIT;
+        b.srcAccessMask = VK_ACCESS_2_SHADER_WRITE_BIT | VK_ACCESS_2_TRANSFER_WRITE_BIT;
+        b.dstStageMask = VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT;
+        b.dstAccessMask = VK_ACCESS_2_SHADER_READ_BIT;
+        VkDependencyInfo di{VK_STRUCTURE_TYPE_DEPENDENCY_INFO};
+        di.memoryBarrierCount = 1, di.pMemoryBarriers = &b;
+        vkCmdPipelineBarrier2(cmd, &di);
+    }
     return true;
 }
 
 void release() {
     State& s = st();
-    s.refused = 0;   // (another engine chosen, or the chain idle: DLSS asked again makes its feature again)
+    s.refusal = {};   // (another engine chosen, or the chain idle: DLSS asked again makes its feature again)
     if (!s.feature) return;
     NVSDK_NGX_Handle* old = s.feature;
     temporal_later([old] { NVSDK_NGX_VULKAN_ReleaseFeature(old); });
@@ -548,7 +589,15 @@ void dlss_device_extensions(std::vector<const char*>& want, const std::vector<Vk
     if (!both) g_why = DLSS_NEEDS_RTX;
 }
 
-void dlss_retry() { st().refused = 0; }
+void dlss_retry() { st().refusal = {}; }
+
+int dlss_ngx_ready() {
+    if (dlss_why() != DLSS_OK) return 0;
+    State& s = st();
+    std::unique_lock lk(s.mu, std::try_to_lock);
+    if (!lk.owns_lock() || !s.ngx_tried) return -1;
+    return s.ngx_ok ? 1 : 0;
+}
 
 void dlss_probe() {
     if (dlss_why() != DLSS_OK || g_why.load(std::memory_order_relaxed) >= 0 || !dev.device) return;
@@ -716,7 +765,7 @@ bool fg_start(Fg& g) {
     if (const char* cap = getenv("RX_VK_DLSS_FG_MOST"); cap && atoi(cap) >= 1 && (unsigned)atoi(cap) < g.most)
         g.most = (unsigned)atoi(cap);
     // (its runtime: NGX takes the newest nvngx_dlssg in the runtime folders, else the driver's own copy, which may be older
-    // and make 1 frame at most, or refuse every set. scripts/ngx_sdk.py puts the SDK's beside DLSS's runtime)
+    // and make 1 frame at most, or refuse every set. scripts/fetch.py dlss puts the SDK's beside DLSS's runtime)
     // (Linux: NGX loads it by its real path, ASCII only, as DLSS's runtime: one only in folders named otherwise is not used)
     std::string where;
     bool here = false, loadable = false;
@@ -739,7 +788,7 @@ bool fg_start(Fg& g) {
         : here   ? std::string(kFgRuntime) + " only in folders whose path is not all ASCII (" + where +
                      "), which NGX on Linux does not load from: the driver's own, which may be older"
                  : "no " + std::string(kFgRuntime) + " in " + where +
-                     ": the driver's own, which may be older (scripts/ngx_sdk.py fetches it)";
+                     ": the driver's own, which may be older (scripts/fetch.py dlss fetches it)";
     logf("vk: DLSS Frame Gen (NGX): available, up to %u made frames between two of the game's (%s)", g.most, runtime.c_str());
     g.ok = true;
     g.most_known = g.most;
@@ -1060,7 +1109,7 @@ int dlss_fg_frames(VkCommandBuffer cmd, VkImage color, VkImageView color_view, u
         NVSDK_NGX_Parameter_SetUI(g.params, NVSDK_NGX_DLSSG_Parameter_DynamicResolution, 0u);
         ::mkwvk::rec::boundary(::mkwvk::rec::B_DIRECT);   // (NGX records into cmd itself)
         const NVSDK_NGX_Result r = NGX_VK_CREATE_DLSSG(cmd, 1, 1, &g.feature, g.params, &cp);
-        note_work();
+        note_other_work();
         if (NVSDK_NGX_FAILED(r) || !g.feature) {
             g.feature = nullptr;
             g.create_failures++;
@@ -1091,9 +1140,8 @@ int dlss_fg_frames(VkCommandBuffer cmd, VkImage color, VkImageView color_view, u
     fg_put(o.prevClipToClip, g.from_prev);
     o.jitterOffset[0] = g.jitter[0], o.jitterOffset[1] = g.jitter[1];
     // (the motion as it is, render pixels: scale 1, as DLSS's own evaluation takes it. nvsdk_ngx_defs_dlssg.h says the scale
-    // normalizes to [-1, 1], which is Streamline's convention: with 1 / render size here DLSS-G saw no motion and every made
-    // frame was a cross-fade of the two game frames (captured 2026-11-10: t = 1/3 and 2/3, 0.2 of 255 off a pure blend); with
-    // scale 1 the same scenes came out as moved pictures between them. RX_VK_DLSS_FG_MV_SCALE=<x> multiplies it, for checks)
+    // normalizes to [-1, 1], which is Streamline's convention: with 1 / render size here DLSS-G sees no motion and every made
+    // frame is a cross-fade of the two game frames; with scale 1 they are moved pictures between them. RX_VK_DLSS_FG_MV_SCALE=<x> multiplies it, for checks)
     static const float mv_scale = getenv("RX_VK_DLSS_FG_MV_SCALE") ? (float)atof(getenv("RX_VK_DLSS_FG_MV_SCALE")) : 1.0f;
     o.mvecScale[0] = o.mvecScale[1] = mv_scale;
     o.cameraPinholeOffset[0] = o.cameraPinholeOffset[1] = 0.0f;
@@ -1114,7 +1162,7 @@ int dlss_fg_frames(VkCommandBuffer cmd, VkImage color, VkImageView color_view, u
     o.automodeOverrideReset = false;
     o.notRenderingGameFrames = false;
     o.orthoProjection = false;
-    // (no value stands for "no motion here": RX_VK_DLSS_FG_INVALID=0 makes zero motion that, as PR 1944's Streamline path has it)
+    // (no value stands for "no motion here": RX_VK_DLSS_FG_INVALID=0 makes zero motion that, as Streamline has it)
     static const bool zero_invalid = env_switch("RX_VK_DLSS_FG_INVALID") == 0;
     o.motionVectorsInvalidValue = zero_invalid ? 0.0f : FLT_MAX;
     o.motionVectorsDilated = false;
@@ -1150,7 +1198,7 @@ int dlss_fg_frames(VkCommandBuffer cmd, VkImage color, VkImageView color_view, u
         o.multiFrameIndex = (unsigned)k;
         ::mkwvk::rec::boundary(::mkwvk::rec::B_DIRECT);   // (NGX records into cmd itself)
         const NVSDK_NGX_Result r = NGX_VK_EVALUATE_DLSSG(cmd, g.feature, g.params, &ep, &o);
-        note_work();
+        note_other_work();
         if (NVSDK_NGX_FAILED(r)) {
             static int told = 0;
             if (told++ < 8) logf("vk: DLSS Frame Gen (NGX): frame %d of %d was refused (%#x)", k, count, (unsigned)r);
@@ -1192,14 +1240,19 @@ void dlss_fg_close() {
     g.closed = true;
     if (!g.feature && !g.params) return;
     // (the swapchain's lock for the queue's idle, waited for a while: a present stuck at the exit leaves NGX to the process's
-    // end rather than hanging the exit, as PR 1944's Streamline shutdown found)
+    // end rather than hanging the exit, as Streamline's shutdown does)
     const auto until = std::chrono::steady_clock::now() + std::chrono::seconds(2);
+    // (RX_VK_RECORDER_PARTS: the parts handed to the recorder submitted first, within the same 2 s: the tries below do not wait
+    // for them, and the idle wait is to cover them)
+    ::mkwvk::rec::settle_parts(::mkwvk::rec::B_QUEUE_LOCK, 2000000000ull);
     std::unique_lock qk(dev.present_mu, std::defer_lock);
     while (!qk.try_lock() && std::chrono::steady_clock::now() < until) std::this_thread::sleep_for(std::chrono::milliseconds(1));
     // (and the presents' own queues, whose presents let dev.present_mu go while they run: a present stuck there held
-    // device_wait_idle_locked on its lock with no end. Free once while present_mu is held, they stay free: a present takes
-    // present_mu first; only the presenter thread's (RX_VK_PRESENT_THREAD, opt-in) does not)
-    const auto free_by_then = [&](std::mutex& m) {
+    // device_wait_idle_locked on its lock with no end. Free once while present_mu is held, they stay free, but for the
+    // presenter thread's (on every PC): on the Present queue row's queue it takes present_queue_mu, not present_mu, then
+    // presenter_queue_mu, for its present call alone, so a present already handed to it may still take them; the
+    // locks device_wait_idle_locked takes wait that one call out)
+    const auto free_by_then = [&](QueueMutex& m) {
         for (;;) {
             if (m.try_lock()) return m.unlock(), true;
             if (std::chrono::steady_clock::now() >= until) return false;
@@ -1222,6 +1275,7 @@ bool dlss_built() { return false; }
 const TemporalEngine* dlss_engine() { return nullptr; }
 void dlss_probe() {}
 void dlss_retry() {}
+int dlss_ngx_ready() { return 0; }
 void dlss_instance_extensions(std::vector<const char*>&, const std::vector<VkExtensionProperties>&) {}
 void dlss_device_extensions(std::vector<const char*>&, const std::vector<VkExtensionProperties>&) {}
 bool dlss_fg_wanted() { return false; }
