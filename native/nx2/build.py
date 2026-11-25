@@ -2020,7 +2020,8 @@ def main():
     # Ocarina of Time (GAME_OOT). Its texture-layout helpers share names with Longshot's own and are renamed d2r_*. host/mtl_nvn_glue.c puts it behind the lifted code: docs/mac-metal-backend.md
     if MAC and host_srcs:
         d2r = os.path.join(kit.ROOT, "third_party", "d2r_gfx")
-        dfl = target() + THIRD_PARTY_CPU + ["-O2", "-g0", "-w", "-std=gnu11", "-fobjc-arc", "-DGAME_OOT=1", "-DGAME_NS2=1", "-DLONGSHOT_MTL=1"] + \
+        d2r_headers = tree_headers(d2r)
+        dfl = target() + THIRD_PARTY_CPU + ["-MD", "-O2", "-g0", "-w", "-std=gnu11", "-fobjc-arc", "-DGAME_OOT=1", "-DGAME_NS2=1", "-DLONGSHOT_MTL=1"] + \
             ["-D%s=d2r_%s" % (n, n) for n in ("nvn_tex_live_at", "nvn_tex_level_tiles", "nvn_tex_level_offset", "nvn_fmt_bpb", "nvn_tex_layout")] + \
             ["-I" + os.path.join(d2r, d) for d in ("gfx/nvn", "gfx/nvn/include", "gfx/tex", "third_party", "host", "game")]
         for root, _, files in os.walk(d2r):
@@ -2028,9 +2029,11 @@ def main():
                 if f.endswith((".c", ".m", ".S")) and "/tests" not in root:
                     src = os.path.join(root, f)
                     rel = os.path.relpath(src, d2r).replace("/", "_")
-                    jobs.append((cc, src, os.path.join(obj_dir, "d2r_" + rel + ".o"),
+                    obj = os.path.join(obj_dir, "d2r_" + rel + ".o")
+                    DEPFILE_JOBS[obj] = (d2r_headers, (d2r,), tp_deps)
+                    jobs.append((cc, src, obj,
                                  [x for x in dfl if not ((f.endswith((".c", ".S")) and x == "-fobjc-arc") or (f.endswith(".S") and x == "-std=gnu11"))],
-                                 open(src, "rb").read() + tp_deps))
+                                 renderer_deps(d2r_headers, (d2r,), obj) + tp_deps))
     # the Vulkan back end, a DLL of its own (the only renderer): CPM cache, LONGSHOT_*_HEADERS, or system includes
     vk_jobs = []
     vk_headers, spirv_headers, vma_headers = vulkan_headers()

@@ -13,24 +13,23 @@
                          rendered region, which the game's dynamic resolution moves (1536x864 at first, about 683x384 in
                          the settled village)
      compute  f8965bff   T -> 384x216 (0x14), plus two storage buffers it writes          kept: other readers unknown
-     compute  d17eefaf   384x216 + a resident 192x128 table -> B (0x25)                    skipped
-     compute  a335c1db   B, T (texture slot 3) -> C (0x40, image slot 2)                   skipped
+     compute  d17eefaf   384x216 + a resident 192x128 table -> B (0x25)                    kept for fallback
+     compute  a335c1db   B, T (texture slot 3) -> C (0x40, image slot 2)                   kept for fallback
      compute  network    C -> O, the 2048x1152 canvas (0x3f); fa3033d0 at full resolution, d99fbeeb at the low one;
                          1.44-1.47 ms a frame either way                                    replaced: MetalFX T -> O
      fragment            the HUD, drawn onto O
    The network is recognised by what it reads (the first dispatch after a335c1db, in the same frame, that samples C),
    not by its key, so every resolution variant is covered. B and C are read by nothing else in the frame.
 
-   Safety: d17eefaf and a335c1db are skipped only in frames that start with a scaler ready and T's rendered region known,
-   so the network never runs on a stale C unless the MetalFX encode itself fails (logged; bypass waits until ready again).
-   MetalFX writes O directly when O's usage allows it; otherwise into its own texture, copied to O when the formats match.
-   Neither possible: the game's network stays (logged once). */
-#define NB_PREP_KEY "d17eefaff4f0bc23"
+   The two input passes run for every game frame. The output texture and active region
+   are known only at the last dispatch. If the scaler is still building for a new
+   resolution, the original dispatch must be able to read this frame's C.
+   MetalFX writes O directly when possible, or through a matching intermediate. */
 #define NB_MIX_KEY "a335c1db6270c355"
 enum { NB_T_SLOT = 3, NB_C_SLOT = 2, NB_DIRECT_TRIES = 30, NB_VP = 8 };
 static _Atomic int g_nb_on = -1;
-static int g_nb_ready, g_nb_own, g_nb_tries, g_nb_gave_up;   // replay thread only
-static uint64_t g_nb_skip_frame = ~0ull, g_nb_mix_frame = ~0ull, g_nb_c_serial, g_nb_done, g_nb_fail, g_nb_novp;
+static int g_nb_own, g_nb_tries, g_nb_gave_up;   // replay thread only
+static uint64_t g_nb_mix_frame = ~0ull, g_nb_c_serial, g_nb_done, g_nb_fail, g_nb_novp;
 static __strong id<MTLTexture> g_nb_t; static const void *g_nb_t_mem;
 static struct { const void *mem; float w, h; uint64_t frame; } g_nb_vp[NB_VP]; static int g_nb_vp_next;
 static int netbp_on(void) {
@@ -46,7 +45,7 @@ static void netbp_set(int on) { atomic_store(&g_nb_on, on != 0); MLOG("[flag] ne
    at the canvas size (native resolution: T's rendered region is as large as O) the network still runs, 1:1, about 1.7 ms a
    frame plus its two preparing dispatches (n90a: 8df148d5 1.73, a335c1db 0.23, d17eefaf 0.17 ms). With this on, those frames
    copy T to O instead (same format and size, checked every frame). The picture then has no anti-aliasing from the network. */
-static _Atomic int g_nb_copy = -1; static uint64_t g_nb_copied; static int g_nb_ready_copy;   // g_nb_ready_copy: ready stands for the copy, not for a scaler
+static _Atomic int g_nb_copy = -1; static uint64_t g_nb_copied;
 static int netbp_copy_on(void) {
     int v = atomic_load_explicit(&g_nb_copy, memory_order_relaxed);
     if (v < 0) { const char *e = getenv("OOT_NET_COPY"); v = e ? strcmp(e, "0") != 0 : !TARGET_OS_IPHONE; atomic_store(&g_nb_copy, v);   /* on: the Mac's default (the user's choice there); the phone keeps the network until it is compared on a device */ MLOG("[net-bypass] %s: at the canvas size the network %s", e ? "OOT_NET_COPY" : "default", v ? "is replaced by a copy" : "runs"); }
@@ -197,20 +196,16 @@ static int netbp_dispatch(NvShader *cs) {
     { int mv = netbp_movie(cs); if (mv >= 0) return mv; }
     if (!strncmp(cs->key, NB_MIX_KEY, 16)) netbp_publish_internal();
     int scale_on = netbp_on(), copy_on = netbp_copy_on();   // MetalFX in place of the network when it upscales / a copy when it runs 1:1: two switches
-    if (!scale_on && !copy_on) { g_nb_ready = g_nb_ready_copy = 0; return 0; }
-    if (!scale_on && g_nb_ready && !g_nb_ready_copy) g_nb_ready = 0;   // a scaler was ready, MetalFX is off now
+    if (!scale_on && !copy_on) return 0;
     uint64_t f = atomic_load(&g_cur_frame);
-    if (!strncmp(cs->key, NB_PREP_KEY, 16)) { if (g_nb_ready_copy && !netbp_copy_on()) g_nb_ready = g_nb_ready_copy = 0;   // net_copy turned off: the network runs again from this frame
-        if (g_nb_ready) { g_nb_skip_frame = f; return 1; } return 0; }
     if (!strncmp(cs->key, NB_MIX_KEY, 16)) {
         int tt = netbp_tid(NB_T_SLOT, 0), tc = netbp_tid(NB_C_SLOT, 1);
         g_nb_t = netbp_tex(tt, 0); g_nb_t_mem = tt ? netbp_mem(tt) : NULL;
         g_nb_c_serial = tc ? netbp_serial(tc) : 0; g_nb_mix_frame = f;
-        return g_nb_skip_frame == f;
+        return 0;   // Produce C before deciding whether to replace its consumer.
     }
     int o_slot; if (g_nb_mix_frame != f || !g_nb_c_serial || !netbp_is_network(cs, &o_slot)) return 0;
     g_nb_mix_frame = ~0ull;   // one network a frame
-    int skipping = g_nb_skip_frame == f;
     prepare_shader_images(cs, 5);   // O as the game's image binding would have it (created / given write usage)
     id<MTLTexture> t = g_nb_t, o = netbp_tex(netbp_tid(o_slot, 1), 1); NSUInteger cw = 0, ch = 0;
     int have_region = netbp_region(g_nb_t_mem, f, &cw, &ch);
@@ -220,7 +215,6 @@ static int netbp_dispatch(NvShader *cs) {
     int same = bad && t && o && have_region && t.textureType == MTLTextureType2D && o.textureType == MTLTextureType2D && cw == o.width && ch == o.height &&
                cw <= t.width && ch <= t.height && t.pixelFormat == o.pixelFormat && t.sampleCount == 1 && o.sampleCount == 1;
     if (same && copy_on) {   // native resolution: nothing to upscale
-        if (!skipping) { if (!g_nb_ready) MLOG("[net-bypass] network %.16s at the canvas size %lux%lu (format %lu): copying T to O from the next frame", cs->key, (unsigned long)cw, (unsigned long)ch, (unsigned long)o.pixelFormat); g_nb_ready = g_nb_ready_copy = 1; return 0; }
         rp_end();
         enc_b_copy_texture(blit(), t, 0, 0, MTLOriginMake(0, 0, 0), MTLSizeMake(cw, ch, 1), o, 0, 0, MTLOriginMake(0, 0, 0));
         if (++g_nb_copied == 1 || g_nb_copied % 300 == 0) MLOG("[net-bypass] copied %llu frames 1:1 (%lux%lu)", (unsigned long long)g_nb_copied, (unsigned long)cw, (unsigned long)ch);
@@ -229,16 +223,24 @@ static int netbp_dispatch(NvShader *cs) {
     { static uint64_t seen; if (!seen++ || (!bad && seen % 1800 == 0)) MLOG("[net-bypass] network %.16s: T %lux%lu fmt %lu region %lux%lu -> O %lux%lu fmt %lu usage %#lx%s%s", cs->key,
           (unsigned long)t.width, (unsigned long)t.height, (unsigned long)t.pixelFormat, (unsigned long)cw, (unsigned long)ch, (unsigned long)o.width, (unsigned long)o.height,
           (unsigned long)o.pixelFormat, (unsigned long)o.usage, bad ? "; not replaced: " : "", bad ? bad : ""); }
-    g_nb_ready_copy = 0;
-    if (!scale_on) { g_nb_ready = 0; if (skipping) { g_nb_fail++; MLOG("【红】[net-bypass] frame %llu: the copy no longer applies (%s) after skipping the network's input; the network ran on the previous C", (unsigned long long)f, bad ? bad : "T smaller than O"); } return 0; }
-    if (bad) { g_nb_ready = 0; if (!have_region) g_nb_novp++; if (skipping) { g_nb_fail++; MLOG("【红】[net-bypass] frame %llu: %s after skipping its input; the network ran on the previous C", (unsigned long long)f, bad); } return 0; }
-    if (!skipping) {   // the network runs this frame; get a scaler ready for the next ones
-        if (g_nb_gave_up) return 0;
-        if (!g_nb_own) { g_nb_ready = mfxup_prepare(MFXUP_DOCKED, t, o, o.width, o.height, MFXUP_PERCEPTUAL); if (!g_nb_ready && ++g_nb_tries > NB_DIRECT_TRIES) { g_nb_own = 1; g_nb_tries = 0; MLOG("[net-bypass] MetalFX cannot write O directly; trying its own texture and a copy"); } }
-        else { g_nb_ready = mfxup_prepare(MFXUP_DOCKED, t, nil, o.width, o.height, MFXUP_PERCEPTUAL); if (!g_nb_ready && ++g_nb_tries > NB_DIRECT_TRIES) { g_nb_gave_up = 1; MLOG("【红】[net-bypass] no MetalFX scaler for T fmt %lu -> O fmt %lu: the game's network stays", (unsigned long)t.pixelFormat, (unsigned long)o.pixelFormat); } }
-        if (g_nb_ready) MLOG("[net-bypass] scaler ready (%s); replacing from the next frame", g_nb_own ? "own texture + copy" : "direct");
+    if (!scale_on || bad || g_nb_gave_up) {
+        if (!have_region) g_nb_novp++;
         return 0;
     }
+    if (!mfxup_prepare(MFXUP_DOCKED, t, g_nb_own ? nil : o, o.width, o.height, MFXUP_PERCEPTUAL)) {
+        if (++g_nb_tries > NB_DIRECT_TRIES) {
+            if (g_nb_own) {
+                g_nb_gave_up = 1;
+                MLOG("[net-bypass] no compatible scaler; keeping the game's upscale");
+            } else {
+                g_nb_own = 1;
+                MLOG("[net-bypass] trying a separate MetalFX output texture");
+            }
+            g_nb_tries = 0;
+        }
+        return 0;
+    }
+    g_nb_tries = 0;
     rp_end(); blit_close(); rs_sync();   // MetalFX encodes on the command buffer itself
     pt_mark(g_cb, 'X', nil);
     id<MTLTexture> w = mfxup_encode_ex(MFXUP_DOCKED, g_cb, t, cw, ch, g_nb_own ? nil : o, o.width, o.height, MFXUP_PERCEPTUAL);
@@ -247,7 +249,7 @@ static int netbp_dispatch(NvShader *cs) {
         else enc_b_copy_texture(blit(), w, 0, 0, MTLOriginMake(0, 0, 0), MTLSizeMake(o.width, o.height, 1), o, 0, 0, MTLOriginMake(0, 0, 0));
     }
     mfxup_queue_residency();
-    if (!w) { g_nb_ready = 0; g_nb_fail++; MLOG("【红】[net-bypass] MetalFX encode failed in frame %llu: the network ran on the previous C", (unsigned long long)f); return 0; }
+    if (!w) { g_nb_fail++; return 0; }
     g_nb_done++;
     if (g_nb_done == 1 || g_nb_done % 300 == 0) MLOG("[net-bypass] replaced %llu frames (%s), region %lux%lu, failed %llu, region unknown %llu", (unsigned long long)g_nb_done,
                                                      g_nb_own ? "own texture + copy" : "direct", (unsigned long)cw, (unsigned long)ch, (unsigned long long)g_nb_fail, (unsigned long long)g_nb_novp);

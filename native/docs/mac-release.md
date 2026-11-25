@@ -1,3 +1,9 @@
+## New in v3.2.0-mac.9
+
+Fixed a Metal rendering fault seen on the moving boat in the Shadow Temple. When the internal resolution changes and MetalFX needs a frame to catch up, the game now draws that frame using the current scene. The fix applies with the Lens of Truth on or off and takes effect the next time Longshot opens.
+
+The Mac builder now tracks the headers and included source files used by the Metal renderer, so an update rebuilds the affected code.
+
 ## New in v3.2.0-mac.8
 
 Press **keypad 5** to turn on either movement cheat. Both start off.
