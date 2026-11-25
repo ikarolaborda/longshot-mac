@@ -1695,6 +1695,76 @@ static int oot_trainer_int(Ctx *c, uint32_t hash, int32_t target) {
     return 0;
 }
 
+typedef struct { uint32_t collected, room_flag; } DungeonKeyPickup;
+typedef struct {
+    const char *map;
+    const DungeonKeyPickup *small;
+    unsigned count;
+    uint32_t balance, lifetime, show_small, boss_chest, boss_room, boss_key;
+} DungeonKeys;
+#define KEY_DUNGEON(map, ...) {#map, keys_##map, sizeof keys_##map / sizeof *keys_##map, __VA_ARGS__}
+#include "oot_dungeon_key_locations.inc"
+#undef KEY_DUNGEON
+
+static void oot_claim_dungeon_keys(Ctx *c, const char *map, int64_t now) {
+    static int64_t next_check;
+    if (now < next_check) return;
+    next_check = now + 1000000000LL;
+    const DungeonKeys *d = NULL;
+    for (unsigned i = 0; i < sizeof key_dungeons / sizeof *key_dungeons; ++i) {
+        if (!strcmp(key_dungeons[i].map, map)) { d = &key_dungeons[i]; break; }
+    }
+    if (!d) return;
+
+    int64_t balance, lifetime;
+    if (!hos_oot_gamedata_int(d->balance, &balance) || !hos_oot_gamedata_int(d->lifetime, &lifetime) ||
+        balance < 0 || balance > INT32_MAX - (int)d->count || lifetime < 0) return;
+
+    /* Resolve the complete batch before queuing anything. Both the room logic
+       and the chest actor can observe these flags. Never mark an unrelated
+       chest, encounter, or lock. Only the player's interaction opens a door. */
+    const uint32_t extras[] = {d->boss_chest, d->boss_room, d->boss_key, d->show_small,
+                               0x154ef588u};  /* IsGet.Item_Dungeon_SmallKey */
+    uint32_t flags[2 * d->count + sizeof extras / sizeof *extras];
+    unsigned nflags = 0, missing = 0;
+    int64_t set;
+    for (unsigned i = 0; i < d->count; ++i) {
+        const DungeonKeyPickup *pickup = &d->small[i];
+        if (!hos_oot_gamedata_bool(pickup->collected, &set)) return;
+        if (!set) { flags[nflags++] = pickup->collected; ++missing; }
+        if (pickup->room_flag) {
+            if (!hos_oot_gamedata_bool(pickup->room_flag, &set)) return;
+            if (!set) flags[nflags++] = pickup->room_flag;
+        }
+    }
+    for (unsigned i = 0; i < sizeof extras / sizeof *extras; ++i) {
+        if (!extras[i]) continue;
+        if (!hos_oot_gamedata_bool(extras[i], &set)) return;
+        if (!set) flags[nflags++] = extras[i];
+    }
+    if (!nflags) return;
+
+    const uint64_t mgr = oot_singleton(c, OOT_GAMEDATA_SLOT);
+    A64Fn set_bool = a64_lookup(0x806a2b20), set_int = a64_lookup(OOT_GD_INT_SET);
+    if (!mgr || !set_bool || !set_int) return;
+    Ctx write = *c;
+    /* Lifetime counts every small key ever picked up, including spent ones.
+       Cap the grant against it if an older save has inconsistent chest flags. */
+    const int64_t unearned = lifetime < d->count ? d->count - lifetime : 0;
+    const int credit = missing < unearned ? (int)missing : (int)unearned;
+    if (credit) {
+        write.x[0] = mgr; write.x[1] = balance + credit; write.x[2] = d->balance; write.x[3] = UINT32_MAX;
+        set_int(&write);
+        write.x[0] = mgr; write.x[1] = lifetime + credit; write.x[2] = d->lifetime; write.x[3] = UINT32_MAX;
+        set_int(&write);
+    }
+    for (unsigned i = 0; i < nflags; ++i) {
+        write.x[0] = mgr; write.x[1] = 1; write.x[2] = flags[i];
+        set_bool(&write);
+    }
+    hos_log("trainer: %s claimed %d small keys and updated %u key flags", map, credit, nflags);
+}
+
 /* Ammunition kept topped up: each consumable's count may not fall below the most it held while the row was on (so the game's own
    capacity, the bag or quiver Link has, is never exceeded) */
 static const char *const oot_trainer_ammo[] = {"Item_DekuStick", "Item_DekuNut", "Item_Bomb", "Item_Bombchu", "Item_DekuSeed",
@@ -1733,7 +1803,8 @@ static void oot_trainer_tick(Ctx *c, uint64_t components, int64_t now) {
     if (!rupees) rupee_mark = -1;
     if (!ammo && ammo_on_before) memset(ammo_mark, 0, sizeof ammo_mark);
     ammo_on_before = ammo;
-    if (!health && max_hearts <= 0 && !rupees && !ammo && !max_rupees && !max_ammo) return;
+    const int dungeon_keys = hos_trainer_enabled(OOT_TRAINER_DUNGEON_KEYS);
+    if (!health && max_hearts <= 0 && !rupees && !ammo && !max_rupees && !max_ammo && !dungeon_keys) return;
     /* (nothing while an event plays: a map change, a cutscene, the death and continue sequence; the game owns Link's values then) */
     if (hos_oot_event_playing(c)) return;
     in_tick = 1;
@@ -1742,6 +1813,7 @@ static void oot_trainer_tick(Ctx *c, uint64_t components, int64_t now) {
         static char banc_was[80];
         char banc[80] = "";
         oot_gamedata_string(c, 0x1d6189dau, banc, sizeof banc);   /* Sequence_CurrentBanc */
+        if (dungeon_keys) oot_claim_dungeon_keys(c, banc, now);
         if (strcmp(banc, banc_was)) {
             snprintf(banc_was, sizeof banc_was, "%s", banc);
             rupee_mark = -1;

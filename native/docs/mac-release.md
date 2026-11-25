@@ -1,3 +1,9 @@
+## New in v3.2.0-mac.7
+
+Press **keypad 5** and enable **Collect dungeon keys and open their chests**. When you resume play, Link receives the remaining small keys in the current dungeon. Dungeons with a boss key award it too. The game records key chests as opened and credits loose keys in dungeons that use them. Doors still spend a small key when you unlock them.
+
+Save normally to keep the keys and opened chests. Turning the cheat off stops it from collecting keys in future dungeons. Each key is credited once per save.
+
 ## New in v3.2.0-mac.6
 
 Open **Pause → Collection**, the tab with the Gold Skulltula tokens. The three stones, six medallions and ocarina songs appear on the tab as icons. **Command+J** or a right-stick click opens their names and earned status. Your recorded Scarecrow tune appears after the twelve standard songs.
