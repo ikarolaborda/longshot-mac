@@ -3675,7 +3675,7 @@ int (*g_nvn_loadscreen_up)(void);   // 宿主登记：读取画面此刻是否�
 // replay frame number, which the synchronous path sets at the end of nvnQueuePresentTexture.
 static void present_exec(win_t *o, int idx, double period, const int crop[4], uint64_t frame) {
     gfx_enter();
-    { void mtl_shot_at_present(const tex_t *t); if (idx >= 0 && idx < o->ntex && idx < 4) mtl_shot_at_present(CTX(o->tex[idx])); }
+    { void mtl_shot_at_present(const tex_t *t, const int crop[4]); if (idx >= 0 && idx < o->ntex && idx < 4) mtl_shot_at_present(CTX(o->tex[idx]), crop); }
     if (idx >= 0 && idx < o->ntex && idx < 4) o->ticket[idx] = mtl_present(CTX(o->tex[idx]), period, (int *)crop, frame ? frame : g_frame + 1);   // 只入队，立即返回 | enqueue only, return immediately
     if (frame) mtl_set_frame(frame);
     gfx_leave();

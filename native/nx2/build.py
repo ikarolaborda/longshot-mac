@@ -1840,7 +1840,7 @@ def main():
         if LINUX or MAC:   # (the window on SDL2, the Win32 calls on POSIX, no Media Foundation)
             host_srcs += [os.path.join(POSIX, f) for f in ("win32_posix.c", "display_sdl.c", "linux_stubs.c", "prof.c")]
         if MAC:
-            host_srcs.extend(os.path.join(POSIX, name) for name in ("mac_cheat_menu.m", "mac_bundle.m", "mac_response.m", "mac_equipment.m"))
+            host_srcs.extend(os.path.join(POSIX, name) for name in ("mac_cheat_menu.m", "mac_bundle.m", "mac_response.m", "mac_equipment.m", "mac_collection.m"))
     else:
         srcs += [os.path.join(NX2_RT, "eden_shim.c"), write_info(out)]
     if kit.env_on("RX_VK_ONLY"):   # (no lift needed: the back end alone)
@@ -1943,7 +1943,7 @@ def main():
         extras = host_extras + (zstd_api if os.path.basename(s) in ZSTD_HOST else b"")
         DEPFILE_JOBS[obj] = (host_blob, host_roots, extras)
         jobs.append((cc, s, obj,
-                     host_fl + (["-fobjc-arc"] if os.path.basename(s) == "mac_equipment.m" else []) + ["-MD", "-I" + os.path.join(OPUS, "include")] +
+                     host_fl + (["-fobjc-arc"] if os.path.basename(s) in ("mac_equipment.m", "mac_collection.m") else []) + ["-MD", "-I" + os.path.join(OPUS, "include")] +
                      (["-I" + os.path.join(FFMPEG, "include")] if FFMPEG else []) +
                      (FFMPEG_LX[0] if UNIX and FFMPEG_LX else []) +
                      ([stamp_def] if os.path.basename(s) == "version.c" else []) +

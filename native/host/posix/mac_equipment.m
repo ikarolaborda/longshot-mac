@@ -1,3 +1,4 @@
+#include "mac_collection.h"
 #import "mac_equipment.h"
 #import "../../gpu/vk/oot_cheat_items.h"
 #import "../oot_trainer.h"
@@ -242,6 +243,7 @@ void hos_mac_inventory_focus(const char *page, const char *button,
                              uint64_t screen) {
   BOOL inventory =
       !strcmp(page, "PaEquipmentMenu_00") || !strcmp(page, "PaItemMenu_00");
+  hos_mac_collection_focus(!strcmp(page, "PaCollectMenu_00") ? screen : 0);
   atomic_store(&inventoryScreen, inventory ? screen : 0);
   if (getenv("HOS_EQUIPMENT_TRACE"))
     NSLog(@"Inventory focus %s %s", page, button);
@@ -267,10 +269,12 @@ void hos_mac_inventory_selection(const char *actor) {
   }
 }
 void hos_mac_inventory_tick(uint64_t screen) {
+  hos_mac_collection_tick(screen);
   if (screen && screen == (uint64_t)atomic_load(&inventoryScreen))
     atomic_store(&inventoryBeat, hos_now_ns());
 }
 void hos_mac_equipment_overlay(void *layer) {
+  hos_mac_collection_overlay(layer);
   @autoreleasepool {
     static CATextLayer *label;
     static double next;

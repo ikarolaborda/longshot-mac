@@ -1,3 +1,11 @@
+## New in v3.2.0-mac.5
+
+Metal fills the game window by default. Resizing a window or moving it between displays updates the camera and HUD to match the drawable. A fixed aspect ratio chosen in Graphics still keeps its proportions.
+
+Pause and open **Collection**. Press **Command+J** or click the **right stick** to open the quest collection. Press the same shortcut to return. The page shows three spiritual stones, six medallions and twelve standard ocarina songs with their game artwork. **All Equipment** fills the stones and medallions. **All ocarina songs** fills the songs. Each entry shows whether it is earned in this save or borrowed from a cheat. Scarecrow’s Song has its own entry for the tune you record with Bonooru.
+
+With All Equipment enabled, the Load screen also shows all nine relic icons. The preview reads the save caption without changing it. Turning the cheats off shows earned progress again.
+
 ## New in v3.2.0-mac.4
 
 Metal now prepares known Kakariko Village and Hyrule Field mesh pipelines before play and remembers newly encountered mesh pipelines for later launches. On an M5 Max, a copied adult save walked through the Kakariko gate, returned, and crossed again. In two offscreen runs of the update, the first exit took 5.69 and 7.32 seconds, compared with 11.75 seconds in mac.3. The repeats took 4.52 and 4.50 seconds, compared with 4.89 seconds. Both timings include the transition until Link can move in Hyrule Field. The longest frame on the final build was 396 ms, compared with 3.73 seconds in mac.3.

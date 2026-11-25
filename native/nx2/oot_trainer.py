@@ -30,6 +30,21 @@ def install(lifter, img, build_id):
         hook = "{ extern void %s(Ctx *); %s(c); }" % (function, function)
         lifter.after[address] = (lifter.after.get(address, "") + "\n" + hook).strip()
 
+    # A populated Load row reads nine relic bytes from the caption. The live
+    # save preview separately reads a temporary for visibility and count.
+    # Override only the destination register of each verified LDRB.
+    for address, instruction in (
+        (0x833ed014, 0x3955a295), (0x833ed044, 0x3955a696), (0x833ed078, 0x3955aa96),
+        (0x833ed0ac, 0x3955ae96), (0x833ed0e0, 0x3955b296), (0x833ed114, 0x3955ba96),
+        (0x833ed148, 0x3955b696), (0x833ed17c, 0x3955be96), (0x833ed1b0, 0x3955c294),
+        (0x833edaac, 0x394123e9), (0x833edac8, 0x394123e8),
+    ):
+        if img.word(address) != instruction:
+            raise ValueError("save preview icon read mismatch at %#x" % address)
+        reg = instruction & 31
+        lifter.after[address] = ("{ extern unsigned hos_oot_preview_relic(unsigned); "
+                                 f"c->x[{reg}] = hos_oot_preview_relic((unsigned)c->x[{reg}]); }}")
+
     # The bottle grant just read the fifth IsValid bit. Resume the native award
     # with an existing empty slot only when all five are owned and this is the letter.
     address = 0x8112f5e0

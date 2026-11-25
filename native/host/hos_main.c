@@ -2263,6 +2263,25 @@ float hos_aspect_ratio = 0;   /* (the window's default shape: host/display.c) */
 /* (nx2/oot_wide.py) read by the widescreen patches in the game's code; 0: the game's own 16:9 */
 volatile uint64_t hos_wide_out, hos_wide_scene;
 volatile float hos_wide_ratio, hos_wide_squeeze, hos_wide_margin;
+#ifdef __APPLE__
+static int mac_follow_window;
+
+/* The game owns the camera and HUD projection. The Metal port uses its own
+   canvas and only chooses where to present it in the final drawable. */
+double runtime_longshot_present_aspect(double drawable_ratio) {
+    return mac_follow_window ? drawable_ratio : hos_wide_ratio > 0 ? hos_wide_ratio : 16.0 / 9.0;
+}
+void hos_mac_window_pixels(int width, int height) {
+    if (!mac_follow_window || width <= 0 || height <= 0) return;
+    const float ratio = (float)width / height;
+    if (fabsf(ratio - hos_wide_ratio) < .0001f) return;
+    const float squeeze = fminf(1.0f, (16.0f / 9.0f) / ratio);
+    hos_wide_squeeze = squeeze;
+    hos_wide_margin = (1.0f - squeeze) * .5f;
+    hos_wide_ratio = ratio;
+}
+#endif
+
 int hos_camera_trace_enabled(void) {
     FILE *marker = fopen("camera-clearance.trace", "rb");
     if (!marker) return 0;
@@ -2650,6 +2669,9 @@ static int game_main(int argc, char **argv) {
             }
             /* (no line: the monitor's shape; an older file's 16:9 on a screen narrower than 16:9 too: hos_aspect_on) */
             const int on = hos_aspect_on(saved, version, sw, sh);
+#ifdef __APPLE__
+            mac_follow_window = on && !getenv("HOS_OUTPUT_RES");
+#endif
             if (on && sh > 0) want = (float)sw / (float)sh;
         }
         extern volatile uint64_t hos_wide_out, hos_wide_scene;
@@ -2658,7 +2680,12 @@ static int game_main(int argc, char **argv) {
         const uint32_t output_w = hos_output_size(0), output_h = hos_output_size(1);
         /* An output of a shape of its own (the Insert menu's Aspect ratio: 21:9, 16:10, 4:3, a 32:9 surround...) asks for that
            shape, over HOS_ASPECT and Ultrawide, even if the OS reports one monitor (host/hos_wide_size.h) */
-        if (hos_output_own_shape(output_w, output_h)) want = (float)output_w / (float)output_h;
+        if (hos_output_own_shape(output_w, output_h)) {
+            want = (float)output_w / (float)output_h;
+#ifdef __APPLE__
+            mac_follow_window = 0;
+#endif
+        }
         const double game = 16.0 / 9.0;
         /* (a screen narrower than 16:9 too, 16:10 to 5:4: the picture keeps the game's height and is narrower, the
            cameras take its ratio, and the HUD fills its width instead of a middle 16:9 wider than the screen. A 4:3 CRT

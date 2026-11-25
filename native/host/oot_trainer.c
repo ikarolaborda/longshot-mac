@@ -15,6 +15,10 @@ void hos_trainer_set(enum OotTrainerOption option, int on) {
     hos_log("trainer: option %d %s", option, on ? "on" : "off");
 }
 
+unsigned hos_oot_preview_relic(unsigned earned) {
+    return hos_trainer_enabled(OOT_TRAINER_EQUIPMENT) ? 1u : earned;
+}
+
 enum { OOT_DOUBLE_MAGIC = 480 };  /* 48 units, tracked in tenths */
 
 void hos_oot_trainer_magic(Ctx *c) {

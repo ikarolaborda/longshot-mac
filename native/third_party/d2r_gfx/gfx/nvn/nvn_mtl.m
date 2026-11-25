@@ -21468,7 +21468,7 @@ void dm_gfx_shot_at(long k, const char *path) {
    link / drawable pacing (an asleep or locked display stalls presents; the game keeps running). DM_NVN_SHOT_FRAME=1 with
    DM_NVN_SHOT=frame,...:path. */
 uint32_t g_rt_draws[64]; uint64_t g_rt_draw_ser[64];   // draws into a colour target 0 since its last present (by serial; the [shot] line)
-void mtl_shot_at_present(const tex_t *t) {
+void mtl_shot_at_present(const tex_t *t, const int crop[4]) {
     static long shots[16]; static int nshot = -1; static const char *shot_path; static char done[16]; static int by_frame;
     if (nshot < 0) {
         nshot = 0; const char *e = getenv("DM_NVN_SHOT"), *c = e ? strchr(e, ':') : NULL; const char *bf = getenv("DM_NVN_SHOT_FRAME"); by_frame = bf && atoi(bf);
@@ -21478,7 +21478,7 @@ void mtl_shot_at_present(const tex_t *t) {
     pthread_mutex_lock(&g_shotq_mu);   // dm_gfx_shot_at requests (game-frame keyed, see there)
     for (int i = 0; i < g_nshotq;) if ((uint64_t)cur >= g_shotq[i].frame) {
         id<MTLTexture> src = tex_mtl(t);
-        if (src) { mtl_finish_gpu(); shot(src, g_shotq[i].path, 1, NULL); unsigned k = (unsigned)(t->serial & 63);
+        if (src) { mtl_finish_gpu(); shot(src, g_shotq[i].path, 1, crop); unsigned k = (unsigned)(t->serial & 63);
             MLOG("[shot] F%ld %s ser=%llu draws since its last present %u", cur, g_shotq[i].path, (unsigned long long)t->serial, g_rt_draw_ser[k] == t->serial ? g_rt_draws[k] : 0u); } else MLOG("【红】截图：出图纹理不可用，丢弃 %s", g_shotq[i].path);
         g_shotq[i] = g_shotq[--g_nshotq];
     } else i++;
@@ -21487,7 +21487,7 @@ void mtl_shot_at_present(const tex_t *t) {
     if (!nshot) return;
     for (int i = 0; i < nshot; i++) if (!done[i] && cur >= shots[i]) {
         done[i] = 1; id<MTLTexture> src = tex_mtl(t); if (!src) { MLOG("【红】截图：出图纹理不可用"); continue; }
-        char path[1024]; snprintf(path, sizeof path, shot_path, (int)shots[i]); mtl_finish_gpu(); shot(src, path, 1, NULL);
+        char path[1024]; snprintf(path, sizeof path, shot_path, (int)shots[i]); mtl_finish_gpu(); shot(src, path, 1, crop);
     }
 }
 static void shot_body(id<MTLTexture> src, const char *path, int screen, const int crop[4]);
@@ -22160,6 +22160,11 @@ static MTLViewport present_viewport(double dw, double dh, double cw, double ch) 
     static int stretch = -1;
     if (stretch < 0) { const char *e = getenv("TOTK_STRETCH"); stretch = e && !strcmp(e, "1"); }
     double a = runtime_aspect_now ? runtime_aspect_now() : 0, want = stretch ? dw / dh : a > 0 ? a : cw / ch;
+#if TARGET_OS_OSX && defined(GAME_OOT)
+    extern double runtime_longshot_present_aspect(double) __attribute__((weak_import));
+    if (!stretch && runtime_longshot_present_aspect && dh > 0)
+        want = runtime_longshot_present_aspect(dw / dh);
+#endif
     if (!(want > 0) || fabs((dw / dh) / want - 1) < 0.01) return (MTLViewport){0, 0, dw, dh, 0, 1};
     double w = fmin(dw, dh * want), h = w / want;
     return (MTLViewport){floor((dw - w) / 2), floor((dh - h) / 2), round(w), round(h), 0, 1};

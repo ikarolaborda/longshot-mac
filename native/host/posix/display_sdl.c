@@ -13,6 +13,7 @@
 void hos_input_clear_toggles(void);
 #ifdef __APPLE__
 #include <pthread.h>
+#include "mac_collection.h"
 void hos_mac_middle_click(void);
 #endif
 #include "../hos_sdl.h"
@@ -73,6 +74,12 @@ static void pointer_publish_at(float x, float y, uint32_t pressed, int wheel) {
     int ww = 0, wh = 0, pw = 0, ph = 0;
     hos_sdl_window_size(window, &ww, &wh);
     hos_sdl_pixel_size(window, &pw, &ph);
+#ifdef __APPLE__
+    if (hos_renderer_metal()) {
+        extern void hos_mac_window_pixels(int, int);
+        hos_mac_window_pixels(pw, ph);
+    }
+#endif
     MkwVkPointer sample = {0};
     sample.width = pw, sample.height = ph;
     const double px = ww > 0 ? floor((double)x * pw / ww) : 0;
@@ -114,6 +121,9 @@ static unsigned virtual_key(int scancode) {
     };
     return (unsigned)scancode < sizeof keys ? keys[scancode] : 0;
 }
+#ifdef __APPLE__
+static int collection_key_held;
+#endif
 static void keys_update(void) {
     int n = 0;
     const uint8_t *k = hos_sdl_keys(&n);
@@ -121,6 +131,9 @@ static void keys_update(void) {
     if (k && hos_posix_window[0]) {
         for (int scancode = 4; scancode < n && scancode <= 230; ++scancode)
             if (k[scancode]) v[virtual_key(scancode)] = 1;
+#ifdef __APPLE__
+        if (collection_key_held) v['J'] = 0;
+#endif
         v[0] = 0;
         v[VK_CONTROL] = v[VK_LCONTROL] || v[VK_RCONTROL];
         v[VK_SHIFT] = v[VK_LSHIFT] || v[VK_RSHIFT];
@@ -252,6 +265,7 @@ static void mac_game_focus(int focused) {
     if (focused == hos_posix_window[0]) return;
     hos_posix_window[0] = focused;
     clear_shoulders();
+    collection_key_held = 0;
     if (!focused) {
         hos_input_clear_toggles();
         ptr_in = ptr_held = 0;
@@ -506,6 +520,7 @@ void hos_display_loop(void) {
                 case HOS_SDL_EV_FOCUS_GAINED: mac_game_focus(1); break;
                 case HOS_SDL_EV_FOCUS_LOST: mac_game_focus(0); break;
                 case HOS_SDL_EV_KEY_UP:
+                    if (e.scancode == 13) collection_key_held = 0;
                     if (hos_posix_window[0] && !menu_open) shoulder_key(e.scancode, 0);
                     break;
 #else
@@ -540,6 +555,13 @@ void hos_display_loop(void) {
                             hos_input_clear_toggles();
                         }
                         break;
+                    }
+                    if (hos_posix_window[0] && !menu_open && scancode == 13 && (mod & 0xc00) && !(mod & 0x3c3)) {
+                        if (!e.repeat && hos_mac_collection_toggle()) {
+                            collection_key_held = 1;
+                            hos_mac_prompt_input(0);
+                        }
+                        if (collection_key_held) break;
                     }
                     if (!e.repeat && hos_posix_window[0]) {
                         // A short tap can start and end in this same batch of SDL events.

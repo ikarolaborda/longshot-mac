@@ -1392,6 +1392,13 @@ def generate(a):
         tex = bntx_textures(textures)
         if sys.platform == "darwin":
             write_textures(os.path.join(a.out, "dialogue.bin"), message_backdrops(textures, tex))
+            icons = os.path.join(a.out, "collection")
+            os.makedirs(icons, exist_ok=True)
+            # Song icon 06 is the player-recorded Scarecrow tune.
+            for family, indices in (("DataFileImportantIcon", range(9)), ("OcarinaMelodyIcon", range(13))):
+                for index in indices:
+                    name = f"{family}_{index:02d}"
+                    decode(textures, tex[name]).save(os.path.join(icons, name + ".png"))
     blarc = read_zs(a.romfs, LAYOUTS, dictionary)
     hint = hint_panes(blarc)
     if not hint:

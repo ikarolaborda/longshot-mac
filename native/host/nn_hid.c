@@ -62,6 +62,7 @@ int rx_option(int id, int otherwise);
 /* (the Insert menu takes the keyboard while it is open) */
 #ifdef __APPLE__
 #include "posix/mac_response.h"
+#include "posix/mac_collection.h"
 unsigned hos_mac_poll_shoulder_keys(void);
 static _Thread_local unsigned mac_shoulder_keys;
 #endif
@@ -1809,6 +1810,12 @@ static void npad_states(Ctx *c) {
     }
     if (connected && !played) {
         read_input(&buttons, &taps, stick);
+#ifdef __APPLE__
+        if (!rx_option(1, 0) && hos_mac_collection_stick((buttons >> B_RS) & 1u)) {
+            buttons &= ~(1ull << B_RS);
+            taps &= ~(1ull << B_RS);
+        }
+#endif
         const int sprint_enabled = sprint_frame;
         const int synthetic_sprint = buttons >> B_SPRINT & 1;
         buttons &= ~(1ULL << B_SPRINT);
