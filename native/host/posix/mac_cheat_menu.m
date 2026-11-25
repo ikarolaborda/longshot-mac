@@ -4,7 +4,8 @@
 
 static NSString *trainerPath;
 static NSArray<NSString *> *settingKeys(void) {
-    return @[@"health", @"magic", @"carrots", @"timers", @"rupees", @"ammunition", @"equipment", @"skulltulas", @"maps", @"targetScore", @"songs", @"attackDamage", @"dungeonKeys"];
+    return @[@"health", @"magic", @"carrots", @"timers", @"rupees", @"ammunition", @"equipment", @"skulltulas", @"maps", @"targetScore", @"songs", @"attackDamage", @"dungeonKeys",
+             @"multiJump", @"fastMovement"];
 }
 
 void hos_mac_trainer_load(const char *directory) {
@@ -56,11 +57,13 @@ static BOOL saveSettings(void) {
                        @"Freeze challenge timers", @"Infinite rupees (1,000)", @"Full ammunition and bags",
                        @"All equipment", @"All 100 Gold Skulltulas", @"Hyrule map, dungeon maps and compasses",
                        @"Perfect score after one target hit", @"All ocarina songs", @"100× attack damage",
-                       @"Collect dungeon keys and open their chests"];
+                       @"Collect dungeon keys and open their chests", @"Multi-jump", @"Faster running and rolling (1.5×)"];
     for (int i = 0; i < OOT_TRAINER_OPTION_COUNT; ++i) {
         NSButton *button = [NSButton checkboxWithTitle:names[i] target:self action:@selector(changeOption:)];
         if (i == OOT_TRAINER_DUNGEON_KEYS)
             button.toolTip = @"Claims the current dungeon’s remaining keys. Opened key chests and spent keys persist when you save.";
+        if (i == OOT_TRAINER_MULTI_JUMP)
+            button.toolTip = @"Press jump again in midair for each extra jump.";
         button.tag = i;
         button.frame = NSMakeRect(20, 104 + (OOT_TRAINER_OPTION_COUNT - 1 - i) * 30, 306, 24);
         [self.contentView addSubview:button];

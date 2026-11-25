@@ -1,3 +1,10 @@
+## New in v3.2.0-mac.8
+
+Press **keypad 5** to turn on either movement cheat. Both start off.
+
+- **Multi-jump** lets Link jump again in midair. Tap **Space** or your mapped jump button once for each extra jump. Hold it for a single jump.
+- **Faster running and rolling (1.5×)** increases Link’s ground speed. Use the usual movement and roll controls. The game clock keeps its normal pace.
+
 ## New in v3.2.0-mac.7
 
 Press **keypad 5** and enable **Collect dungeon keys and open their chests**. When you resume play, Link receives the remaining small keys in the current dungeon. Dungeons with a boss key award it too. The game records key chests as opened and credits loose keys in dungeons that use them. Doors still spend a small key when you unlock them.

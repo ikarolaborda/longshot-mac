@@ -702,6 +702,8 @@ int hos_oot_is_player(Ctx *c, uint64_t actor) {
 /* Movement speed (the Debug tab's row): Link's character controller and the row's percent, as oot_player_speed saw them on
    his last update (0: none, or 1x) */
 static uint64_t oot_speed_controller;
+static uint64_t oot_fast_run_controller;
+static uint64_t oot_fast_roll_controller;
 static int oot_speed_percent = 100;
 
 /* A character controller's forward speed being set (nx2/oot_patches.py patch_cct_speed: s0, in metres a second, or a frame when
@@ -709,14 +711,25 @@ static int oot_speed_percent = 100;
    map, keeps its pace), the physics step moving him by it with its collisions. Only speeds up to 15 m/s (his run is 4.5): a ledge
    climb sets some 55 for a frame, and scaled it threw him past the ledge. Every other controller as it is. */
 void hos_oot_cct_speed(Ctx *c, uint64_t controller, int per_second) {
-    if (!controller || controller != __atomic_load_n(&oot_speed_controller, __ATOMIC_RELAXED)) return;
-    const int percent = __atomic_load_n(&oot_speed_percent, __ATOMIC_RELAXED);
+    if (!controller) return;
+    const int fast_run = controller == __atomic_load_n(&oot_fast_run_controller, __ATOMIC_RELAXED);
+    const int fast_roll = controller == __atomic_load_n(&oot_fast_roll_controller, __ATOMIC_RELAXED);
+    const int debug = controller == __atomic_load_n(&oot_speed_controller, __ATOMIC_RELAXED);
+    if (!fast_run && !fast_roll && !debug) return;
     int hos_move_stick_held(void);   /* host/nn_hid.c */
-    if (percent <= 100 || percent > 400 || !hos_move_stick_held()) return;
+    const int steering = hos_move_stick_held();
+    const int percent = debug && steering ? __atomic_load_n(&oot_speed_percent, __ATOMIC_RELAXED) : 100;
+    float factor = percent > 100 && percent <= 400 ? percent / 100.0f : 1.0f;
+    if (fast_run && steering) factor = fmaxf(factor, 1.5f);
+    /* The roll supplies its forward speed at this call. Direction changes then
+       resubmit the speed already stored on the controller, sometimes several
+       times in one update. Apply the boost only to the original request. */
+    if (fast_roll && c->x[30] == 0x80953d24ULL) factor = fmaxf(factor, 1.5f);
+    if (factor == 1.0f) return;
     float speed;
     memcpy(&speed, &c->vreg[0][0], sizeof speed);
     if (!(fabsf(speed) * (per_second ? 1.0f : 60.0f) <= 15.0f)) return;   /* (and NaN) */
-    speed *= percent / 100.0f;
+    speed *= factor;
     memcpy(&c->vreg[0][0], &speed, sizeof speed);
 }
 
@@ -1614,6 +1627,46 @@ static void oot_player_speed(Ctx *c, uint64_t components) {
     logged = percent;
 }
 
+/* The same action slot that the game's sprint uses. A wrapper action holds the active
+   verb at +0x4c. Only Link's ordinary jump/fall and ground locomotion participate. */
+static void oot_movement_cheats(Ctx *c, uint64_t components) {
+    const int multi = hos_trainer_enabled(OOT_TRAINER_MULTI_JUMP);
+    const int fast = hos_trainer_enabled(OOT_TRAINER_FAST_MOVEMENT);
+    int state = -1;
+    if ((multi || fast) && !hos_oot_event_playing(c)) {
+        const uint64_t actions = recomp_load64(c, components + 0x188);
+        const uint64_t slot = actions ? recomp_load64(c, actions + 0x1c0) : 0;
+        if (slot) {
+            state = (int)recomp_load32(c, slot + 0x28);
+            if (state == 0x11a) state = (int)recomp_load32(c, slot + 0x4c);
+        }
+    }
+    const uint64_t moving = fast && (state == 1 || state == 99) ? oot_player_controller(c, components) : 0;
+    __atomic_store_n(&oot_fast_run_controller, state == 1 ? moving : 0, __ATOMIC_RELAXED);
+    __atomic_store_n(&oot_fast_roll_controller, state == 99 ? moving : 0, __ATOMIC_RELAXED);
+    static uint64_t previous_components;
+    static int was_airborne;
+    const int airborne = multi && (state == 13 || state == 33);
+    const int repeat = airborne && was_airborne && previous_components == components;
+    previous_components = components;
+    was_airborne = airborne;
+    if (!repeat) return;
+    const uint64_t link = recomp_load64(c, components + 0x358);
+    if (!link) return;
+    const uint64_t pressed = recomp_load64(c, link + 0x40);
+    if (!pressed || !(recomp_load64(c, pressed) & 1u)) return;
+    const uint64_t controller = oot_player_controller(c, components);
+    A64Fn jump = a64_lookup(0x838b3f80ULL);  /* OneShotPhysicsCctJump */
+    if (!controller || !jump) return;
+    Ctx takeoff = *c;
+    takeoff.x[0] = controller;
+    /* The controller's local axis (+0x210 in its vtable) follows gravity.
+       OneShotPhysicsCctJump replaces velocity along that axis and retains lateral motion. */
+    const float speed = -6.5f;
+    memcpy(takeoff.vreg[0], &speed, sizeof speed);
+    jump(&takeoff);
+}
+
 /* Whether the game moved Link since the flight last placed him: he is more than 2 units (the flight moves him 4 a second)
    from where it holds him. A respawn after a fall or a warp keeps his actor, so the flight took him straight back to
    where it had him, over the same drop: he fell, respawned and fell again until the flight was switched off. It starts
@@ -1927,6 +1980,7 @@ static void oot_update_player_cheats(Ctx *c, uint64_t actor, uint64_t components
 #endif
 
     oot_player_speed(c, components);
+    oot_movement_cheats(c, components);
     oot_map_refresh(c, now);
 #ifdef __APPLE__
     /* Link stops updating on pause and load. Expire his last reticle sample there. */
