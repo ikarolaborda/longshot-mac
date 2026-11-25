@@ -83,6 +83,34 @@ static NSImage *icon(int index) {
     }
     return cache[key] == NSNull.null ? nil : cache[key];
 }
+/* Keep the item model, its description, and the selectable inventory to the
+   right visible. The two rows share the lower left of the Collection tab. */
+static void inlineIcon(int index, BOOL shown, CGFloat x, CGFloat y) {
+    NSRect rect = NSMakeRect(x, y, 23, 23);
+    if (shown) {
+        [icon(index) drawInRect:rect fromRect:NSZeroRect operation:NSCompositingOperationSourceOver
+                      fraction:1 respectFlipped:YES hints:nil];
+    } else {
+        [[gold() colorWithAlphaComponent:.35] setStroke];
+        [[NSBezierPath bezierPathWithOvalInRect:NSInsetRect(rect, 5, 5)] stroke];
+    }
+}
+static void overview(uint32_t available, BOOL custom, NSString *hint) {
+    NSFont *font = [NSFont systemFontOfSize:12 weight:NSFontWeightSemibold];
+    caption(@"Stones", 10, 10, font, gold());
+    for (int i = 0; i < STONES; ++i)
+        inlineIcon(i, (available >> i) & 1u, 56 + 23 * i, 4);
+    caption(@"Medallions", 136, 10, font, gold());
+    for (int i = STONES; i < RELICS; ++i)
+        inlineIcon(i, (available >> i) & 1u, 207 + 23 * (i - STONES), 4);
+    NSString *shortcut = [hint isEqualToString:@"⌘J"] ? hint : @"RS click";
+    CGFloat width = [shortcut sizeWithAttributes:@{NSFontAttributeName : font}].width;
+    caption(shortcut, 410 - width, 10, font, NSColor.whiteColor);
+    caption(@"Songs", 10, 39, font, gold());
+    for (int i = RELICS; i < COUNT; ++i)
+        inlineIcon(i, (available >> i) & 1u, 56 + 24 * (i - RELICS), 33);
+    inlineIcon(COUNT, custom, 357, 33);
+}
 static void section(NSString *name, int start, int end, uint32_t available, CGFloat x, CGFloat y) {
     int count = 0;
     for (int i = start; i < end; i++)
@@ -96,11 +124,7 @@ static void paint(CGSize size, BOOL open, NSString *hint, uint32_t earned, uint3
     [[NSBezierPath bezierPathWithRoundedRect:(NSRect){NSZeroPoint, size} xRadius:8 yRadius:8] fill];
     NSColor *white = NSColor.whiteColor;
     if (!open) {
-        NSFont *font = [NSFont systemFontOfSize:15 weight:NSFontWeightSemibold];
-        NSString *text = [NSString
-            stringWithFormat:@"Quest collection   %d/%d     %@", __builtin_popcount(available), COUNT, hint];
-        CGFloat w = [text sizeWithAttributes:@{NSFontAttributeName : font}].width;
-        caption(text, (size.width - w) / 2, 7, font, white);
+        overview(available, recorded || customEarned, hint);
         return;
     }
     caption(@"Quest collection", 22, 13,
@@ -168,15 +192,18 @@ void hos_mac_collection_overlay(void *layer) {
         BOOL recorded = !!recording, customEarned = !!award;
         BOOL keyboard = hos_prompts_face() == HOS_PROMPT_KEYBOARD;
         NSString *hint = keyboard ? @"⌘J" : @"Right stick click";
-        CGSize art = open ? CGSizeMake(646, 442) : CGSizeMake(330, 32);
-        CGFloat fit = MIN(
-            1.0, MIN((game.bounds.size.width - 12) / art.width, (game.bounds.size.height - 18) / art.height));
+        CGSize art = open ? CGSizeMake(646, 442) : CGSizeMake(420, 60);
+        CGSize bounds = game.bounds.size;
+        CGFloat safeWidth = MIN(bounds.width, bounds.height * (16.0 / 9.0));
+        CGFloat fit = open ? MIN(1.0, MIN((bounds.width - 12) / art.width, (bounds.height - 18) / art.height))
+                           : MIN(safeWidth * .405 / art.width, bounds.height * .12 / art.height);
         if (fit <= 0)
             return;
         CGSize display = CGSizeMake(art.width * fit, art.height * fit);
-        CGRect frame = CGRectMake((game.bounds.size.width - display.width) / 2,
-                                  open ? (game.bounds.size.height - display.height) / 2 : 8, display.width,
-                                  display.height);
+        CGRect frame = open ? CGRectMake((bounds.width - display.width) / 2,
+                                         (bounds.height - display.height) / 2, display.width, display.height)
+                            : CGRectMake((bounds.width - safeWidth) / 2 + safeWidth * .018,
+                                         bounds.height * .012, display.width, display.height);
         CGFloat density = MAX(1, game.contentsScale * fit);
         static uint32_t oldEarned, oldAvailable;
         static BOOL oldOpen, oldKeyboard, oldRecorded, oldCustomEarned;

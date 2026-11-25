@@ -269,6 +269,31 @@ static void trace_read(Ctx *c, uint32_t key, const char *name) {
     seen[count++] = signature;
     hos_log("inventory read: caller 0x%llx scope %u key %08x %s", (unsigned long long)c->x[30], loan_depth, key, name);
 }
+/* The pause grid resolves a slot's actor, then separately asks whether it has
+   been acquired and how many copies to display. Only these UI callers borrow
+   the card, fairy gifts and tokens. Rewards use the original game functions. */
+static int collection_quantity(Ctx *c, uint64_t actor_ref) {
+    if (!hos_guest_range(actor_ref, 8)) return 0;
+    const char *actor = hos_guest_range(recomp_load64(c, actor_ref), 96);
+    if (!actor || !memchr(actor, 0, 96)) return 0;
+    if (!strcmp(actor, "Item_Token_Gold"))
+        return hos_trainer_enabled(OOT_TRAINER_SKULLTULAS) ? 100 : 0;
+    if (!hos_trainer_enabled(OOT_TRAINER_EQUIPMENT)) return 0;
+    return !strcmp(actor, "Item_Token_Gerudo") || !strcmp(actor, "Item_FairyBless_MP") ||
+           !strcmp(actor, "Item_FairyBless_MPDouble") || !strcmp(actor, "Item_FairyBless_DefenseDouble");
+}
+
+void hos_oot_collection_owned(Ctx *c, A64Fn original) {
+    if (collection_quantity(c, c->x[0])) c->x[0] = 1;
+    else original(c);
+}
+
+void hos_oot_collection_stock(Ctx *c, A64Fn original) {
+    int count = collection_quantity(c, c->x[1]);
+    if (count) c->x[0] = (unsigned)count;
+    else original(c);
+}
+
 int hos_oot_loan_count(Ctx *c) {
     if (!loan_depth && !tracing_inventory()) return 0;
     uint64_t string_ref = c->x[1];

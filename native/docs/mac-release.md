@@ -1,3 +1,9 @@
+## New in v3.2.0-mac.6
+
+Open **Pause → Collection**, the tab with the Gold Skulltula tokens. The three stones, six medallions and ocarina songs appear on the tab as icons. **Command+J** or a right-stick click opens their names and earned status. Your recorded Scarecrow tune appears after the twelve standard songs.
+
+**All 100 Gold Skulltulas** shows the gold token and its count of 100 on the original grid. **All Equipment** shows the Gerudo Pass and the three Great Fairy gifts, including the Gift of Halved Damage. Selecting one displays its original model and description. Their story rewards still use the save’s earned progress.
+
 ## New in v3.2.0-mac.5
 
 Metal fills the game window by default. Resizing a window or moving it between displays updates the camera and HUD to match the drawable. A fixed aspect ratio chosen in Graphics still keeps its proportions.

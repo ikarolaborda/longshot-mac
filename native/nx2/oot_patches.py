@@ -320,6 +320,12 @@ def patch_inventory_loans(source):
 # Return addresses for wallet transactions, equipment use and map reads.
 # Acquisition scripts and save serialization continue through the original code.
 TRAINER_CALL_SITES = {
+    0x80a92c20: (0x801a1160, "hos_oot_collection_owned"),  # Collection grid icon
+    0x802eb854: (0x801a1160, "hos_oot_collection_owned"),  # show the selected item's text
+    0x802ed8ac: (0x801a1160, "hos_oot_collection_owned"),  # show its rotatable model
+    0x80a8d600: (0x801a1160, "hos_oot_collection_owned"),  # selected item description
+    0x80a92c48: (0x805b63e0, "hos_oot_collection_stock"),  # visible quantity on Collection
+    0x80a8f0c4: (0x805b63e0, "hos_oot_collection_stock"),  # choose the item for a pouch widget
     0x8007f000: (0x809d39e0, "hos_oot_wallet_transaction"),  # commit the pouch balance and inform its HUD
     0x829e93cc: (0x80854960, "hos_oot_loan_bomb_flower_prompt"),  # default result in the no-bracelet angle test
     0x82ea79a0: (0x8019bf90, "hos_oot_loan_strength"),  # player lifter, before the actor's grade cap
