@@ -29,9 +29,12 @@ int hos_mac_bundle_setup(void) {
     @autoreleasepool {
         NSBundle *app = NSBundle.mainBundle;
         BOOL preview = [app.bundleIdentifier isEqual:@"dev.longshot.game.preview"];
-        if (!preview && ![app.bundleIdentifier isEqual:@"dev.longshot.game"]) return 1;
+        BOOL experimental = [app.bundleIdentifier isEqual:@"dev.longshot.game.experimental"];
+        if (!preview && !experimental && ![app.bundleIdentifier isEqual:@"dev.longshot.game"]) return 1;
+        NSString *channel = experimental ? @"Longshot Experimental" : preview ? @"Longshot Metal Preview" : @"Longshot";
+        if (experimental) setenv("HOS_WINDOW_TITLE", channel.UTF8String, 0);
         NSFileManager *fm = NSFileManager.defaultManager;
-        NSString *support = [[NSHomeDirectory() stringByAppendingPathComponent:@"Library/Application Support"] stringByAppendingPathComponent:preview ? @"Longshot Metal Preview" : @"Longshot"];
+        NSString *support = [[NSHomeDirectory() stringByAppendingPathComponent:@"Library/Application Support"] stringByAppendingPathComponent:channel];
         NSString *runtime = [support stringByAppendingPathComponent:@"Runtime"];
         NSString *dataName = [app objectForInfoDictionaryKey:@"LongshotDataDirectory"];
         NSString *assets = dataName ? [[support stringByAppendingPathComponent:@"GameData"] stringByAppendingPathComponent:dataName]

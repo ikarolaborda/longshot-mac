@@ -5,6 +5,7 @@ import ctypes
 import os
 from pathlib import Path
 import plistlib
+import re
 import uuid
 import subprocess
 import tempfile
@@ -109,13 +110,28 @@ def main():
     parser.add_argument("game", type=Path, help="updated macOS game build")
     parser.add_argument("--output", type=Path)
     parser.add_argument("--data-home", type=Path, help="existing XDG data folder containing longshot/save")
-    parser.add_argument("--preview", action="store_true", help="use a separate application identity and player profile")
+    channel = parser.add_mutually_exclusive_group()
+    channel.add_argument("--experimental-release", metavar="TAG", help="install the side-by-side experimental release")
+    channel.add_argument("--preview", action="store_true", help="use a separate application identity and player profile")
     args = parser.parse_args()
     app_id = APP_ID + ".preview" if args.preview else APP_ID
     support_name = "Longshot Metal Preview" if args.preview else "Longshot"
+    experimental = None
+    if args.experimental_release:
+        experimental = re.fullmatch(r"v(\d+\.\d+\.\d+)-metal-experimental\.([1-9]\d*)", args.experimental_release)
+        if not experimental or args.data_home:
+            parser.error("Experimental installs require a release tag and a separate default player profile.")
+        app_id = APP_ID + ".experimental"
+        support_name = "Longshot Experimental"
     support = Path.home() / "Library/Application Support" / support_name
     if args.output is None:
-        if args.preview:
+        if experimental:
+            app_dir = Path("/Applications")
+            if not os.access(app_dir, os.W_OK):
+                app_dir = Path.home() / "Applications"
+                app_dir.mkdir(exist_ok=True)
+            args.output = app_dir / "Longshot Experimental.app"
+        elif args.preview:
             args.output = Path.home() / "Applications/Longshot Metal Preview.app"
             args.output.parent.mkdir(exist_ok=True)
         else:
@@ -185,6 +201,9 @@ def main():
                     CFBundleShortVersionString=version, NSHighResolutionCapable=True, LongshotDataDirectory=data_name,
                     LSApplicationCategoryType="public.app-category.adventure-games",
                     NSMicrophoneUsageDescription="Use the microphone during game actions that require it.")
+        if experimental:
+            info.update(CFBundleName=support_name, CFBundleShortVersionString=experimental[1],
+                        CFBundleVersion=experimental[2], LongshotReleaseTag=args.experimental_release)
         (contents / "Info.plist").write_bytes(plistlib.dumps(info))
         run("codesign", "--force", "--sign", "-", app)
         run("codesign", "--verify", "--strict", app)
