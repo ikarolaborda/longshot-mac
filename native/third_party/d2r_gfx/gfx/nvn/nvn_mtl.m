@@ -3561,6 +3561,9 @@ static void usnap_check_commit(void) {
         memcpy(e->copy, u->cpu, (size_t)e->n); e->stamp = nvn_dirty_now(); nvn_dirty_protect((const void *)(uintptr_t)e->lo, (size_t)e->n); l->n++; }
     [g_commit_blocks addObject:^{ usnap_check_done(l); }];
 }
+#ifdef LONGSHOT_MTL
+static void field_entry_prepare(void);
+#endif
 uint64_t mtl_sub_commit(void) {
     copy_sites_report();   // OOT_COPY_SITES=1 only
     cg_flush();   // TOTK: cube-face-set groups still pending at the end of the submission (reason 4 in the stats line)
@@ -3574,6 +3577,9 @@ uint64_t mtl_sub_commit(void) {
     upd_flush(); BOTW_WB_STAGE() BOTW_TINY_COMMIT()   // TOTK: renamed uniform updates reach memory here, after every draw that read them through private copies
     if (g_blit) { enc_b_end(g_blit); g_blit = nil; }
     rs_sub_end();   // TOTK: encode stage drained before the command buffer is ended
+#ifdef LONGSHOT_MTL
+    field_entry_prepare();
+#endif
     up_flush();
     uint64_t fence = ++g_fence;
     if (g_vis_ring_i >= 0) g_vis_ring[g_vis_ring_i].fence = fence;
@@ -6066,6 +6072,9 @@ static void storage_allocation_trace(const tex_t *t, id<MTLTexture> texture) {
     fflush(file);
     funlockfile(file);
 }
+#ifdef LONGSHOT_MTL
+static _Thread_local int field_entry_upload;
+#endif
 static void *tex_mtl_p(const tex_t *ct) {
     tex_t *t = (tex_t *)ct; BOTW_TEX_FOLLOW(t)
     if (!t || !t->serial) return NULL;
@@ -6126,6 +6135,11 @@ static void *tex_mtl_p(const tex_t *ct) {
         }
         TILELOG(t, "first upload from the pool bytes");
         NvPkg *npk = [NvPkg new]; pk = npk;
+#ifdef LONGSHOT_MTL
+        /* Retain the two shared page edges on an early upload. Another asset
+           can then be loaded alongside it without uploading this texture twice. */
+        pk->edge_want = field_entry_upload;
+#endif
         pk->lo = (uintptr_t)t->mem; pk->hi = pk->lo + t->L.size; BOTW_PKG_WB_SEEN(pk)
         pkg_views_drop(pk); pk->tex = pkg_upload(t, &pk->stamp, &pk->key, pk);
         if (!pk->tex) return NULL;
@@ -8742,6 +8756,97 @@ typedef struct { tex_t t; int ok; view_t v; int has_v; void *view; uint64_t view
 /* TOTK: view_tt / view_parent: textureType and parentTexture of view, read once when it is stored (a Metal texture never
    changes either). view_parent is only compared, never messaged; the view retains its parent while it is stored. */
 static treg_t *g_treg; static int g_ntreg;
+#ifdef LONGSHOT_MTL
+extern int hos_oot_field_entry_near(void);
+extern int nvn_tex_live_at(const void *mem, tex_t *out);
+static int field_arrival_texture(const tex_t *t) {
+    static const uint64_t hints[] = {
+#include "longshot_field_textures.inc"
+    };
+    /* The partial fingerprint only selects work. tex_mtl_p uploads the actual
+       live serial's own bytes and retains its usual dirty-page tracking. */
+    size_t last = t->L.size - sizeof(uint64_t);
+    uint64_t hash = ((uint64_t)t->d.width << 32) ^ t->d.height ^ ((uint64_t)t->d.format << 24) ^ t->L.size;
+    for (unsigned i = 0; i < 3; ++i) {
+        uint64_t word;
+        if (!guarded_memcpy(&word, t->mem + i * (last / 2), sizeof word, "field texture hint")) return 0;
+        hash ^= word;
+        hash *= UINT64_C(0x9e3779b185ebca87);
+        hash ^= hash >> 29;
+    }
+    size_t lo = 0, hi = sizeof hints / sizeof *hints;
+    while (lo < hi) {
+        size_t mid = lo + (hi - lo) / 2;
+        if (hints[mid] == hash) return 1;
+        if (hints[mid] < hash) lo = mid + 1; else hi = mid;
+    }
+    return 0;
+}
+
+/* End of replay only. Inspect a slice of registered descriptors and give the
+   normal draws first use of the command buffer. Never retain guest pointers. */
+static void field_entry_prepare(void) {
+    static int cursor, active;
+    static uint64_t total, count, last_frame;
+    static double rescan_at;
+    if (!on_sub_thread()) return;
+    if (!hos_oot_field_entry_near()) {
+        if (active && count) MLOG("Field arrival prewarm: %llu textures, %.1f MiB", count, total / 1048576.);
+        active = cursor = 0; count = total = 0; rescan_at = 0;
+        return;
+    }
+    uint64_t frame = atomic_load(&g_cur_frame);
+    if (total >= (192u << 20) || (active && frame == last_frame)) return;
+    active = 1; last_frame = frame;
+    double start = CACurrentMediaTime();
+    if (start < rescan_at) return;
+    unsigned bytes = 0;
+    for (unsigned checked = 0; checked < 4096 && bytes < (8u << 20); ++checked) {
+        if ((checked % 32 == 0 || bytes) && CACurrentMediaTime() - start >= .001) break;
+        registry_lock();
+        if (cursor >= g_ntreg) {
+            registry_unlock();
+            cursor = 0; rescan_at = start + .25;
+            break;
+        }
+        treg_t *slot = &g_treg[cursor++];
+        const tex_t *t = &slot->t;
+        if (slot->ok && t->mem && t->L.size >= 262144 && t->L.size <= 5242880 &&
+            !(t->d.flags & ~NVN_TEXTURE_FLAGS_IMAGE) && t->d.samples <= 1) {
+            int width, height;
+            nvn_fmt_bpb(t->d.format, &width, &height);
+            tex_t live;
+            if (width > 1 && height > 1 && !serial_is_dead(t->serial) && !gpu_owned(t->serial) &&
+                nvn_tex_live_at(t->mem, &live) && live.serial == t->serial &&
+                mtl_addr_known((uint64_t)live.mem, live.L.size) && tex_mirrored(&live) &&
+                nvn_dirty_tracked(live.mem, live.L.size)) {
+                /* IMAGE is a capability. GPU-written serials are excluded above.
+                   On a return trip the same texture often has fresh CPU pool bytes. */
+                id obj = (__bridge id)serial_ptr(live.serial);
+                NvPkg *pkg = [obj isKindOfClass:[NvPkg class]] ? obj : nil;
+                int needs_upload = !obj || (pkg && !pkg->owned && !pkg->hashed &&
+                    (!pkg->tex || (pkg->seen != nvn_dirty_now() && nvn_dirty_since(live.mem, live.L.size, pkg->stamp))));
+                if (needs_upload && live.L.size <= (192u << 20) - total &&
+                    live.L.size <= (8u << 20) - bytes && field_arrival_texture(&live)) {
+                    uint64_t before = g_pkg_uploads + g_pkg_reuploads;
+                    if (pkg) pkg->edge_want = 1;
+                    field_entry_upload = 1;
+                    void *prepared = tex_mtl_p(&live);
+                    field_entry_upload = 0;
+                    if (prepared && g_pkg_uploads + g_pkg_reuploads > before) {
+                        /* A fresh package has no draw yet. Give it this submission's
+                           age so the idle sweep cannot immediately discard it. */
+                        NvPkg *resident = (__bridge NvPkg *)serial_ptr(live.serial);
+                        if (resident) resident->used = g_sub_serial;
+                        bytes += live.L.size; total += live.L.size; count++;
+                    }
+                }
+            }
+        }
+        registry_unlock();
+    }
+}
+#endif
 /* Only slots with a cached Metal view need work when an NVN texture is finalized. A linear
    scan of the entire descriptor pool on every finalize dominated the game's render thread. */
 static nvn_hmap g_view_heads = {.klen = 8};   // serial -> slot id + 1; protected by g_rmu
@@ -11897,7 +12002,11 @@ static void warm_plan(NSArray<NSString *> *paths, NSArray<NSString *> *files, NS
             [rows addObject:line];
             NSArray<NSString *> *c = [line componentsSeparatedByString:@"\t"];
             if ([c[0] isEqualToString:@"S"] && c.count >= 3 && [c[1] length]) {
-                if (g_warm_pipelines_only || !warm_available(c[1])) continue;
+                if (g_warm_pipelines_only && ![path.lastPathComponent isEqualToString:@"field-entry-shaders.tsv"]) {
+                    [rows removeObject:line]; // a later entrance list may explicitly request this library
+                    continue;
+                }
+                if (!warm_available(c[1])) continue;
                 [keys addObject:c[1]];
             }
             else if (([c[0] isEqualToString:@"R"] && c.count >= 2) || ([c[0] isEqualToString:@"B"] && c.count >= 4) || ([c[0] isEqualToString:@"T"] && c.count >= 3)) {
@@ -12621,6 +12730,10 @@ static void warm_start(void) {
         }
     }
     NSMutableArray<NSString *> *files = [NSMutableArray array];
+#ifdef LONGSHOT_MTL
+    NSString *field = [dir stringByAppendingPathComponent:@"field-entry-shaders.tsv"];
+    if (field && [[NSFileManager defaultManager] fileExistsAtPath:field]) paths = [(paths ?: @[]) arrayByAddingObject:field];
+#endif
     NSUInteger skipped = 0;
     for (NSString *file in cached) {
         if ([file hasSuffix:@"_b.metal"] && !totk_shader_scope_contains(g_warm_scope, [file stringByDeletingPathExtension])) { skipped++; continue; }

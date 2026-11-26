@@ -1377,13 +1377,42 @@ int hos_oot_stick_y_reversed(void) {
     return __atomic_load_n(&oot_stick_reverse_y, __ATOMIC_RELAXED);
 }
 #endif
-static void oot_map_refresh(Ctx *c, int64_t now) {
+#ifdef __APPLE__
+static float oot_load_float(Ctx *c, uint64_t addr);
+/* The renderer reads only this deadline, never the live actor. */
+static int64_t oot_field_entry_until;
+int hos_oot_field_entry_near(void) {
+    int64_t until = __atomic_load_n(&oot_field_entry_until, __ATOMIC_RELAXED);
+    return until && hos_now_ns() < until;
+}
+static void oot_field_entry_refresh(Ctx *c, uint64_t actor, const char *map, int64_t now) {
+    static int enabled = -1;   /* read only on Link's update thread */
+    if (enabled < 0) enabled = env_on("LONGSHOT_FIELD_PREWARM");
+    if (!enabled) return;
+    /* Stream only while approaching the adult village exit or crossing its fade.
+       Link can stop updating during a load, so each observation expires. */
+    static float previous_distance = -1.f;
+    float distance = -1.f;
+    if (!strcmp(map, "KakarikoVillage_Adult") || !strcmp(map, "KakarikoVillage_Adult_Alternative")) {
+        float dx = oot_load_float(c, actor + 796) + 148.f;
+        float dz = oot_load_float(c, actor + 804) - 44.f;
+        distance = hypotf(dx, dz);
+    }
+    if (!(distance >= 0.f && distance < 40.f))
+        __atomic_store_n(&oot_field_entry_until, 0, __ATOMIC_RELAXED);
+    else if (previous_distance >= 0.f && distance < previous_distance - .25f)
+        __atomic_store_n(&oot_field_entry_until, now + 5000000000LL, __ATOMIC_RELAXED);
+    previous_distance = distance < 40.f ? distance : -1.f;
+}
+#endif
+static void oot_map_refresh(Ctx *c, uint64_t actor, int64_t now) {
     static int64_t next;
     if (now < next) return;
     next = now + 250000000LL;
     char map[80];
     if (!oot_gamedata_string(c, 0x1d6189dau, map, sizeof map) || !map[0]) return;   /* Sequence_CurrentBanc */
 #ifdef __APPLE__
+    oot_field_entry_refresh(c, actor, map, now);
     __atomic_store_n(&oot_ranged_zr, hos_oot_zr_ranged(), __ATOMIC_RELAXED);
     int64_t reverse_y;
     if (hos_oot_gamedata_bool(0x520ddc44u, &reverse_y))  /* IsCameraUpDownReverse */
@@ -1981,7 +2010,7 @@ static void oot_update_player_cheats(Ctx *c, uint64_t actor, uint64_t components
 
     oot_player_speed(c, components);
     oot_movement_cheats(c, components);
-    oot_map_refresh(c, now);
+    oot_map_refresh(c, actor, now);
 #ifdef __APPLE__
     /* Link stops updating on pause and load. Expire his last reticle sample there. */
     __atomic_store_n(&oot_aim_until, hos_oot_weapon_reticle() ? now + 250000000LL : 0, __ATOMIC_RELAXED);

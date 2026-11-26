@@ -63,6 +63,10 @@ The controller timer starts when the test sends the input. It stops when Metal d
 
 The two routes are in `scripts/mac/tests/village_response.py` and `scripts/mac/tests/field_traversal.py`. Set `HOS_METAL_TIMING=2` for displayed-frame timestamps. For a small image sample from each SDR drawable, also set `HOS_METAL_PIXEL_TRACE` to a new file and pass that path to the village script with `--pixels`.
 
+The Metal-only preview prepares shader libraries and mesh pipelines used at the adult Kakariko Village gate before gameplay. For the experimental texture prefetch, launch the preview with `LONGSHOT_FIELD_PREWARM=1` in its environment. It starts when Link approaches the Hyrule Field exit. The default uses on-demand texture uploads because prefetch produced mixed loading times.
+
+To test that gate, launch a copied save with `HOS_METAL_TIMING=2`. Run `scripts/mac/tests/gate_crossings.py SOCKET --output route.json`, then `scripts/mac/tests/displayed_fps.py GAME_LOG route.json`. The route records when Link responds to movement and the first two seconds of frame delivery in each destination.
+
 In an adult Death Mountain Crater test on an M5 Max and a 240 Hz LG display, the manual 144 FPS cap delivered 74 to 84 displayed frames per second. Adaptive mode delivered 115 to 120 across three samples of 600 displayed frames, including frames from MetalFX. The game produced 70 frames per second on average during the 22-second adaptive test. The game clock ran within 1% of real time during steady play. A second game window was open.
 
 This preview updates an existing Longshot game build for Apple silicon. Unzip the installer, open it, and choose the folder containing your game files. It installs Longshot in Applications. The executable has a local ad hoc signature. Finder may require approval in Privacy & Security.
