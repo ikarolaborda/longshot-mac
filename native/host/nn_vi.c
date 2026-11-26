@@ -186,6 +186,18 @@ static void fps_refresh(void) {
     int hos_mac_frame_cap(int configured);
     if (!env && hos_renderer_metal()) row = hos_mac_frame_cap(row);
 #endif
+    int boot_pacing = 0;
+#ifdef __APPLE__
+    // Leave CPU time for the save loader while Adaptive mode shows the title and file list.
+    // Restore the chosen frame rate at the first player update, including on a new game.
+    static int entered_world;
+    if (!env && !entered_world && hos_renderer_metal()) {
+        extern int hos_oot_player_seen(void), hos_mac_adaptive_enabled(void);
+        entered_world = hos_oot_player_seen();
+        boot_pacing = !entered_world && hos_mac_adaptive_enabled();
+        if (boot_pacing && row > 60) row = 60;
+    }
+#endif
     int v = row;
     /* (issue #73: while a movie's player is updating, pace at FPS_MOVIE even at the console's cap: its pictures come one
        per update and the updates follow the frame loop, so a 60 fps loop undersupplies a 59.95-picture-second movie.
@@ -195,7 +207,7 @@ static void fps_refresh(void) {
        left alone - the player asked for its own pacing. Measured on a Deck OLED at cap 240: intro skips 1,055 -> 567
        of 5,947, the title's looped movies 4-86 of 1,800, game clock 0.998-1.005; middle caps measured worse than both
        ends (cap 73 skipped 1,216, later movies 465/275), so jump straight to 240 rather than nudge past 60) */
-    if (movie_pace && row == 60) {
+    if (movie_pace && row == 60 && !boot_pacing) {
         const uint64_t seen = __atomic_load_n(&movie_seen_at, __ATOMIC_RELAXED);
         if (seen && hos_now_ns() - (int64_t)seen < MOVIE_STALE_NS) v = FPS_MOVIE;
     }

@@ -1,5 +1,6 @@
 // Frame interpolation (vk_framegen.cpp): made frames shown between the game's (in a window; RX_VK_FRAMEGEN=0: off).
 #pragma once
+#include "menu_upscale_types.h"
 
 #include "vk_internal.h"
 
@@ -30,7 +31,7 @@ bool framegen_record(VkCommandBuffer cmd, VkImageView src, uint32_t sw, uint32_t
 /// Frame generation by row and the FPS counter name. None: none made (Off, nothing to blend from, none for half a second).
 /// DlssPaused: DLSS FG chosen, and the sets were the game's frames alone, with no Upscaler picture to make frames from (the
 /// game's own menus, movies and loading screens: vk_dlss.cpp dlss_fg_holds)
-enum class FgMaker { None, BuiltIn, Dlss, Fsr3, DlssPaused };
+
 FgMaker framegen_maker();
 /// The first frame the last framegen_record made (null when it made none), w x h, GENERAL; with RX_VK_SHOT_MADE=all, each
 /// call the next of its made frames in turn, its place in the set in index

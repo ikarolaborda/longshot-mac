@@ -7,9 +7,6 @@
 
 #include "menu/bindings.h"
 
-#ifndef MENU_LAYOUT_ONLY
-#include "vk_internal.h"   // (host: the bindings, hos_bind)
-#endif
 
 #include <algorithm>
 #include <string>

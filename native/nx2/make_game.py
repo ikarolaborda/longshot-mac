@@ -73,7 +73,7 @@ MAC = sys.platform == "darwin"   # (longshot-mac)
 LINUX, CROSS = not _toolchain.windows() and not MAC, _toolchain.windows() and os.name != "nt"
 # (SDL2.dll is sdl2-compat: it loads SDL3.dll from beside the exe. Left out of bin\ since v2.0.0, it said "Failed loading SDL3
 # library" three times and no controller worked: Discord #bug-reporting, 11-08)
-BESIDE = (["longshot", "longshot_vk.dylib", "longshot_mtl.dylib", "libSDL2-2.0.so.0", "renhdrum.dylib"] if MAC else
+BESIDE = (["longshot", "longshot_mtl.dylib", "libSDL2-2.0.so.0", "renhdrum.dylib"] if MAC else
           ["longshot", "longshot_vk.so", "libSDL2-2.0.so.0", "renhdrum.so"] if LINUX else
           ["longshot.exe", "longshot_vk.dll", "SDL2.dll", "SDL3.dll", "renhdrum.dll"])
 LANGUAGES = [("en-US", "English (US)"), ("en-GB", "English (UK)"), ("fr", "French (France)"), ("fr-CA", "French (Canada)"), ("de", "German"),
@@ -912,7 +912,7 @@ def check_linux_prerequisites(work=None):
                     missing.append("Python module %s (not on %s's isolated import path; install requirements.txt "
                                    "with that Python)" % (pin[1], sys.executable))
     # (the Vulkan back end is compiled by every build, the AppImage's too: its headers, and clang++ for it and a64emit)
-    for (name, package, probe, env), found in zip(build.VK_HEADERS, build.vulkan_headers(work)):
+    for (name, package, probe, env), found in (() if MAC else zip(build.VK_HEADERS, build.vulkan_headers(work))):
         if not found:
             missing.append("%s header %s (CPM package %s: RX_CPM, clone/cpm, work/eg/.cache/cpm, then sibling "
                            "mkw-recomp/Eglantine caches; then %s, package root or include/; then /usr/local, /usr)"
@@ -3254,7 +3254,7 @@ def main(a=None):
 
     # (made once on the development PC: lists of addresses and counts, no game code)
     # (longshot_vk.profdata: the renderer's own profile, counts over Longshot's own code)
-    for name in ("hot_order.txt", "longshot_pieces.prof", VK_PROFILE, "longshot.res"):
+    for name in ("hot_order.txt", "longshot_pieces.prof", "longshot.res") + (() if MAC else (VK_PROFILE,)):
         src = os.path.join(ROOT, "work", name)
         dst = os.path.join(work, name)
         # (copied only when it differs: a compiler still ending from a cancelled build keeps the profile mapped, WinError 1224)
@@ -3271,7 +3271,7 @@ def main(a=None):
     print(hot_list_line(hot, os.environ), flush=True)
     if os.path.exists(os.path.join(work, "longshot_pieces.prof")) and profile_readable(os.path.join(work, "longshot_pieces.prof")):
         env["RX_PGO"] = os.path.join(work, "longshot_pieces.prof")
-    vk_profile = vk_profile_for(work, os.environ)
+    vk_profile = None if MAC else vk_profile_for(work, os.environ)
     if vk_profile:
         env["RX_VK_PGO"] = vk_profile
 
@@ -3628,16 +3628,17 @@ def main(a=None):
     if getattr(a, "fetch_xess_runtime", False):
         place_xess_runtime(out)
     PHASES.part("swap and runtimes")
-    # every shader of the game, for its first start to translate (gpu/vk/vk_shader.cpp seed_open). Without it the game still runs, compiling them
-    # as it meets them: not worth stopping a finished build for
-    # (made again only when the game's shader files, the census or the list itself changed: 4 s and 514 MB written at every update)
-    if shader_list_current(work, romfs, os.path.join(out, "longshot_shaders.bin")):
-        print("the shader list is the one the last build made from the same files: not made again", flush=True)
-    elif run(shader_census_cmd(romfs, os.path.join(out, "longshot_shaders.bin")), check=False, output=sys.stderr):
-        print("the shader list was not made: the game will compile its shaders as it plays", flush=True)
-    else:
-        note_shader_list(work, romfs, os.path.join(out, "longshot_shaders.bin"))
-    PHASES.part("shader list")
+    if not MAC:
+        # every shader of the game, for its first start to translate (gpu/vk/vk_shader.cpp seed_open). Without it the game still runs, compiling them
+        # as it meets them: not worth stopping a finished build for
+        # (made again only when the game's shader files, the census or the list itself changed: 4 s and 514 MB written at every update)
+        if shader_list_current(work, romfs, os.path.join(out, "longshot_shaders.bin")):
+            print("the shader list is the one the last build made from the same files: not made again", flush=True)
+        elif run(shader_census_cmd(romfs, os.path.join(out, "longshot_shaders.bin")), check=False, output=sys.stderr):
+            print("the shader list was not made: the game will compile its shaders as it plays", flush=True)
+        else:
+            note_shader_list(work, romfs, os.path.join(out, "longshot_shaders.bin"))
+        PHASES.part("shader list")
     # (longshot) the text that names the console, reworded for a PC in every language (host/texts.c serves them; a mod's own wins)
     texts = os.path.join(out, "texts")
     if run(PY + [os.path.join(HERE, "text_assets.py"), "--romfs", romfs, "--out", texts], check=False, output=sys.stderr):
@@ -3661,8 +3662,9 @@ def main(a=None):
     icon = os.path.join(ROOT, "assets", "longshot.png")
     if LINUX and not game_title.write_png(out, os.path.join(out, "longshot.png")) and os.path.exists(icon):   # (the window's icon: host/posix/display_sdl.c; the game's own when its .nup had one)
         copy_writable(icon, os.path.join(out, "longshot.png"))   # (a second build overwrites the first's)
-    seed_pipelines(out)
-    ship_state_list(out)
+    if not MAC:
+        seed_pipelines(out)
+        ship_state_list(out)
     language = os.path.join(out, "language.txt")   # (the same text as host/nn_applet.c writes)
     with open(language, "w", encoding="utf-8", newline="\n") as f:
         f.write("# The game's language. Change the line below to one of the codes listed here, save, and start the game again.\n\n%s\n\n" % a.language)

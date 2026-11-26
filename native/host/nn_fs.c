@@ -6,6 +6,7 @@
    hos_romfs_dir and hos_user_dir are set by hos_main.c. Reads are positional (ReadFile with an offset), so any number
    of guest threads can read one file at once. Results: switchbrew "Error codes" (module 2 = fs). */
 #include "hos.h"
+#include "scene_trace.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -1259,6 +1260,7 @@ static uint64_t read_at(Ctx *c, uint64_t id, int64_t off, uint64_t buf, uint64_t
         *oom = 1;
         return 0;
     }
+    uint64_t scene_read = fh->save ? 0 : hos_scene_begin();
     if (fh->save) AcquireSRWLockShared(&save_lock);
     while (done < size) {
         OVERLAPPED ov = {0};
@@ -1270,6 +1272,7 @@ static uint64_t read_at(Ctx *c, uint64_t id, int64_t off, uint64_t buf, uint64_t
         done += got;
     }
     if (fh->save) ReleaseSRWLockShared(&save_lock);
+    hos_scene_end(SCENE_FILE_READ, scene_read, done);
     HOS_WRITTEN(GP(buf), (size_t)done);   /* (into guest memory: the GPU may read it) */
     {   /* HOS_FS_WATCH=<lo hex>:<hi hex> (debugging): reads into that guest range, with the file */
         static int on = -1;

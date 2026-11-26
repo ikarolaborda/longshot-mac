@@ -1804,7 +1804,18 @@ static uint64_t g_sub_serial;   // 第几次提交（并行预编「每次提交
 static void pt_apply_request(void);
 static int g_sub_chunks; static uint64_t g_chunk_mark, g_stat_draw; static void chunk_cfg(void);   // mid-submission commits, defined before mtl_sub_commit
 static int g_nupd, g_nshadow; static inline int upd_guard(uint64_t lo, uint64_t hi);   // renamed uniform updates, defined with mtl_sub_update
+#ifdef LONGSHOT_MTL
+static double stream_submit_start;
+extern int hos_oot_gate_zone(void);
+static int stream_zone;
+extern int hos_mac_stream_policy(void);
+extern int hos_oot_field_entry_near(void);
+#endif
 void mtl_sub_begin(void) {
+#ifdef LONGSHOT_MTL
+    stream_zone = hos_oot_gate_zone();
+    stream_submit_start = hos_oot_field_entry_near() ? CACurrentMediaTime() : 0;
+#endif
     g_fc_begin0 = clock_gettime_nsec_np(CLOCK_UPTIME_RAW);
     /* The submission's autorelease pool, drained in mtl_sub_commit, opens before anything else: the guest's submit
        thread has no pool of its own that drains (frontend.m's lasts the whole game), so what defer_drain, defer_reset,
@@ -3561,6 +3572,9 @@ static void usnap_check_commit(void) {
         memcpy(e->copy, u->cpu, (size_t)e->n); e->stamp = nvn_dirty_now(); nvn_dirty_protect((const void *)(uintptr_t)e->lo, (size_t)e->n); l->n++; }
     [g_commit_blocks addObject:^{ usnap_check_done(l); }];
 }
+#ifdef LONGSHOT_MTL
+static void field_entry_prepare(void);
+#endif
 uint64_t mtl_sub_commit(void) {
     copy_sites_report();   // OOT_COPY_SITES=1 only
     cg_flush();   // TOTK: cube-face-set groups still pending at the end of the submission (reason 4 in the stats line)
@@ -3574,6 +3588,9 @@ uint64_t mtl_sub_commit(void) {
     upd_flush(); BOTW_WB_STAGE() BOTW_TINY_COMMIT()   // TOTK: renamed uniform updates reach memory here, after every draw that read them through private copies
     if (g_blit) { enc_b_end(g_blit); g_blit = nil; }
     rs_sub_end();   // TOTK: encode stage drained before the command buffer is ended
+#ifdef LONGSHOT_MTL
+    field_entry_prepare();
+#endif
     up_flush();
     uint64_t fence = ++g_fence;
     if (g_vis_ring_i >= 0) g_vis_ring[g_vis_ring_i].fence = fence;
@@ -4034,7 +4051,14 @@ static int pkg_final_cache_on(void) {
     if (v < 0) { const char *e = getenv("TOTK_PKG_FINAL_CACHE"); v = !(e && !atoi(e)); atomic_store(&g_pkg_final_cache, v); }
     return v;
 }
-@interface NvPkg : NSObject { @public id<MTLTexture> tex; NSMutableDictionary *views; __unsafe_unretained id<MTLTexture> view_base; uint64_t stamp, seen, hash, owned_gen; int tracked, owned, hashed, vol, lost, keep_full; reup_key key; uint64_t chash, csub, used; uintptr_t lo, hi; uint8_t *edge; uint32_t eh, et; int edge_want; BOTW_PKG_FIELDS UI_PACK_PKG_FIELDS } @end   // lo / hi (TOTK): the texture's memory (pkg_orphan_report)   // tracked (TOTK): result of the last nvn_dirty_tracked   // hash：DM_NVN_DIRTYCHECK 时上传内容的全量哈希 | hash: full hash of the uploaded content under DM_NVN_DIRTYCHECK
+@interface NvPkg : NSObject { @public id<MTLTexture> tex; NSMutableDictionary *views; __unsafe_unretained id<MTLTexture> view_base; uint64_t stamp, seen, hash, owned_gen; int tracked, owned, hashed, vol, lost, keep_full; reup_key key; uint64_t chash, csub, used; uintptr_t lo, hi; uint8_t *edge; uint32_t eh, et; int edge_want; BOTW_PKG_FIELDS UI_PACK_PKG_FIELDS
+#ifdef LONGSHOT_MTL
+    unsigned char field_digest[CC_SHA256_DIGEST_LENGTH];
+    BOOL field_digest_valid, field_priority;
+    uint64_t gate_use;
+    unsigned gate_zones;
+#endif
+} @end   // lo / hi (TOTK): the texture's memory (pkg_orphan_report)   // tracked (TOTK): result of the last nvn_dirty_tracked   // hash：DM_NVN_DIRTYCHECK 时上传内容的全量哈希 | hash: full hash of the uploaded content under DM_NVN_DIRTYCHECK
 static void pkg_views_drop(NvPkg *pkg) {
     if (pkg->views) defer_obj_unref(pkg->views);
     pkg->views = nil; pkg->view_base = nil;
@@ -5634,6 +5658,49 @@ static void upt_pages(const void *mem, uint64_t size) {
 }
 static int upt_on(void) { static int on = -1; if (on < 0) on = getenv("DM_NVN_UPTIME") != NULL; return on; }
 static inline void upt_mark(int i) { if (upt_on()) g_upt[i] = clock_gettime_nsec_np(CLOCK_MONOTONIC); }
+#ifdef LONGSHOT_MTL
+static int field_arrival_texture(const tex_t *t);
+static int stream_tex_trace(void) {
+    static dispatch_once_t once;
+    static int enabled;
+    dispatch_once(&once, ^{ const char *v = getenv("HOS_SCENE_TRACE"); enabled = v && atoi(v); });
+    return enabled;
+}
+enum { UP_FIRST, UP_EVICTED, UP_FORMAT, UP_DIRTY, UP_UNTRACKED, UP_IDENTICAL, UP_REASONS };
+static _Thread_local unsigned stream_reasons[UP_REASONS];
+static _Thread_local uint64_t stream_first_bytes, stream_repeat_bytes;
+
+/* A sampled signature only gives this resource priority. Reuse requires the
+   complete guest bytes, the same live package and no intervening page write. */
+static int field_digest(const tex_t *t, unsigned char out[CC_SHA256_DIGEST_LENGTH]) {
+    sigjmp_buf jb, *prev = runtime_fault_guard;
+    if (sigsetjmp(jb, 1)) { runtime_fault_guard = prev; return 0; }
+    runtime_fault_guard = &jb;
+    CC_SHA256(t->mem, (CC_LONG)t->L.size, out);
+    runtime_fault_guard = prev;
+    return 1;
+}
+static void field_remember_upload(const tex_t *t, NvPkg *pk, uint64_t stamp) {
+    pk->field_digest_valid = pk->field_priority = NO;
+    if (!hos_mac_stream_policy() || t->L.size < 262144 || t->L.size > 5242880 || pk->owned ||
+        (t->d.flags & ~NVN_TEXTURE_FLAGS_IMAGE) || t->d.samples > 1) return;
+    int bw,bh;
+    nvn_fmt_bpb(t->d.format,&bw,&bh);
+    if (bw == 1 || bh == 1 || !nvn_dirty_tracked(t->mem,t->L.size) || !field_arrival_texture(t)) return;
+    pk->field_priority = YES;
+    pk->field_digest_valid = field_digest(t,pk->field_digest) && !nvn_dirty_since(t->mem,t->L.size,stamp);
+}
+static int field_bytes_unchanged(const tex_t *t, NvPkg *pk) {
+    if (!pk->field_digest_valid || pk->owned || !pk->tex) return 0;
+    uint64_t check = nvn_dirty_now();
+    nvn_dirty_protect(t->mem,t->L.size);
+    unsigned char candidate[CC_SHA256_DIGEST_LENGTH];
+    if (!field_digest(t,candidate) || memcmp(candidate,pk->field_digest,sizeof candidate) ||
+        nvn_dirty_since(t->mem,t->L.size,check)) return 0;
+    pk->stamp = check;
+    return 1;
+}
+#endif
 static id<MTLTexture> pkg_upload(const tex_t *t, uint64_t *stamp, reup_key *key, NvPkg *pk) {
     struct timespec a, b; clock_gettime(CLOCK_MONOTONIC, &a);
     struct rusage ru0; if (upt_on()) { upt_pages(t->mem, t->L.size); getrusage(RUSAGE_SELF, &ru0); memset(g_upt, 0, sizeof g_upt); g_upt_path = 0; upt_mark(0); }
@@ -5648,6 +5715,15 @@ static id<MTLTexture> pkg_upload(const tex_t *t, uint64_t *stamp, reup_key *key,
         uint64_t k = ++g_pkg_upload_unreadable;
         if (k <= 4 || k % 1000 == 0) MLOG("【红】贴图的内存已不可读，不上传（ser=%llu %ux%u 格式 %#x 存储 %p+%llu，第 %llu 次）", (unsigned long long)t->serial, t->d.width, t->d.height, t->d.format, (const void *)t->mem, (unsigned long long)t->L.size, (unsigned long long)k);
     } else { upt_mark(1); r = pkg_upload_(t, stamp, key, pk); }
+#ifdef LONGSHOT_MTL
+    if (r && pk) {
+        if (stream_tex_trace()) {
+            if (stamp != &pk->stamp) stream_repeat_bytes += t->L.size;
+            else stream_first_bytes += t->L.size;
+        }
+        field_remember_upload(t, pk, *stamp);
+    }
+#endif
     clock_gettime(CLOCK_MONOTONIC, &b); uint64_t d_ = (uint64_t)((b.tv_sec - a.tv_sec) * 1000000000ll + b.tv_nsec - a.tv_nsec);
     if (upt_on()) { static double min_ms = -1; if (min_ms < 0) min_ms = atof(getenv("DM_NVN_UPTIME"));
         if (d_ / 1e6 >= min_ms) { struct rusage ru1; getrusage(RUSAGE_SELF, &ru1); uint64_t e = clock_gettime_nsec_np(CLOCK_MONOTONIC);
@@ -6066,6 +6142,9 @@ static void storage_allocation_trace(const tex_t *t, id<MTLTexture> texture) {
     fflush(file);
     funlockfile(file);
 }
+#ifdef LONGSHOT_MTL
+static _Thread_local int field_entry_upload;
+#endif
 static void *tex_mtl_p(const tex_t *ct) {
     tex_t *t = (tex_t *)ct; BOTW_TEX_FOLLOW(t)
     if (!t || !t->serial) return NULL;
@@ -6074,6 +6153,9 @@ static void *tex_mtl_p(const tex_t *ct) {
     if (packaged) {
         __unsafe_unretained NvPkg *pk = have;
         if (pk) pk->used = g_sub_serial;
+#ifdef LONGSHOT_MTL
+        if (pk && stream_zone) { pk->gate_use = g_sub_serial; pk->gate_zones |= stream_zone; }
+#endif
         if (pk && (pk->vol || pk->lost)) pkg_unpurge(pk);   // TOTK (iPhone): a copy marked purgeable while idle (pkg_purge_idle)
         /* TOTK: rendered into by the GPU since the upload: the pool memory is stale, never re-upload. The set only grows, so
            the answer is kept in the NvPkg and asked again only after it gained members (a locked lookup on every use before). */
@@ -6084,11 +6166,17 @@ static void *tex_mtl_p(const tex_t *ct) {
             const int lv_reduced = pk->tex && pk->tex.mipmapLevelCount < (t->d.levels ? t->d.levels : 1u);
             if (!pk->tex || (pk->owned && reduced) || (pk->keep_full && lv_reduced)) {   // keep_full: read by integer texel coordinates (tex_keep_full)   // TOTK: the copy was evicted, or the GPU renders into a reduced copy (needs full size); the copy was evicted under memory pressure (pkg_evict_sweep): upload it again from the pool bytes
                 clean = 0; g_pkg_restored++;
+#ifdef LONGSHOT_MTL
+                stream_reasons[pk->tex ? UP_FORMAT : UP_EVICTED]++;
+#endif
                 if (pk->hashed) { pk->csub = g_sub_serial; if (!pkg_hash_guarded(t, &h)) h = 0; }   // a fault: the upload below refuses too
             } else
             if (pk->hashed) {   // TOTK: small texture, content hash once per submission (see pkg_hashed)
                 if (pk->csub == g_sub_serial) return (__bridge void *)pk->tex;
                 pk->csub = g_sub_serial; clean = !pkg_hash_guarded(t, &h) || h == pk->chash;   // memory gone: keep the texture it has
+#ifdef LONGSHOT_MTL
+                if (!clean) stream_reasons[UP_DIRTY]++;
+#endif
             } else {
             /* TOTK: once per submission, as for the small hashed ones: the contents are those of the submit call (the rule
                of the uniform snapshot). Re-checking on every use, whenever any game thread had written any page since,
@@ -6100,6 +6188,12 @@ static void *tex_mtl_p(const tex_t *ct) {
             int tracked = now == pk->seen && pk->tracked ? 1 : nvn_dirty_tracked(t->mem, t->L.size);
             clean = tracked && (now == pk->seen || !nvn_dirty_since(t->mem, t->L.size, pk->stamp));
             if (!clean && tracked && pkg_edge_clean(t, pk)) clean = 1; BOTW_PKG_WB_STALE(pk, t, clean)   // TOTK (#90): only a shared first / last page was written
+#ifdef LONGSHOT_MTL
+            if (!clean && tracked && field_bytes_unchanged(t,pk)) {
+                clean = 1; stream_reasons[UP_IDENTICAL]++;
+            }
+            if (!clean) stream_reasons[tracked ? UP_DIRTY : UP_UNTRACKED]++;
+#endif
             pk->seen = now; pk->tracked = tracked;
             }
             if (clean && atomic_load_explicit(&g_up_lost_n, memory_order_relaxed) && up_lost_take(pk->tex)) { clean = 0; uint64_t k = atomic_load(&g_up_lost_redo); if (k <= 3 || !atomic_load(&g_up_lost_n)) MLOG("上传被丢的贴图 ser=%llu 重传（累计 %llu 张，记录里还剩 %d 张）", (unsigned long long)t->serial, (unsigned long long)k, atomic_load(&g_up_lost_n)); }
@@ -6124,13 +6218,25 @@ static void *tex_mtl_p(const tex_t *ct) {
             else { free(pk->edge); pk->edge = NULL; }   // TOTK (#90): the bytes kept belong to the upload that failed
             return (__bridge void *)pk->tex;
         }
+#ifdef LONGSHOT_MTL
+        stream_reasons[UP_FIRST]++;
+#endif
         TILELOG(t, "first upload from the pool bytes");
         NvPkg *npk = [NvPkg new]; pk = npk;
+#ifdef LONGSHOT_MTL
+        /* Retain the two shared page edges on an early upload. Another asset
+           can then be loaded alongside it without uploading this texture twice. */
+        pk->edge_want = field_entry_upload;
+#endif
         pk->lo = (uintptr_t)t->mem; pk->hi = pk->lo + t->L.size; BOTW_PKG_WB_SEEN(pk)
         pkg_views_drop(pk); pk->tex = pkg_upload(t, &pk->stamp, &pk->key, pk);
         if (!pk->tex) return NULL;
         /* TOTK (#90): seen = the upload's stamp, not "now": a write that faulted during the copy moved "now" on, and the
            now == seen shortcut above then called the texture clean without looking at its pages. */
+#ifdef LONGSHOT_MTL
+        if (stream_zone) { pk->gate_use = g_sub_serial; pk->gate_zones |= stream_zone; }
+        pk->used = g_sub_serial;
+#endif
         pk->seen = pk->stamp; g_pkg_uploads++; if (dirtycheck()) pk->hash = full_hash(t->mem, t->L.size); UI_PACK_UPLOADED(pk, t)
         serial_put(t->serial, pk);
         pk->owned = gpu_owned(t->serial);   // after it is in the table: a later mark finds it there (pkg_owned_locked)
@@ -8742,6 +8848,118 @@ typedef struct { tex_t t; int ok; view_t v; int has_v; void *view; uint64_t view
 /* TOTK: view_tt / view_parent: textureType and parentTexture of view, read once when it is stored (a Metal texture never
    changes either). view_parent is only compared, never messaged; the view retains its parent while it is stored. */
 static treg_t *g_treg; static int g_ntreg;
+#ifdef LONGSHOT_MTL
+extern int hos_oot_field_entry_near(void);
+extern int nvn_tex_live_at(const void *mem, tex_t *out);
+static int field_arrival_texture(const tex_t *t) {
+    static const uint64_t hints[] = {
+#include "longshot_field_textures.inc"
+    };
+    /* The partial fingerprint only selects work. tex_mtl_p uploads the actual
+       live serial's own bytes and retains its usual dirty-page tracking. */
+    size_t last = t->L.size - sizeof(uint64_t);
+    uint64_t hash = ((uint64_t)t->d.width << 32) ^ t->d.height ^ ((uint64_t)t->d.format << 24) ^ t->L.size;
+    for (unsigned i = 0; i < 3; ++i) {
+        uint64_t word;
+        if (!guarded_memcpy(&word, t->mem + i * (last / 2), sizeof word, "field texture hint")) return 0;
+        hash ^= word;
+        hash *= UINT64_C(0x9e3779b185ebca87);
+        hash ^= hash >> 29;
+    }
+    size_t lo = 0, hi = sizeof hints / sizeof *hints;
+    while (lo < hi) {
+        size_t mid = lo + (hi - lo) / 2;
+        if (hints[mid] == hash) return 1;
+        if (hints[mid] < hash) lo = mid + 1; else hi = mid;
+    }
+    return 0;
+}
+
+/* End of replay only. Inspect a slice of registered descriptors and give the
+   normal draws first use of the command buffer. Never retain guest pointers. */
+static void field_entry_prepare(void) {
+    static int cursor, active;
+    static uint64_t total, count, last_frame;
+    static double rescan_at, replay_ms, previous_replay_ms;
+    static uint64_t measured_frame;
+    if (!on_sub_thread()) return;
+    uint64_t frame = atomic_load(&g_cur_frame);
+    if (measured_frame != frame) {
+        if (stream_tex_trace()) {
+            unsigned *a = stream_reasons;
+            if (a[0] || a[1] || a[2] || a[3] || a[4] || a[5])
+                MLOG("Scene textures: at=%.9f until_frame=%llu first=%u evicted=%u format=%u dirty=%u untracked=%u identical=%u first_bytes=%llu repeat_bytes=%llu",
+                    CACurrentMediaTime(), frame,a[0],a[1],a[2],a[3],a[4],a[5],stream_first_bytes,stream_repeat_bytes);
+        }
+        stream_first_bytes = stream_repeat_bytes = 0;
+        memset(stream_reasons,0,sizeof stream_reasons);
+        previous_replay_ms = replay_ms; replay_ms = 0; measured_frame = frame;
+    }
+    if (stream_submit_start) replay_ms += 1000. * (CACurrentMediaTime() - stream_submit_start);
+    if (!hos_oot_field_entry_near()) {
+        if (active && count) MLOG("Field arrival prewarm: %llu textures, %.1f MiB", count, total / 1048576.);
+        active = cursor = 0; count = total = 0; rescan_at = 0;
+        return;
+    }
+    if (total >= (192u << 20) || (active && frame == last_frame)) return;
+    active = 1; last_frame = frame;
+    double start = CACurrentMediaTime();
+    if (start < rescan_at) return;
+    extern int hos_mac_frame_cap(int configured);
+    int hz = hos_mac_frame_cap(0);
+    double frame_ms = 1000. / (hz > 0 ? hz : 120);
+    double gpu_ms = frame >= 8 ? mtl_gpu_ms(frame-8) : 0;
+    double spare_ms = frame_ms - MAX(MAX(previous_replay_ms,replay_ms),gpu_ms);
+    if (spare_ms <= 1.) return;
+    double work_seconds = MIN(.001, (spare_ms - 1.) * .00020);
+    unsigned limit = spare_ms < 4. ? 2u << 20 : 6u << 20;
+    unsigned bytes = 0;
+    for (unsigned checked = 0; checked < 4096 && bytes < limit; ++checked) {
+        if ((checked % 32 == 0 || bytes) && CACurrentMediaTime() - start >= work_seconds) break;
+        registry_lock();
+        if (cursor >= g_ntreg) {
+            registry_unlock();
+            cursor = 0; rescan_at = start + .25;
+            break;
+        }
+        treg_t *slot = &g_treg[cursor++];
+        const tex_t *t = &slot->t;
+        if (slot->ok && t->mem && t->L.size >= 262144 && t->L.size <= 5242880 &&
+            !(t->d.flags & ~NVN_TEXTURE_FLAGS_IMAGE) && t->d.samples <= 1) {
+            int width, height;
+            nvn_fmt_bpb(t->d.format, &width, &height);
+            tex_t live;
+            if (width > 1 && height > 1 && !serial_is_dead(t->serial) && !gpu_owned(t->serial) &&
+                nvn_tex_live_at(t->mem, &live) && live.serial == t->serial &&
+                mtl_addr_known((uint64_t)live.mem, live.L.size) && tex_mirrored(&live) &&
+                nvn_dirty_tracked(live.mem, live.L.size)) {
+                /* IMAGE is a capability. GPU-written serials are excluded above.
+                   On a return trip the same texture often has fresh CPU pool bytes. */
+                id obj = (__bridge id)serial_ptr(live.serial);
+                NvPkg *pkg = [obj isKindOfClass:[NvPkg class]] ? obj : nil;
+                int needs_upload = !obj || (pkg && !pkg->owned && !pkg->hashed &&
+                    (!pkg->tex || pkg->vol || (pkg->seen != nvn_dirty_now() && nvn_dirty_since(live.mem, live.L.size, pkg->stamp))));
+                if (needs_upload && live.L.size <= (192u << 20) - total &&
+                    live.L.size <= limit - bytes && field_arrival_texture(&live)) {
+                    uint64_t before = g_pkg_uploads + g_pkg_reuploads;
+                    if (pkg) pkg->edge_want = 1;
+                    field_entry_upload = 1;
+                    void *prepared = tex_mtl_p(&live);
+                    field_entry_upload = 0;
+                    if (prepared && g_pkg_uploads + g_pkg_reuploads > before) {
+                        /* A fresh package has no draw yet. Give it this submission's
+                           age so the idle sweep cannot immediately discard it. */
+                        NvPkg *resident = (__bridge NvPkg *)serial_ptr(live.serial);
+                        if (resident) resident->used = g_sub_serial;
+                        bytes += live.L.size; total += live.L.size; count++;
+                    }
+                }
+            }
+        }
+        registry_unlock();
+    }
+}
+#endif
 /* Only slots with a cached Metal view need work when an NVN texture is finalized. A linear
    scan of the entire descriptor pool on every finalize dominated the game's render thread. */
 static nvn_hmap g_view_heads = {.klen = 8};   // serial -> slot id + 1; protected by g_rmu
@@ -8895,6 +9113,20 @@ static void treg_sweep_replaced(void) {
 #define EVICT_IDLE_CRIT 8
 typedef struct { void *pk; uint64_t used, bytes, serial; } evict_cand;
 static uint64_t g_pkg_evicted, g_pkg_evicted_mb_x, g_evict_sweeps;
+#ifdef LONGSHOT_MTL
+static int gate_cache_headroom(void) {
+    static double next;
+    static int normal;
+    double now = CACurrentMediaTime();
+    if (now >= next) {
+        int level = 0;
+        size_t size = sizeof level;
+        normal = !sysctlbyname("kern.memorystatus_vm_pressure_level", &level, &size, NULL, 0) && level == 1;
+        next = now + .5;
+    }
+    return normal && g_dev.currentAllocatedSize < .75 * g_dev.recommendedMaxWorkingSetSize;
+}
+#endif
 static int evict_cmp(const void *a, const void *b) { uint64_t x = ((const evict_cand *)a)->used, y = ((const evict_cand *)b)->used; return x < y ? -1 : x > y; }
 static uint64_t env_mb(const char *name, uint64_t dflt) { const char *e = getenv(name); return (e && *e ? strtoull(e, NULL, 10) : dflt) << 20; }
 static uint64_t evict_available(void) {
@@ -9013,7 +9245,16 @@ static void treg_merge_used_locked(void) {   // texture-pool ids resolved on the
     for (int i = 0; i < g_ntreg; i++) {
         treg_t *r = &g_treg[i]; if (!r->ok || r->view_pkg != 1 || !r->used) continue;
         __unsafe_unretained id o = hm_get_id(&g_by_serial, &r->t.serial);
-        if ([o isKindOfClass:[NvPkg class]] && r->used > ((NvPkg *)o)->used) ((NvPkg *)o)->used = r->used;
+        if ([o isKindOfClass:[NvPkg class]] && r->used > ((NvPkg *)o)->used) {
+            NvPkg *pk = (NvPkg *)o;
+            pk->used = r->used;
+#ifdef LONGSHOT_MTL
+            if (stream_zone && g_sub_serial - r->used < 64) {
+                pk->gate_use = r->used;
+                pk->gate_zones |= stream_zone;
+            }
+#endif
+        }
     }
 }
 static void treg_clear_pkg_views_locked(int (*gone)(NvPkg *)) {   // texture-pool slot views on copies that may no longer be used directly
@@ -9072,6 +9313,11 @@ static void pkg_evict_sweep(void) {
         if (mode == 3) MLOG("贴图副本淘汰：开（闲置 ≥%llu 次提交的副本都淘汰，不设上限）", (unsigned long long)idle_age);
     }
     if (!mode || (g_sub_serial & 3)) return;
+#ifdef LONGSHOT_MTL
+    /* Idle-only eviction can inspect once per 64 submissions. Explicit byte
+       budgets and memory-pressure sweeps retain their original frequency. */
+    if (mode == 3 && hos_mac_stream_policy() && (g_sub_serial & 63)) return;
+#endif
     uint64_t avail = 0, want = 0;
     if (mode == 1) {
         avail = evict_available();
@@ -9102,6 +9348,42 @@ static void pkg_evict_sweep(void) {
     uint64_t freed = 0, k = 0;
     if (want && n) {
         qsort(c, n, sizeof *c, evict_cmp);
+#ifdef LONGSHOT_MTL
+        /* Guest position can jump during the fade. Keep the previous scene
+           eligible across that gap, with independent allowances for both banks.
+           Volatile Metal storage lets macOS reclaim the bytes at any time. */
+        static double gate_until;
+        double now = CACurrentMediaTime();
+        if (stream_zone) gate_until = now + 18.;
+        if (mode == 3 && now < gate_until && hos_mac_stream_policy() && gate_cache_headroom()) {
+            uint64_t active_bytes = total;
+            for (size_t i = 0; i < n; ++i) active_bytes -= c[i].bytes;
+            const uint64_t ceiling = 1664ull << 20;
+            uint64_t room = active_bytes < ceiling ? MIN(384ull << 20, ceiling-active_bytes) : 0;
+            uint64_t field_room = MIN(room, 256ull << 20);
+            uint64_t village_room = room - field_room;
+            size_t dropped = 0;
+            unsigned marked = 0;
+            for (size_t i = n; i-- > 0;) {
+                NvPkg *pk = (__bridge NvPkg *)c[i].pk;
+                uint64_t *allowance = (pk->gate_zones & 2) || pk->field_priority ? &field_room : &village_room;
+                if ((!pk->gate_use && !pk->field_priority) || g_sub_serial-pk->used > 20*idle ||
+                    c[i].bytes > *allowance || pk->tex.heap || pk->tex.buffer || pk->tex.parentTexture) continue;
+                *allowance -= c[i].bytes;
+                if (!pk->vol) {
+                    MTLPurgeableState prior = [pk->tex setPurgeableState:MTLPurgeableStateVolatile];
+                    pk->lost = prior == MTLPurgeableStateEmpty;
+                    pk->vol = 1;
+                    ser_bump_locked(c[i].serial);
+                    ++marked;
+                }
+                c[i].pk = NULL;
+            }
+            if (marked) treg_clear_pkg_views_locked(pkg_purgeable);
+            for (size_t i = 0; i < n; ++i) if (c[i].pk) c[dropped++] = c[i];
+            n = dropped;
+        }
+#endif
         for (; k < n && freed < want; k++) {
             NvPkg *pk = (__bridge NvPkg *)c[k].pk;
             id<MTLTexture> t = pk->tex; pkg_views_drop(pk); pk->tex = nil;
@@ -11897,7 +12179,11 @@ static void warm_plan(NSArray<NSString *> *paths, NSArray<NSString *> *files, NS
             [rows addObject:line];
             NSArray<NSString *> *c = [line componentsSeparatedByString:@"\t"];
             if ([c[0] isEqualToString:@"S"] && c.count >= 3 && [c[1] length]) {
-                if (g_warm_pipelines_only || !warm_available(c[1])) continue;
+                if (g_warm_pipelines_only && ![path.lastPathComponent isEqualToString:@"field-entry-shaders.tsv"]) {
+                    [rows removeObject:line]; // a later entrance list may explicitly request this library
+                    continue;
+                }
+                if (!warm_available(c[1])) continue;
                 [keys addObject:c[1]];
             }
             else if (([c[0] isEqualToString:@"R"] && c.count >= 2) || ([c[0] isEqualToString:@"B"] && c.count >= 4) || ([c[0] isEqualToString:@"T"] && c.count >= 3)) {
@@ -12181,8 +12467,7 @@ static void warm_worker(NSArray<NSString *> *paths, NSArray<NSString *> *files,
         par_miss_summary("预热结束");
     }
     par_flush_thread(); g_variant_bg = 0; par_write_in_place = 0;   // a queue thread: other work may run on it next
-    atomic_store(&g_warm_running, 0);
-    if (runtime_warm_done) runtime_warm_done();
+    if (atomic_fetch_sub(&g_warm_running, 1) == 1 && runtime_warm_done) runtime_warm_done();
 }
 // 等后台预热跑完（最多 timeout_ms；负数表示一直等）：返回实际等了多少毫秒，没在跑返回 0。首装时系统着色器缓存全冷，预热慢于玩家进局的话，
 // 没预热到的管线会在提交线程现编 = 局内卡顿；进局读取画面本来就挡着玩家，让它多读一会儿（hle_nvn.c 出图处调）。
@@ -12433,6 +12718,22 @@ void mtl_pipeline_archive_quit(void) {
                         (unsigned long long)atomic_load(&g_fn4_gave_up));
 #endif
 }
+#ifdef LONGSHOT_MTL
+int mtl_prepare_game_shaders(void) {
+    @autoreleasepool {
+        mtl_init();
+        if (!g_dev) return 0;
+        shmap_load();
+        mtl_warm_wait(-1);
+        mtl_pipeline_archive_quit();
+        NSDictionary *receipt = @{@"arch": g_dev.architecture.name ?: @"", @"schema": @PAR_SCHEMA,
+                                  @"chain": @DMSH_CHAIN, @"pipelines": @(g_warm_rps + g_warm_cps)};
+        NSData *json = [NSJSONSerialization dataWithJSONObject:receipt options:0 error:nil];
+        if (json) printf("@@metal %.*s\n", (int)json.length, (const char *)json.bytes);
+        return 1;
+    }
+}
+#endif
 int mtl_pipeline_archive_tool(int argc, char **argv) {
     g_compute_archive_tool=1;
     if (argc < 1 || !getenv("TOTK_SHADER_CACHE") || !getenv("TOTK_SHADER_SEED_DIR"))
@@ -12544,6 +12845,10 @@ static void warm_start(void) {
         // seed's own; the Mac's export is build/pso_manifest.tsv. Before 2026-10-22 the phone warmed none of them.
         NSString *gate = [dir stringByAppendingPathComponent:@"kakariko-mesh.tsv"];
         if ([fm fileExistsAtPath:gate]) [all addObject:gate];
+#ifdef LONGSHOT_MTL
+        NSString *gerudo = [dir stringByAppendingPathComponent:@"gerudo-mesh.tsv"];
+        if ([fm fileExistsAtPath:gerudo]) [all addObject:gerudo];
+#endif
         NSString *list = [dir stringByAppendingPathComponent:@"pso_list.tsv"];
         if ([fm fileExistsAtPath:list]) [all addObject:list];
         if ([fm fileExistsAtPath:seed]) [all addObject:seed];
@@ -12554,14 +12859,10 @@ static void warm_start(void) {
         NSString *prepared = [dir stringByAppendingPathComponent:@"shader-seed/pso_manifest.tsv"];
         if (!(seedMode && !strcmp(seedMode, "off")) && [fm fileExistsAtPath:prepared]) [all addObject:prepared];
         paths = all;
-        NSMutableString *desc = [NSMutableString string];
-        for (NSString *p in paths) { NSString *t = [NSString stringWithContentsOfFile:p encoding:NSUTF8StringEncoding error:nil];
-            [desc appendFormat:@"%@%@ %lu 行", desc.length ? @"，" : @"", p.lastPathComponent, (unsigned long)[t componentsSeparatedByString:@"\n"].count - 1]; }
-        MLOG("预热清单（自动着色器收集）：%s；另加翻译缓存里本版本游戏的着色器", desc.UTF8String);
+        MLOG("Pipeline warm-up lists: %s", [[paths valueForKey:@"lastPathComponent"] componentsJoinedByString:@", "].UTF8String);
     }
     if (!g_warm_items) g_warm_items = [NSMutableArray array];
     g_warm_scope = totk_rt_shader_scope();
-    NSArray<NSString *> *cached = totk_rt_list();
     par_open_dir(g_dev);   // the pipeline archive: with files, the pipeline lists are made from them and the rest when drawn
     /* With a valid pipeline archive the resident lists are still warmed (title and local user on low-memory devices;
        all lists with warm_shared). The rest are checked / filled without keeping their pipelines in memory. Skipped:
@@ -12570,7 +12871,9 @@ static void warm_start(void) {
        not by file: 8b6d26b kept the iPhone seed's list by its path, and a second start loaded all 20,368 libraries
        again (12,266 after 7 minutes; the warm-up never ended).
        Only the title list first (2026-10-20: 866 ms frames on entering the world when the lists were skipped too). */
-    if (g_par_valid || (g_par_on && par_fill_light())) {
+    const BOOL pipelines_only = g_par_valid || (g_par_on && par_fill_light());
+    NSArray<NSString *> *cached = pipelines_only ? @[] : totk_rt_list();
+    if (pipelines_only) {
         NSArray<NSString *> *archive = nil;
         const int mode = warm_resident_mode(), kinds = mode == WARM_RESIDENT_TITLE_KINDS;
         paths = warm_resident_lists(paths, title, kinds ? nil : user, g_par_valid, warm_shared(), &archive);
@@ -12598,7 +12901,6 @@ static void warm_start(void) {
                  (unsigned long)rows.count, (unsigned long)archive.count, WARM_RESIDENT_NAME[mode]);
         }
         g_warm_pipelines_only = 1;
-        cached = @[];
         if (g_par_valid) {
             g_shared_fill = archive;
             if (archive && !kinds) MLOG("预热：标题和本机清单驻留，其余 %lu 份只填存档（TOTK_WARM_RESIDENT=all 全部驻留）", (unsigned long)archive.count);
@@ -12609,6 +12911,10 @@ static void warm_start(void) {
         }
     }
     NSMutableArray<NSString *> *files = [NSMutableArray array];
+#ifdef LONGSHOT_MTL
+    NSString *field = [dir stringByAppendingPathComponent:@"field-entry-shaders.tsv"];
+    if (field && [[NSFileManager defaultManager] fileExistsAtPath:field]) paths = [(paths ?: @[]) arrayByAddingObject:field];
+#endif
     NSUInteger skipped = 0;
     for (NSString *file in cached) {
         if ([file hasSuffix:@"_b.metal"] && !totk_shader_scope_contains(g_warm_scope, [file stringByDeletingPathExtension])) { skipped++; continue; }
@@ -12624,7 +12930,7 @@ static void warm_start(void) {
     g_warm_t0 = bp_now();
     dispatch_queue_attr_t attr = dispatch_queue_attr_make_with_qos_class(DISPATCH_QUEUE_SERIAL, QOS_CLASS_USER_INITIATED, 0);   // 不是可有可无的后台活：它决定玩家进局前管线是否就绪 | Not optional background work: it decides whether the pipelines are ready before the player enters a run
     dispatch_queue_t q = dispatch_queue_create("dm.nvn.pso-warm", attr);
-    atomic_store(&g_warm_running, 1);
+    atomic_fetch_add(&g_warm_running, 1);
     dispatch_async(q, ^{ warm_worker(paths,files,eligible,planned_keys,total,shader_total,pipeline_total); });
     // The title's list must be ready before its first frame. The other lists,
     // the prepared shaders and the remaining translated variants finish behind
@@ -12642,6 +12948,14 @@ static void warm_start(void) {
        own list, the rest behind it (before 2026-10-23). */
     const char *bt = getenv("TOTK_WARM_BEFORE_TITLE");
     int before = !(bt && !atoi(bt));
+#ifdef LONGSHOT_MTL
+    // The installer materializes the archive for this GPU. Keep the title list
+    // on the critical path and load the world pipelines while the menu is up.
+    if (!bt && g_par_valid && [NSFileManager.defaultManager fileExistsAtPath:
+            [[dir stringByAppendingPathComponent:@"pipelines"] stringByAppendingPathComponent:
+                [NSString stringWithFormat:@"installed-%@-%s.ready", g_dev.architecture.name, DMSH_CHAIN]]])
+        before = 0;
+#endif
     /* Every game waits before the title on the Mac too, archive complete or not (user 2026-11-11: "所有塞尔达 都是 预热玩 进标题！",
        then "大金刚和 Pokopia 也是 所有游戏都是"). From 2026-10-29 ("桌面 王国 每次打开 都预热") a complete archive let the title
        come at once and the warm-up go on behind the menu; Ocarina of Time (games/oot) dropped it the same day. */
@@ -12657,7 +12971,7 @@ static void warm_start(void) {
         NSArray<NSString *> *after = @[g_warm_after_title]; g_warm_after_title = nil;
         NSMutableSet<NSString *> *akeys = [NSMutableSet set], *aok = [NSMutableSet set]; uint64_t at = 0, as = 0, ap = 0;
         warm_plan(after, @[], akeys, aok, &at, &as, &ap);
-        atomic_store(&g_warm_running, 1);   // the first world frame waits for it (hle_nvn.c mtl_warm_wait)
+        atomic_fetch_add(&g_warm_running, 1);   // the first world frame waits for it (hle_nvn.c mtl_warm_wait)
         dispatch_async(q, ^{ warm_worker(after, @[], aok, akeys, at, as, ap); });
         MLOG("预热：本机玩过的管线 %llu 条在标题之后在后台建（进世界前读档时等它做完）", (unsigned long long)ap);
     }

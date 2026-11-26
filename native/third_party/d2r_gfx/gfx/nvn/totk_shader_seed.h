@@ -48,9 +48,15 @@ static BOOL totk_seed_sealed(NSString *source) {
 #else
     const char *e = getenv("TOTK_SHADER_SEED_IN_PLACE");
     if (e && *e) return !strcmp(e, "1");
-    for (NSString *dir = path.stringByResolvingSymlinksInPath; dir.length > 1; dir = dir.stringByDeletingLastPathComponent)
+    for (NSString *dir = path.stringByResolvingSymlinksInPath; dir.length > 1; dir = dir.stringByDeletingLastPathComponent) {
+#ifdef LONGSHOT_MTL
+        if ([dir.lastPathComponent isEqualToString:@"Longshot Shaders.bundle"] &&
+            [[NSBundle bundleWithPath:dir].bundleIdentifier isEqualToString:@"dev.longshot.game.shader-assets"])
+            return [NSFileManager.defaultManager fileExistsAtPath:[dir stringByAppendingPathComponent:@"Contents/_CodeSignature/CodeResources"]];
+#endif
         if ([dir.pathExtension isEqualToString:@"app"])
             return [NSFileManager.defaultManager fileExistsAtPath:[dir stringByAppendingPathComponent:@"Contents/_CodeSignature/CodeResources"]];
+    }
     return NO;
 #endif
 }
@@ -94,9 +100,10 @@ static NSDictionary *totk_seed_import_into(NSString *source, NSString *cache, NS
     if (problem) goto fail;
     {
         NSDictionary *files = m[@"files"];
-        NSArray<NSString *> *names = [files.allKeys sortedArrayUsingSelector:@selector(compare:)];
-        NSString *fingerprint = totk_seed_fingerprint(m, names);
-        NSData *oldData = marker ? [NSData dataWithContentsOfFile:marker] : nil;
+        BOOL sealed = marker && totk_seed_sealed(source);
+        NSArray<NSString *> *names = sealed ? files.allKeys : [files.allKeys sortedArrayUsingSelector:@selector(compare:)];
+        NSString *fingerprint = sealed ? nil : totk_seed_fingerprint(m, names);
+        NSData *oldData = marker && !sealed ? [NSData dataWithContentsOfFile:marker] : nil;
         NSDictionary *old = oldData ? [NSJSONSerialization JSONObjectWithData:oldData options:0 error:nil] : nil;
         NSRegularExpression *safe = [NSRegularExpression regularExpressionWithPattern:
             @"^(?:[0-9a-f]{64}\\.variants|[0-9a-f]{64}-[0-9a-f]{12}_b\\.(?:metal|json|metallib)|pso_title\\.tsv|pso_manifest\\.tsv|shader-keys\\.json)$" options:0 error:nil];
@@ -104,7 +111,6 @@ static NSDictionary *totk_seed_import_into(NSString *source, NSString *cache, NS
         // (totk_shader_rt.m shader_scope), so it is never copied into the writable cache.
         NSString *const scopeName = @"shader-keys.json";
         BOOL installed = [old isKindOfClass:NSDictionary.class] && [old[@"files_sha256"] isEqual:fingerprint];   // receipts from before 2026-10-18 (manifest_sha256) are checked once more
-        BOOL sealed = marker && totk_seed_sealed(source);
         for (id name in names) {
             if (![name isKindOfClass:NSString.class] || ![safe numberOfMatchesInString:name options:0 range:NSMakeRange(0, [name length])]) {
                 problem = @"Unsafe startup shader seed filename"; goto fail;

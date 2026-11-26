@@ -3,9 +3,14 @@
 #pragma once
 #include "auto_settings.h"
 
+#ifdef LONGSHOT_METAL_MENU
+#include "menu_metal_services.h"
+#else
 #include "vk_internal.h"
+#endif
 
 namespace mkwvk {
+int shared_host_option(int id, int fallback);
 
 // (out of the box every feature is off: what the game does on its own. The ini beside the executable keeps a player's choices)
 struct Options {
@@ -178,7 +183,9 @@ extern Options opts;
 constexpr int kAutoPreset = 6;   // (the Quality preset Auto (this PC): menu_auto_for_gpu, auto_settings.h)
 
 void menu_init();             // (the options from the file, once)
+#ifndef LONGSHOT_METAL_MENU
 void menu_auto_for_gpu(const VkPhysicalDeviceProperties& props, ::auto_settings::Hardware hw);   // (the card chosen: Auto's profile)
+#endif
 void menu_auto_tune(double gpu_ms, double draws, double fps);   // (the replay's 120-present windows: Auto (this PC) measured in play)
 /// (longshot) The V-Sync row as this run applies it: RX_VK_FIFO=1 is On and RX_VK_IMMEDIATE=1 Off, whatever the row says
 /// (for the run only: the row keeps the player's choice). 0 Auto, 1 On, 2 Off
@@ -233,11 +240,15 @@ void menu_note_frame(bool game_frame, int shown = 1);   // (the frame rates the 
 void menu_note_present_sizes(uint32_t picture_w, uint32_t picture_h, uint32_t window_w, uint32_t window_h);
 /// Over the window's image `index` (TRANSFER_DST_OPTIMAL before and after), w x h: the start-up screen, the menu and the FPS
 /// counter, drawn with Dear ImGui (vk_imgui.h, vk_ui.h). Nothing recorded while none of them shows
+#ifndef LONGSHOT_METAL_MENU
 void menu_record(VkCommandBuffer cmd, uint32_t index, uint32_t w, uint32_t h, int colour_vision);
+#endif
 void menu_rumble_tick();   // (once a present: the Rumble strength row's own rumble)
 /// (headless shots, RX_VK_SHOT_MENU) The menu and the counter over another image: TRANSFER_DST_OPTIMAL before and after,
 /// R8G8B8A8_UNORM with colour-attachment use, view a view of it
+#ifndef LONGSHOT_METAL_MENU
 void menu_record_image(VkCommandBuffer cmd, VkImage image, VkImageView view, uint32_t w, uint32_t h);
+#endif
 /// (longshot) The start-up screen while the shaders are prepared (vk_main.cpp, vk_progress.h), drawn by menu_record under the
 /// counter and the menu. Null takes it away.
 struct StartupView;

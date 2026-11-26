@@ -1,7 +1,7 @@
 name: Release the Mac installer
 on:
   push:
-    tags: ['v3.*-mac.*']
+    tags: ['v3.*-mac.*', 'v*-metal-experimental.*']
 permissions:
   contents: write
 jobs:
@@ -11,15 +11,29 @@ jobs:
       - uses: actions/checkout@v4
       - name: Build and verify the Apple silicon installer
         run: |
-          native/scripts/mac/build_release_installer.sh HEAD:native Longshot-Mac-Installer
-          lipo Longshot-Mac-Installer -verify_arch arm64
-          codesign --verify --strict Longshot-Mac-Installer
-          if [ "$(uname -m)" = arm64 ]; then ./Longshot-Mac-Installer --help; fi
-          ditto -c -k --keepParent Longshot-Mac-Installer Longshot-Mac-Installer.zip
-          shasum -a 256 Longshot-Mac-Installer.zip > SHA256SUMS
+          installer=Longshot-Mac-Installer
+          notes=native/docs/mac-release.md
+          case "$GITHUB_REF_NAME" in
+            *-metal-experimental.*)
+              installer=Longshot-Experimental-Installer
+              notes=native/docs/mac-experimental.md
+              ;;
+          esac
+          native/scripts/mac/build_release_installer.sh HEAD:native "$installer" "$GITHUB_REF_NAME"
+          lipo "$installer" -verify_arch arm64
+          codesign --verify --strict "$installer"
+          if [ "$(uname -m)" = arm64 ]; then "./$installer" --help; fi
+          zip -j "$installer.zip" "$installer"
+          shasum -a 256 "$installer.zip" > SHA256SUMS
+          echo "INSTALLER=$installer" >> "$GITHUB_ENV"
+          echo "RELEASE_NOTES=$notes" >> "$GITHUB_ENV"
       - name: Publish the signed installer
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          gh release create "$GITHUB_REF_NAME" Longshot-Mac-Installer.zip SHA256SUMS \
-            --prerelease --verify-tag --title "Longshot for macOS $GITHUB_REF_NAME" --notes-file native/docs/mac-release.md
+          case "$GITHUB_REF_NAME" in
+            *-metal-experimental.*) channel=--prerelease ;;
+            *) channel=--latest ;;
+          esac
+          gh release create "$GITHUB_REF_NAME" "$INSTALLER.zip" SHA256SUMS \
+            "$channel" --verify-tag --title "Longshot for macOS $GITHUB_REF_NAME" --notes-file "$RELEASE_NOTES"

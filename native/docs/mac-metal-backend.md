@@ -1,6 +1,6 @@
 # Native Metal renderer for the Mac port
 
-Longshot draws through Vulkan. On the Mac that means MoltenVK, which translates every Vulkan call and shader to Metal at runtime. Measured on OoT 131072 (M5, macOS 26):
+The native Mac game renders through Metal. Its settings menu and shader preparation use the same backend. The earlier Mac port used Vulkan through MoltenVK. Measurements from that port on OoT 131072 (M5, macOS 26) follow.
 
 - About 990 shader programs fail translation (descriptor aliasing) and their draws are skipped.
 - Compute programs that bind more than Metal's 31 buffers fail, and their passes are skipped.
@@ -30,4 +30,4 @@ The difference is addressing. MacNativeGames runs the game at its real addresses
 2. Shader corpus: extract, translate and compile the game's shaders at build time into a Metal library bundle beside the game. Done when the title renders correctly.
 3. Gameplay: New Game and a save both load Kokiri Forest, rendered correctly, at 120 fps.
 4. Longshot's own overlay on Metal: the menu (Cheats, About, Controls), the FPS counter and screenshots.
-5. MoltenVK stays available as `RX_RENDERER=vulkan` until the Metal renderer is the default.
+5. The native Mac build now ships only the Metal backend. Windows and Linux use the upstream Vulkan backend.

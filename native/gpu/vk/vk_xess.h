@@ -5,6 +5,7 @@
 // no XeSS library for Linux, where this says so and the game's own upscaler runs. XeSS Frame Generation and XeLL (Intel's
 // latency reduction) are D3D12 only, so they are not here.
 #pragma once
+#include "menu_upscale_types.h"
 
 #include <vector>
 
@@ -21,7 +22,7 @@ bool xess_built();
 /// for, or one without XeSS's Vulkan entry points; NO_VULKAN: the Vulkan instance or device lacks what XeSS needs (an extension
 /// or a feature it asked for: Vulkan 1.1, shaderStorageImageWriteWithoutFormat, VK_EXT_mutable_descriptor_type);
 /// UNSUPPORTED: Intel's library made no context for this GPU or driver
-enum XessWhy { XESS_OK, XESS_NOT_BUILT, XESS_ENV_OFF, XESS_NO_LIBRARY, XESS_NO_VULKAN, XESS_UNSUPPORTED, XESS_WHY_COUNT };
+
 XessWhy xess_why();
 /// Intel's library is there and loaded (before the device is made: the Quality preset's Auto (this PC) and the device's
 /// extensions ask)

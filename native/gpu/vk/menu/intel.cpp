@@ -7,7 +7,6 @@
 
 #ifndef MENU_LAYOUT_ONLY
 #include "intel_compiles.h"   // (intel_side_by_side_chosen)
-#include "vk_internal.h"   // (dev: the device's vendor, model and driver)
 #endif
 
 #include <string>
@@ -42,7 +41,7 @@ const char* hn_intel_compiles(int v, int variant) {
 }
 } // namespace
 
-#ifndef MENU_LAYOUT_ONLY
+#if !defined(MENU_LAYOUT_ONLY) && !defined(LONGSHOT_METAL_MENU)
 // (what the renderer asks: vk_internal.h)
 bool intel_compiles_side_by_side() {   // (RX_VK_NO_INTEL_SERIAL in the row: menu_init. Asked once the device is made)
     return intel_side_by_side_chosen(opts.intel_compiles, dev.props.deviceID, dev.props.driverVersion);

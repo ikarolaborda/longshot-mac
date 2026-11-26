@@ -1,3 +1,11 @@
+## New in v3.2.0-mac.10
+
+The standard Longshot app now includes the native Metal renderer and the startup improvements from experimental build 4. The installer prepares the graphics shaders for your Mac once. Adaptive mode restores your selected gameplay frame rate when Link enters the world. This release also improves audio buffering and prepares more graphics resources before you enter Hyrule Field and Gerudo areas.
+
+Download `Longshot-Mac-Installer.zip`, unzip it, and open `Longshot-Mac-Installer`. Select your existing prepared game folder. The installer uses a temporary copy and updates Longshot in Applications. Existing stable installations keep their configured save location.
+
+For automatic resume, open Longshot Settings with Command-comma and enable Gameplay → Skip title screen. On an M5 Max, the experimental release reached controllable gameplay in 14.0–16.6 seconds across three locations with this option enabled. Each test started with an empty Longshot shader cache and retained the macOS caches.
+
 ## New in v3.2.0-mac.9
 
 Fixed a Metal rendering fault seen on the moving boat in the Shadow Temple. When the internal resolution changes and MetalFX needs a frame to catch up, the game now draws that frame using the current scene. The fix applies with the Lens of Truth on or off and takes effect the next time Longshot opens.
@@ -45,7 +53,7 @@ With **All Equipment** enabled, the pause inventory identifies loaned gear as **
 
 This Mac release uses the stable Longshot v3.2.0 game code, including the controller trigger, save-loading, first adult night, and high-frame-rate movie fixes. Movies keep their sound timing and 16:9 shape. The upstream release also lists driver fixes specific to Windows and Vulkan. [Upstream release notes](https://git.magicbean.dev/MagicBeanDev/Longshot/releases/tag/v3.2.0)
 
-Press F1 or Insert in the game window to open Longshot Settings. On a Mac keyboard, use Fn+F1 if F1 changes the screen brightness. You can also choose Longshot Settings… from the Longshot menu or press Command+comma. Use Tab to change pages and the arrow keys to select a setting. The keypad 5 shortcut still opens the cheat menu.
+Press F1 or Insert in the game window to open Longshot Settings. On a Mac keyboard, use Fn+F1 if F1 changes the screen brightness. You can also open settings from the Longshot application menu or press Command+comma. Use Tab to change pages and the arrow keys to select a setting. The keypad 5 shortcut still opens the cheat menu.
 
 In Graphics, turn on Adaptive 144 FPS to target up to 144 displayed frames per second. The target follows the screen when its refresh rate is lower. When game frames fall behind on a high-refresh screen, supported Macs can use MetalFX to draw a frame between two game frames. If the GPU is the limit, the game can lower its 3D resolution and raise it again when the GPU has time. Movement and animation use elapsed time.
 
@@ -62,6 +70,16 @@ With pixel sampling enabled in both modes, Hyrule Field averaged 104 displayed F
 The controller timer starts when the test sends the input. It stops when Metal displays the first game frame submitted after the game reads that input. The frame-spacing measurement includes the game’s frames and frames added by MetalFX. These timings cover the game and the Mac display system. Physical controller and panel latency need separate equipment.
 
 The two routes are in `scripts/mac/tests/village_response.py` and `scripts/mac/tests/field_traversal.py`. Set `HOS_METAL_TIMING=2` for displayed-frame timestamps. For a small image sample from each SDR drawable, also set `HOS_METAL_PIXEL_TRACE` to a new file and pass that path to the village script with `--pixels`.
+
+The Metal-only preview warms pipelines observed at Kakariko’s gate and on the road into Hyrule Field. On a return visit it prepares previously identified field textures during spare render time. An idle-texture sweep can keep up to 384 MiB of recently used gate textures in purgeable Metal storage while memory pressure is normal. The allowance shrinks as active texture copies approach 1.625 GiB. Guest writes, format changes, GPU ownership and missing resources still go through the renderer’s validation. Set `LONGSHOT_FIELD_PREWARM=0` to disable speculative uploads or `1` to include the first visit. Set `LONGSHOT_STREAM_REUSE=0` to disable the extra residency and full-content reuse checks.
+
+Adaptive 144 FPS keeps its target when Link moves between areas. To choose a fixed rate, use Frame Rate in the Mac menu bar.
+
+To measure a gate, use a copied adult save at the Kakariko entrance, a control socket and `HOS_METAL_TIMING=2`. Run `scripts/mac/tests/gate_crossings.py SOCKET --output gates.json`, then `scripts/mac/tests/field_traversal.py SOCKET > field.json`. Run `scripts/mac/tests/scene_report.py GAME_LOG gates.json field.json` with Python 3.9 or later. It reports the freeze after arrival, time to directional movement, displayed game and generated frames, and input delay for each action. Logged long-frame upload totals cover only the frames that triggered the renderer’s long-frame logger.
+
+For a diagnostic run, also set `HOS_SCENE_TRACE=1`. The game logs cumulative file-read and Zstandard work, texture validation reasons, and the first real frame submitted and displayed after a sampled ready state. The player state is sampled about every 250 ms. Worker times can overlap. Instruments can record the corresponding Points of Interest during a crossing. To check an actual sword hit, `scripts/mac/tests/combat_response.py` uses a separate copied Death Mountain Trail save, the damage multiplier and `HOS_TRACE_ATTACK=1`.
+
+In three runs per build on an M5 Max with the 240 Hz LG display at 1920 × 1080, the median worst gap in the first two seconds of a repeat Hyrule Field arrival fell from 187 to 92 ms. The repeat crossing took 4.51 seconds to confirmed movement, up from 4.30. The first crossing improved from 4.81 to 4.48 seconds. Median peak process footprint was 11.67 GiB, previously 11.79 GiB. The field route rose from 88 to 94 displayed FPS, including 47 real game frames per second. Its slowest measured second delivered 63 frames and its longest gap was 171 ms. Sustained 120 FPS remains an open target.
 
 In an adult Death Mountain Crater test on an M5 Max and a 240 Hz LG display, the manual 144 FPS cap delivered 74 to 84 displayed frames per second. Adaptive mode delivered 115 to 120 across three samples of 600 displayed frames, including frames from MetalFX. The game produced 70 frames per second on average during the 22-second adaptive test. The game clock ran within 1% of real time during steady play. A second game window was open.
 

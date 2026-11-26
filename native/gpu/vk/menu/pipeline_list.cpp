@@ -12,8 +12,12 @@
 #include "menu/output.h"     // (the template's output)
 #include "menu/upscaler.h"   // (the template's upscaler and the 3D's size)
 #include "pipeline_share.h"
+#ifdef LONGSHOT_METAL_MENU
+#include "menu_metal_services.h"
+#else
 #include "vk_draw.h"         // (state_list_snapshot: the pipelines built)
 #include "vk_internal.h"
+#endif
 #include "vk_menu_i18n.h"    // (i18n::tr)
 #include "vk_paths.h"        // (game_module_path: the game folder, its mods)
 #ifdef _WIN32
@@ -372,7 +376,11 @@ bool share_write(const std::string& path, const std::string& data) {
 std::vector<std::string> share_values(long long pipelines, bool v2, long long computes) {
     std::vector<std::string> v(ps::kFieldCount);
     v[0] = menu_version();   // (nx2/build.py gives the version to gpu/vk/vk_version.cpp alone)
+#ifdef LONGSHOT_METAL_MENU
+    v[1] = share_os() + "; " + device_report_text() + ", driver " + driver_text();
+#else
     v[1] = share_os() + "; " + dev.props.deviceName + ", driver " + driver_text();
+#endif
     const Out o = shown_output();
     v[2] = ps::output_text(o.w, o.h, opts.handheld != 0, output_choice(opts.output_res) == 0, aspect_follows_host(opts.ultrawide));
     v[3] = std::string(tx_upscaler(opts.dlss)) + ", " + tx_resolution(opts.resolution);

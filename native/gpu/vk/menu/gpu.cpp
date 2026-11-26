@@ -6,9 +6,6 @@
 // ASTC as RGBA8 (an AMD texture workaround that takes far more video memory; RX_VK_ASTC_RGBA8 holds it for the run).
 #include "menu_module.h"
 
-#ifndef MENU_LAYOUT_ONLY
-#include "vk_internal.h"   // (gpu_device_names: vk_main.cpp pick_device)
-#endif
 
 #include <cstdio>
 #include <string>

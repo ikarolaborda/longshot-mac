@@ -593,7 +593,7 @@ static void flush_early(void) {
     ReleaseSRWLockExclusive(&early_lock);
 }
 
-/* dll: longshot_vk.dll (longshot_vk.so on Linux), the Vulkan back end: one export */
+/* Both backends implement the same host ABI. */
 static HMODULE renderer_library(const char *dll) {
     char path[MAX_PATH];
     const DWORD n = GetModuleFileNameA(NULL, path, MAX_PATH);
@@ -619,7 +619,7 @@ static HMODULE renderer_library(const char *dll) {
     return m;
 }
 
-static const MkwVkRenderer *load_vulkan(const char *dll) {
+static const MkwVkRenderer *load_renderer(const char *dll) {
     HMODULE m = renderer_library(dll);
     if (!m) return NULL;
     vk_module = m;
@@ -652,7 +652,7 @@ void hos_mac_tick_settings(void *layer) {
     if (m && layer) m->tick(layer, __atomic_exchange_n(&menu_toggle, 0, __ATOMIC_ACQ_REL));
 }
 static void start_metal_menu(void *hwnd) {
-    HMODULE lib = renderer_library("longshot_vk.dll");
+    HMODULE lib = renderer_library("longshot_mtl.dll");
     typedef const LongshotMetalMenu *(*Start)(const MkwVkHost *, void *);
     Start start = lib ? (Start)(void *)GetProcAddress(lib, "longshot_mac_menu_start") : NULL;
     if (start) __atomic_store_n(&metal_menu, start(&vk_host, hwnd), __ATOMIC_RELEASE);
@@ -660,38 +660,48 @@ static void start_metal_menu(void *hwnd) {
 }
 #endif
 int rx_start(void *hwnd) {
-    /* (longshot: Vulkan, the only renderer; RX_BACKEND, which once picked the WebGPU one, is not read) */
+#ifdef __APPLE__
+    const char *dll = "longshot_mtl.dll";
+    const char *renderer = "Metal";
+#else
     const char *dll = "longshot_vk.dll";
-#ifdef __APPLE__   /* (mac, RX_RENDERER=metal: the native Metal back end, gpu/mtl; asked for, so no fall back to Vulkan) */
-    int hos_renderer_metal(void);
-    if (hos_renderer_metal()) dll = "longshot_mtl.dll";
+    const char *renderer = "Vulkan";
 #endif
-    const MkwVkRenderer *r = load_vulkan(dll);
+    const MkwVkRenderer *r = load_renderer(dll);
     /* (the crash report's renderer: host/hos_crash_dialog.h. Before start(), which prepares the shaders: a crash in there
        is a crash of this renderer too) */
-    const char *renderer = strstr(dll, "mtl") ? "Metal" : "Vulkan";
+
     if (r) hos_log("report: renderer %s", renderer);
     if (r && r->start(hwnd)) {
         vk = r;
 #ifdef __APPLE__
         /* A controlled offscreen run uses the same settings and bindings as the window. */
-        if ((hwnd || getenv("HOS_CONTROL")) && hos_renderer_metal()) start_metal_menu(hwnd);
+        if ((hwnd || getenv("HOS_CONTROL"))) start_metal_menu(hwnd);
 #endif
         hos_log("rx: renderer: %s (%s)", renderer, dll);
         flush_early();
         return 1;
     }
     if (r) hos_log("rx: the %s back end could not start on the window", renderer);
+#ifdef __APPLE__
+    return 0;
+#else
     const int ok = wgr_start(hwnd);
     if (ok) hos_log("report: renderer WebGPU (no usable Vulkan device)");
     flush_early();
     return ok;
+#endif
 }
 /* (longshot) longshot --prepare-shaders: the Vulkan back end started with no window and no game, which prepares
    every shader in its start (gpu/vk/vk_main.cpp started_up) and is then let go. 0 when there is no usable Vulkan */
 int rx_prepare_shaders(void) {
-    const MkwVkRenderer *r = load_vulkan("longshot_vk.dll");
+#ifdef __APPLE__
+    extern int mtl_prepare_game_shaders(void);
+    return mtl_prepare_game_shaders();
+#else
+    const MkwVkRenderer *r = load_renderer("longshot_vk.dll");
     return r && r->start(NULL);
+#endif
 }
 /* (longshot) the window is being closed: a back end still preparing its shaders stops and keeps what it made first (a few
    seconds at most). One without the export (an older one) has nothing to keep */

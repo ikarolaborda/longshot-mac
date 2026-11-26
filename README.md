@@ -5,9 +5,13 @@ The original launcher and its build tools are also available.
 
 ## Native game
 
-Download the Mac installer and checksum from [Releases](../../releases), unzip the installer, and open it. Choose your existing macOS Longshot game build when prompted. The installer rebuilds the game from your files and installs `/Applications/Longshot.app`. Keep the original build folder for future updates.
+Download the Mac installer and checksum from the [latest stable release](https://github.com/ikarolaborda/longshot-mac/releases/latest), unzip the installer, and open it. Choose your existing macOS Longshot game build when prompted. The installer builds from a private copy of your files, prepares Metal shaders for your GPU, and installs `Longshot.app` in Applications. Keep the original build folder for future updates.
 
-The build needs Xcode command-line tools, a Python environment that can run the original builder, and the libraries used by your macOS build, including Homebrew Mesa and vulkan-loader. Native Metal uses the Ocarina of Time shader service and shader data from your prepared game folder.
+The build needs Xcode command-line tools, a Python environment that can run the original builder, and the libraries used by your macOS build, including SDL and the audio/video libraries. The native game renders and draws its settings menu with Metal. It uses the Ocarina of Time shader service and shader data from your prepared game folder. You can build and run the native game without a Vulkan SDK, loader, or driver.
+
+### Side-by-side Metal preview
+
+From the native source directory on this branch, rebuild a copy of your prepared game folder with `python3 -I nx2/make_game.py --update "/path/to/game-copy" --no-prepare-shaders`. Then run `python3 scripts/mac/package_app.py "/path/to/game-copy" --preview`. The preview installs in `~/Applications/Longshot Metal Preview.app` and keeps its saves, settings and caches under `~/Library/Application Support/Longshot Metal Preview`.
 
 ## Original launcher
 
@@ -20,7 +24,7 @@ dependencies are embedded).
 The launcher will look for your game file (the Ocarina of Time `.nup`,
 title ID `04004860224DEC000`) and build/run the game normally.
 
-## What this port does
+### Original launcher features
 
 - **Full Metal rendering** — the UI renders through Avalonia's native macOS
   backend (Metal compositor + Skia's Metal backend).
@@ -30,7 +34,7 @@ title ID `04004860224DEC000`) and build/run the game normally.
 - Native arm64 single-file executable; universal-ready native libraries
   (arm64 + x86_64).
 
-## Vulkan support (game renderer)
+## Vulkan support in the original launcher
 
 The launcher checks for Vulkan 1.3 (the game's renderer). On macOS this is
 provided by [MoltenVK](https://github.com/KhronosGroup/MoltenVK):

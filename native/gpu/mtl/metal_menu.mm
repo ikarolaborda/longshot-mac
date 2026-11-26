@@ -13,7 +13,7 @@ namespace mkwvk {
 void mac_menu_host(const MkwVkHost *, void *);
 void mac_draw_menu(uint32_t, uint32_t, float);
 void mac_menu_poll(uint32_t, uint32_t, bool);
-int menu_host_option(int, int);
+int shared_host_option(int, int);
 void menu_option_set(int, int);
 int menu_setting(int, MkwVkSetting *);
 int menu_setting_set(const char *, int, MkwVkSetting *);
@@ -22,6 +22,9 @@ bool menu_is_open();
 namespace ui { bool begin_metal(uint32_t, uint32_t, float); }
 }
 extern "C" int hos_mac_resolution_option(int);
+static id<MTLDevice> menuDevice;
+extern "C" const char *longshot_menu_device_name() { return menuDevice.name.UTF8String ?: "Metal"; }
+extern "C" uint64_t longshot_menu_device_budget() { return menuDevice.recommendedMaxWorkingSetSize; }
 static bool active;
 extern "C" int longshot_mac_overlay_active() { return active; }
 
@@ -89,12 +92,13 @@ static int option(int id) {
     case HOS_OPT_DLSS_JITTER_PHASES:
         return INT_MIN;
     default:
-        return mkwvk::menu_host_option(id, INT_MIN);
+        return mkwvk::shared_host_option(id, INT_MIN);
     }
 }
 extern "C" __attribute__((visibility("default"))) const LongshotMetalMenu *
 longshot_mac_menu_start(const MkwVkHost *host, void *window) {
     active = true;
+    menuDevice = MTLCreateSystemDefaultDevice();
     mkwvk::mac_menu_host(host,window);
     mkwvk::menu_init();
     static const LongshotMetalMenu menu{tick,option,mkwvk::menu_option_set,mkwvk::menu_setting,mkwvk::menu_setting_set};

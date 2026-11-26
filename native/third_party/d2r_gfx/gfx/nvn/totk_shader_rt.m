@@ -98,16 +98,22 @@ static _Atomic uint64_t g_new_variants, g_new_variant_ns, g_new_at_count;
 static _Atomic int64_t g_cached_variants = -1;
 
 static NSString *root_dir(void) {   // native-port/ (the executable lives in native-port/build/)
-    if (g_root) return g_root;
-    const char *native = getenv("TOTK_NATIVE_DIR");   // the Mac app: its executable is Contents/MacOS/<name> (app/launcher.m)
-    if (native && *native) return g_root = [@(native) stringByDeletingLastPathComponent];
-    char path[4096]; uint32_t n = sizeof path;
-    if (_NSGetExecutablePath(path, &n)) die("executable path too long");
-#ifdef LONGSHOT_MTL   /* (longshot-mac) the game folder's metal/: build/shader-service/totk_xlate, build/shader-seed */
-    g_root = [[[@(path) stringByResolvingSymlinksInPath] stringByDeletingLastPathComponent] stringByAppendingPathComponent:@"metal"];
+    static dispatch_once_t once;
+    dispatch_once(&once, ^{
+        const char *native = getenv("TOTK_NATIVE_DIR");
+        if (native && *native) {
+            g_root = [@(native) stringByDeletingLastPathComponent];
+            return;
+        }
+        char path[4096]; uint32_t n = sizeof path;
+        if (_NSGetExecutablePath(path, &n)) die("executable path too long");
+        NSString *dir = [[@(path) stringByResolvingSymlinksInPath] stringByDeletingLastPathComponent];
+#ifdef LONGSHOT_MTL
+        g_root = [dir stringByAppendingPathComponent:@"metal"];
 #else
-    g_root = [[[@(path) stringByResolvingSymlinksInPath] stringByDeletingLastPathComponent] stringByDeletingLastPathComponent];
+        g_root = dir.stringByDeletingLastPathComponent;
 #endif
+    });
     return g_root;
 }
 static NSString *seed_dir(void) {   // the prepared startup shaders that come with the app (build_app.py)
@@ -152,10 +158,8 @@ NSString *totk_rt_dir(void) {
           if (retired) LOG("[shader-cache] 本机缓存目录换新的：%s（%s）；旧的翻译留在 %s，管线存档和收集清单照常接过来",
                            g_dir.lastPathComponent.UTF8String, why.UTF8String, retired.lastPathComponent.UTF8String);
           else if (why) LOG("[shader-cache] 【红】本机缓存目录 %s：%s", g_dir.UTF8String, why.UTF8String);
-          NSData *md = [NSData dataWithContentsOfFile:[seed_dir() stringByAppendingPathComponent:@"seed-manifest.json"]];
-          NSDictionary *m = md ? [NSJSONSerialization JSONObjectWithData:md options:0 error:nil] : nil;
-          NSString *seedTranslator = [m isKindOfClass:NSDictionary.class] ? m[@"translator_sha256"] : nil;
-          NSString *seedCode = [m isKindOfClass:NSDictionary.class] ? m[@"translator_code_sha256"] : nil;   // since 2026-11-18: the code, any signature
+          NSString *seedTranslator = [metadata isKindOfClass:NSDictionary.class] ? metadata[@"translator_sha256"] : nil;
+          NSString *seedCode = [metadata isKindOfClass:NSDictionary.class] ? metadata[@"translator_code_sha256"] : nil;
           BOOL other = [seedCode isKindOfClass:NSString.class] ? ![seedCode isEqualToString:translator]
                      : [seedTranslator isKindOfClass:NSString.class] && ![seedTranslator isEqualToString:file];
           if (translator && other && !(xe && *xe))
@@ -194,11 +198,7 @@ NSString *totk_rt_dir(void) {
                         seed_mark_broken(name); seed_mark_broken([[name substringToIndex:name.length - 6] stringByAppendingString:@".json"]);
                     }
             }
-            if ([seed[@"available"] boolValue]) {
-                NSData *md = [NSData dataWithContentsOfFile:[source stringByAppendingPathComponent:@"seed-manifest.json"]];
-                NSDictionary *m = md ? [NSJSONSerialization JSONObjectWithData:md options:0 error:nil] : nil;
-                g_seed_all_default = [m isKindOfClass:NSDictionary.class] && [m[@"all_default"] isEqual:@YES];
-            }
+            g_seed_all_default = [seed[@"available"] boolValue] && [metadata isKindOfClass:NSDictionary.class] && [metadata[@"all_default"] isEqual:@YES];
             if (!seed) {   // 2026-10-18: a damaged bundle or a full disk used to end the game here with nothing on screen. The
                            // cache stays usable (totk_seed_import writes shader files before the indexes that name them),
                            // so play on and translate shaders as they first appear, as before the prepared shaders existed.
@@ -248,6 +248,15 @@ static NSDictionary *shader_scope(void) {
     return scope;
 #endif
 }
+#ifdef LONGSHOT_MTL
+void hos_metal_start_cache_read(void) {
+    // Both calls use dispatch_once. The renderer joins only when it needs these data.
+    dispatch_async(dispatch_get_global_queue(QOS_CLASS_USER_INITIATED, 0), ^{ @autoreleasepool {
+        totk_rt_dir();
+        shader_scope();
+    } });
+}
+#endif
 static NSMutableDictionary *observed_keys_state(void) {
     static NSMutableDictionary *state; static dispatch_once_t once;
     // Finish cache/seed initialization before entering this once token. Keeping

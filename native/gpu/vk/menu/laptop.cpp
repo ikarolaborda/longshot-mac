@@ -4,9 +4,6 @@
 // samplers, the restart question, the save; menu_module.h). Fenced from a layout-only build (MENU_LAYOUT_ONLY, MENU_HOOK).
 #include "menu_module.h"
 
-#ifndef MENU_LAYOUT_ONLY
-#include "vk_internal.h"   // (dev: the GPU's type)
-#endif
 
 #include <string>
 
@@ -14,7 +11,13 @@ namespace mkwvk {
 
 namespace {
 #ifndef MENU_LAYOUT_ONLY
-bool laptop_row() { return dev.props.deviceType == VK_PHYSICAL_DEVICE_TYPE_INTEGRATED_GPU; }   // (integrated graphics)
+bool laptop_row() {
+#ifdef LONGSHOT_METAL_MENU
+    return false;
+#else
+    return dev.props.deviceType == VK_PHYSICAL_DEVICE_TYPE_INTEGRATED_GPU;
+#endif
+}   // (integrated graphics)
 #endif
 } // namespace
 

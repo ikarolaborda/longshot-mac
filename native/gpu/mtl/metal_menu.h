@@ -1,5 +1,5 @@
 #pragma once
-/* Shared with the settings renderer in longshot_vk.dylib. The host keeps ownership
+/* Shared with the settings renderer in longshot_mtl.dylib. The host keeps ownership
    of the window, the game display, and the persistent Metal settings. */
 typedef struct {
     void (*tick)(void *layer, int toggle);

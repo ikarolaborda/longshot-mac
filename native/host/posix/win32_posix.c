@@ -945,47 +945,7 @@ SIZE_T VirtualQuery(const void *addr, MEMORY_BASIC_INFORMATION *mbi, SIZE_T size
 /* ---- modules ---- */
 #ifdef __APPLE__
 #include <mach-o/dyld.h>
-#ifdef __APPLE__
-/* (longshot-mac) Vulkan through KosmicKrisp (Mesa's Vulkan 1.4 driver on Metal 4) where Homebrew has it and the Vulkan
-   loader: OoT's save in Kokiri Forest draws correctly at 60 fps on it, where MoltenVK left programs untranslated and ran
-   Metal out of memory on 8-bit index draws. Its mesh fallback's compute pipelines take 15-60 s each to compile the first
-   time an area is seen (the picture is white until then) and come from its cache after. Chosen once, before anything
-   loads Vulkan: the loader is named to SDL too (SDL_VULKAN_LIBRARY), since SDL opens Vulkan itself for the window's
-   surface and a second Vulkan library in the process crashed in the first surface call. RX_VK_DRIVER=moltenvk keeps
-   MoltenVK; a VK_DRIVER_FILES or VK_ICD_FILENAMES already set is left alone. */
-static char kosmickrisp_loader[PATH_MAX];
-__attribute__((constructor)) static void choose_vulkan_driver(void) {
-    const char *want = getenv("RX_VK_DRIVER");
-    if (want && !strcmp(want, "moltenvk")) return;
-    char executable[PATH_MAX], icdPath[PATH_MAX], library[PATH_MAX];
-    uint32_t capacity = sizeof executable;
-    if (!_NSGetExecutablePath(executable, &capacity)) {
-        char *macos = strstr(executable, ".app/Contents/MacOS/");
-        if (macos) {
-            macos[sizeof ".app/Contents" - 1] = 0;
-            snprintf(icdPath, sizeof icdPath, "%s/Resources/kosmickrisp.json", executable);
-            snprintf(library, sizeof library, "%s/Frameworks/libvulkan.dylib", executable);
-            if (!access(icdPath, R_OK) && !access(library, R_OK)) {
-                if (!getenv("VK_DRIVER_FILES") && !getenv("VK_ICD_FILENAMES")) setenv("VK_DRIVER_FILES", icdPath, 1);
-                setenv("SDL_VULKAN_LIBRARY", library, 0);
-                snprintf(kosmickrisp_loader, sizeof kosmickrisp_loader, "%s", library);
-                return;
-            }
-        }
-    }
-    static const char *const prefixes[] = {"/opt/homebrew/opt/", "/usr/local/opt/"};
-    for (size_t i = 0; i < sizeof prefixes / sizeof prefixes[0]; i++) {
-        char icd[PATH_MAX], loader[PATH_MAX];
-        snprintf(icd, sizeof icd, "%smesa/share/vulkan/icd.d/kosmickrisp_mesa_icd.aarch64.json", prefixes[i]);
-        snprintf(loader, sizeof loader, "%svulkan-loader/lib/libvulkan.dylib", prefixes[i]);
-        if (access(icd, R_OK) || access(loader, R_OK)) continue;
-        if (!getenv("VK_DRIVER_FILES") && !getenv("VK_ICD_FILENAMES")) setenv("VK_DRIVER_FILES", icd, 1);
-        setenv("SDL_VULKAN_LIBRARY", loader, 0);
-        snprintf(kosmickrisp_loader, sizeof kosmickrisp_loader, "%s", loader);
-        return;
-    }
-}
-#endif
+
 #endif
 static void exe_path(char *out, size_t cap) {
 #ifdef __APPLE__   /* (mac) no /proc: dyld's record of the executable, through its symlinks */
@@ -1002,8 +962,7 @@ static void exe_path(char *out, size_t cap) {
    vulkan-1.dll -> libvulkan.so.1, x.dll -> x.so */
 static const char *linux_name(const char *base) {
 #ifdef __APPLE__
-    static const char *map[][2] = {{"sdl3.dll", "libSDL3.0.dylib"}, {"sdl2.dll", "libSDL2-2.0.0.dylib"},
-                                   {"vulkan-1.dll", "libvulkan.dylib"}};
+    static const char *map[][2] = {{"sdl3.dll", "libSDL3.0.dylib"}, {"sdl2.dll", "libSDL2-2.0.0.dylib"}};
 #else
     static const char *map[][2] = {{"sdl3.dll", "libSDL3.so.0"}, {"sdl2.dll", "libSDL2-2.0.so.0"},
                                    {"vulkan-1.dll", "libvulkan.so.1"}};
@@ -1035,26 +994,17 @@ HMODULE LoadLibraryA(LPCSTR name) {
 #endif
         }
     }
-#ifdef __APPLE__
-    if (!slash && !strcmp(path, "libvulkan.dylib") && kosmickrisp_loader[0]) {
-        HMODULE kk = dlopen(kosmickrisp_loader, RTLD_NOW | RTLD_LOCAL);
-        if (kk) return kk;
-    }
-#endif
+
     HMODULE m = dlopen(path, RTLD_NOW | RTLD_LOCAL);
 #ifdef __APPLE__
-    if (!m && !slash) {   /* (mac) dyld's default search skips /usr/local/lib and Homebrew's prefix: SDL, MoltenVK's libvulkan */
+    if (!m && !slash) {   /* (mac) dyld's default search skips /usr/local/lib and Homebrew's prefix: SDL */
         char alt[PATH_MAX];
         static const char *const dirs[] = {"/opt/homebrew/lib/", "/usr/local/lib/"};
         for (size_t i = 0; !m && i < sizeof dirs / sizeof dirs[0]; i++) {
             snprintf(alt, sizeof alt, "%s%s", dirs[i], path);
             m = dlopen(alt, RTLD_NOW | RTLD_LOCAL);
         }
-        if (!m && !strcmp(path, "libvulkan.dylib"))   /* (MoltenVK alone, no loader: its own library answers) */
-            for (size_t i = 0; !m && i < sizeof dirs / sizeof dirs[0]; i++) {
-                snprintf(alt, sizeof alt, "%slibMoltenVK.dylib", dirs[i]);
-                m = dlopen(alt, RTLD_NOW | RTLD_LOCAL);
-            }
+
     }
 #endif
     if (!m) {
@@ -1647,16 +1597,33 @@ void *hos_sdl_audio_open(unsigned device, int freq, int channels, int s16, int f
     __attribute__((weak));
 void hos_sdl_audio_close(void *audio) __attribute__((weak));
 int hos_sdl_audio_alive(void *audio) __attribute__((weak));
+#ifdef __APPLE__
+/* The mixer submits 10 ms blocks. Four queued blocks leave 30 ms in reserve
+   after the first callback, including after a device reset or underrun. */
+enum { WAVE_PRIME_BLOCKS = 4 };
+#endif
 typedef struct {
     pthread_mutex_t mu;
     WAVEHDR *q[64];
     int head, count;
     DWORD pos;
+#ifdef __APPLE__
+    unsigned resume_blocks;
+    unsigned underruns, reported_underruns;
+#endif
     void *audio;
 } WaveOut;
 static void wave_pull(void *user, uint8_t *out, int len) {
     WaveOut *w = (WaveOut *)user;
     pthread_mutex_lock(&w->mu);
+#ifdef __APPLE__
+    if ((unsigned)w->count < w->resume_blocks) {
+        pthread_mutex_unlock(&w->mu);
+        memset(out, 0, (size_t)len);
+        return;
+    }
+    w->resume_blocks = 0;
+#endif
     while (len > 0 && w->count) {
         WAVEHDR *h = w->q[w->head];
         DWORD k = h->dwBufferLength - w->pos;
@@ -1668,6 +1635,12 @@ static void wave_pull(void *user, uint8_t *out, int len) {
             w->head = (w->head + 1) % 64, w->count--, w->pos = 0;
         }
     }
+#ifdef __APPLE__
+    if (len > 0) {
+        w->resume_blocks = WAVE_PRIME_BLOCKS;
+        w->underruns++;
+    }
+#endif
     pthread_mutex_unlock(&w->mu);
     if (len > 0) memset(out, 0, (size_t)len);   /* (behind: silence) */
 }
@@ -1678,6 +1651,9 @@ MMRESULT waveOutOpen(HWAVEOUT *out, UINT device, const WAVEFORMATEX *f, DWORD_PT
     WaveOut *w = (WaveOut *)calloc(1, sizeof *w);
     if (!w) return MMSYSERR_ERROR;
     if (pthread_mutex_init(&w->mu, NULL)) { free(w); return MMSYSERR_ERROR; }
+#ifdef __APPLE__
+    w->resume_blocks = WAVE_PRIME_BLOCKS;
+#endif
     w->audio = hos_sdl_audio_open(device, (int)f->nSamplesPerSec, (int)f->nChannels, f->wBitsPerSample == 16, 0, wave_pull, w);
     if (!w->audio) {
         pthread_mutex_destroy(&w->mu);
@@ -1704,7 +1680,15 @@ MMRESULT waveOutWrite(HWAVEOUT hw, WAVEHDR *h, UINT size) {
     h->dwFlags = (h->dwFlags & ~(DWORD)WHDR_DONE) | WHDR_INQUEUE;
     w->q[(w->head + w->count) % 64] = h;
     w->count++;
+#ifdef __APPLE__
+    unsigned gaps = w->underruns;
+    int report = gaps != w->reported_underruns && !(gaps & (gaps - 1));
+    w->reported_underruns = gaps;
+#endif
     pthread_mutex_unlock(&w->mu);
+#ifdef __APPLE__
+    if (report) fprintf(stderr, "[audio] Output queue ran dry %u time(s) since opening the device.\n", gaps);
+#endif
     return MMSYSERR_NOERROR;
 }
 MMRESULT waveOutReset(HWAVEOUT hw) {
@@ -1715,6 +1699,9 @@ MMRESULT waveOutReset(HWAVEOUT hw) {
         w->head = (w->head + 1) % 64, w->count--;
     }
     w->pos = 0;
+#ifdef __APPLE__
+    w->resume_blocks = WAVE_PRIME_BLOCKS;
+#endif
     pthread_mutex_unlock(&w->mu);
     return 0;
 }

@@ -7,11 +7,15 @@
 
 #ifndef MENU_LAYOUT_ONLY
 #include "menu/framegen.h"
+#ifdef LONGSHOT_METAL_MENU
+#include "menu_metal_services.h"
+#else
 #include "vk_antilag.h"
 #include "vk_dlss.h"
 #include "vk_framegen.h"
 #include "vk_fsr3fi.h"
 #include "vk_reflex.h"
+#endif
 #endif
 
 #if defined(__APPLE__) && !defined(MENU_LAYOUT_ONLY)

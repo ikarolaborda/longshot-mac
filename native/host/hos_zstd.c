@@ -49,6 +49,7 @@
      - the whole-buffer decode's output room past the content (callers give exactly the content's size): what is left
        there, and on an error how much of the output was written. */
 #include "hos.h"
+#include "scene_trace.h"
 #ifndef LONGSHOT_ENV_H   /* (env_on: the switches' one rule) */
 #include "../gpu/vk/compat/longshot_env.h"
 #include "../gpu/vk/vk_api.h"   /* (HOS_OPT_NATIVE_ZSTD; the check -includes both) */
@@ -266,10 +267,12 @@ static void zs_drop(uint64_t g) {   /* (stream object g's context, if it has one
 static size_t zs_continue(ZSTD_DCtx *z, uint64_t g, uint64_t src, size_t n) {
     const uint64_t dst = S_DST(g);
     const size_t room = (size_t)(int64_t)(int32_t)S_ROOM(g);
+    uint64_t scene_decode = hos_scene_begin();
     const size_t r = ZSTD_decompressContinue(z, GP(dst), room, GP(src), n);
     /* (marked also when it fails: a block that ran out of room was partly written. libzstd may keep a block's literals in
        the output room past the block, up to two blocks on: marked too) */
     const size_t out = ZSTD_isError(r) ? 0 : r, span = out > (2u << 17) + 64 ? out : (2u << 17) + 64;
+    hos_scene_end(SCENE_ZSTD, scene_decode, out);
     HOS_WRITTEN(GP(dst), span < room ? span : room);
     if (ZSTD_isError(r)) return r;
     S_DST(g) = dst + (uint64_t)(int64_t)(int32_t)r;
@@ -418,8 +421,10 @@ int hos_zstd_frames(Ctx *c) {
     /* z and d are held exclusively or by reference until the call completes. No guest
        registers or dictionary-table locks are needed while libzstd fills the output. */
     const int away = (room >= ZSTD_BLOCKSIZE_MAX || n >= ZSTD_BLOCKSIZE_MAX) && hos_vcore_away();
+    uint64_t scene_decode = hos_scene_begin();
     const size_t r = d ? ZSTD_decompress_usingDDict(z, GP(dst), room, GP(src), n, d->dd)
                        : ZSTD_decompress_usingDict(z, GP(dst), room, GP(src), n, NULL, 0);
+    hos_scene_end(SCENE_ZSTD, scene_decode, ZSTD_isError(r) ? 0 : r);
     HOS_WRITTEN(GP(dst), room);   /* (the whole room: libzstd may keep literals in its far end while it decodes) */
     if (away) hos_vcore_back();
     zs_lock();

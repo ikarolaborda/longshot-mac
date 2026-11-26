@@ -9,7 +9,6 @@
 
 #ifndef MENU_LAYOUT_ONLY
 #include "../../../host/audio_output_devices.h"
-#include "vk_internal.h"    // (host: the host's devices and microphones)
 #include "vk_menu_i18n.h"   // (i18n::tr: the unplugged device's line)
 #endif
 

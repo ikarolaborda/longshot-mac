@@ -2,6 +2,7 @@
 // NVIDIA's NGX SDK (LONGSHOT_NGX, scripts/fetch.py dlss: Linux and Windows); without it these say DLSS is not there and the
 // game's network runs.
 #pragma once
+#include "menu_upscale_types.h"
 
 #include <vector>
 
@@ -14,8 +15,7 @@ struct TemporalEngine;
 /// Whether this build has DLSS in it (LONGSHOT_NGX)
 bool dlss_built();
 /// Why DLSS cannot be chosen here (the Insert menu's Upscaler row says it), DLSS_OK when it can or is not known yet
-enum DlssWhy { DLSS_OK, DLSS_NOT_BUILT, DLSS_ENV_OFF, DLSS_NEEDS_RTX, DLSS_NEEDS_DRIVER, DLSS_NO_RUNTIME,
-               DLSS_RUNTIME_NOT_ASCII, DLSS_WHY_COUNT };
+
 DlssWhy dlss_why();
 /// Asks NGX once whether DLSS runs on this device, so dlss_why knows before the first upscale (the menu, when it opens).
 /// Nothing off an NVIDIA device with NGX's extensions, or in a build without DLSS
@@ -43,17 +43,7 @@ bool dlss_fg_wanted();
 /// (longshot) Why the last set it was asked for went to the renderer's own frame generation, for the Insert menu's Frame
 /// generation by row (its texts are the menu's, to be translated): FG_SKIP_NONE when DLSS-G made it or nothing is known.
 /// most: its runtime's most made frames a set (FG_SKIP_TOO_MANY)
-enum FgSkip {
-    FG_SKIP_NONE,
-    FG_SKIP_OFF,        // (RX_VK_DLSS_FG=0 for the run)
-    FG_SKIP_DEVICE,     // (DLSS does not run on this GPU)
-    FG_SKIP_START,      // (NGX did not start it: no runtime, an older GPU)
-    FG_SKIP_TOO_MANY,   // (more made frames than its runtime makes)
-    FG_SKIP_INPUTS,     // (no picture from a temporal Upscaler this frame)
-    FG_SKIP_REFUSED,    // (NGX refused the set)
-    FG_SKIP_NOT_BUILT,  // (a build without NVIDIA's SDK)
-    FG_SKIP_COUNT
-};
+
 int dlss_fg_skip(unsigned* most = nullptr);
 /// (longshot) Why DLSS-G cannot run in this process at all, for the Frame generation by row, which offers DLSS FG only where
 /// it can: FG_SKIP_NONE while it can as far as is known (NGX not asked yet, or its yes), else for the rest of the run

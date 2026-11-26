@@ -6,6 +6,7 @@
 #include <pthread.h>
 #include <stdatomic.h>
 #include "mac_response.h"
+#include "../../gpu/vk/compat/longshot_env.h"
 #import <QuartzCore/CAMetalLayer.h>
 #import <MetalFX/MetalFX.h>
 #import "../../third_party/d2r_gfx/gfx/nvn/totk_mfx.h"
@@ -27,9 +28,13 @@ static BOOL linkResource(NSString *source, NSString *target) {
 int hos_mac_bundle_setup(void) {
     @autoreleasepool {
         NSBundle *app = NSBundle.mainBundle;
-        if (![app.bundleIdentifier isEqual:@"dev.longshot.game"]) return 1;
+        BOOL preview = [app.bundleIdentifier isEqual:@"dev.longshot.game.preview"];
+        BOOL experimental = [app.bundleIdentifier isEqual:@"dev.longshot.game.experimental"];
+        if (!preview && !experimental && ![app.bundleIdentifier isEqual:@"dev.longshot.game"]) return 1;
+        NSString *channel = experimental ? @"Longshot Experimental" : preview ? @"Longshot Metal Preview" : @"Longshot";
+        if (experimental) setenv("HOS_WINDOW_TITLE", channel.UTF8String, 0);
         NSFileManager *fm = NSFileManager.defaultManager;
-        NSString *support = [NSHomeDirectory() stringByAppendingPathComponent:@"Library/Application Support/Longshot"];
+        NSString *support = [[NSHomeDirectory() stringByAppendingPathComponent:@"Library/Application Support"] stringByAppendingPathComponent:channel];
         NSString *runtime = [support stringByAppendingPathComponent:@"Runtime"];
         NSString *dataName = [app objectForInfoDictionaryKey:@"LongshotDataDirectory"];
         NSString *assets = dataName ? [[support stringByAppendingPathComponent:@"GameData"] stringByAppendingPathComponent:dataName]
@@ -63,8 +68,7 @@ int hos_mac_bundle_setup(void) {
         setenv("LONGSHOT_BUNDLE_RUNTIME", runtime.fileSystemRepresentation, 1);
         setenv("TOTK_NATIVE_DIR", metalDir.fileSystemRepresentation, 0);
         setenv("TOTK_UNCAPPED_HZ", "display", 0);
-        if ([fm fileExistsAtPath:[metalDir stringByAppendingPathComponent:@"shader-service"]])
-            setenv("RX_RENDERER", "metal", 0);
+        setenv("RX_RENDERER", "metal", 1);
         return chdir(runtime.fileSystemRepresentation) == 0;
     }
 }
@@ -152,6 +156,16 @@ int hos_metal_frame_info(int64_t *p, int64_t *d, int *w, int *h) {
 static _Atomic int displayHz;
 static _Atomic int selectedHz = -1, adaptive, supported, manualInterpolation, adaptiveInterpolation;
 static _Atomic int scalePercent, gameActive;
+int hos_mac_stream_policy(void) {
+    static dispatch_once_t once;
+    static int enabled;
+    dispatch_once(&once, ^{ enabled = env_on_or("LONGSHOT_STREAM_REUSE", 1); });
+    return enabled;
+}
+static int adaptiveTarget(int display) {
+    if (hos_mac_response_active()) return hos_mac_response_target(display);
+    return MIN(144, display);
+}
 static pthread_mutex_t graphicsLock = PTHREAD_MUTEX_INITIALIZER;
 static unsigned graphicsRevision;
 static const int rates[] = {0,30,60,90,120,144,165,240};
@@ -232,7 +246,7 @@ void hos_mac_adapt_frame(double now, double gpuMS) {
     static double last, elapsed, gpuSum;
     static int frames, gpuSamples, lastHz;
     const int display = atomic_load(&displayHz);
-    const int hz = hos_mac_response_active() ? hos_mac_response_target(display) : MIN(144, display);
+    const int hz = adaptiveTarget(display);
     const double delta = now-last;
     last = now;
     if (!atomic_load(&adaptive) || hz < 30 || delta <= 0 || delta > .10 || hz != lastHz) {
@@ -270,17 +284,19 @@ int front_display_hz(void) { return atomic_load(&displayHz); }
 
 double hos_mac_pair_period(double gamePeriod) {
     int display = front_display_hz();
-    int hz = hos_mac_response_active() ? hos_mac_response_target(display) : MIN(144, display);
+    int hz = adaptiveTarget(display);
     if (hz >= 100 && atomic_load(&adaptive) && atomic_load(&adaptiveInterpolation))
         return 2.0 / hz;
     return gamePeriod;
 }
 
+int hos_mac_adaptive_enabled(void) { return atomic_load(&adaptive) != 0; }
+
 int hos_mac_frame_cap(int configured) {
     int display = front_display_hz();
     if (display < 30) display = 60;
     if (atomic_load(&adaptive)) {
-        int target = hos_mac_response_active() ? hos_mac_response_target(display) : MIN(144,display);
+        int target = adaptiveTarget(display);
         if (!hos_mac_response_active() && atomic_load(&adaptiveInterpolation) && target >= 100)
             return (target+1)/2;
         return target;
@@ -359,7 +375,17 @@ void hos_mac_refresh_screen(void *metalLayer, int sdlMillihertz) {
             if (![choices containsObject:@(choice)]) choice = 0;
             atomic_store(&selectedHz, choice);
             NSMenu *appMenu = NSApp.mainMenu.itemArray.firstObject.submenu;
-            NSMenuItem *settings = [appMenu insertItemWithTitle:@"Longshot Settings…" action:@selector(openSettings:) keyEquivalent:@"," atIndex:MIN((NSInteger)2,appMenu.numberOfItems)];
+            // SDL can install a placeholder Settings item which already owns Command-comma.
+            NSMenuItem *settings = nil;
+            for (NSMenuItem *item in appMenu.itemArray) {
+                if ([item.keyEquivalent isEqualToString:@","] && item.keyEquivalentModifierMask == NSEventModifierFlagCommand) {
+                    settings = item;
+                    break;
+                }
+            }
+            if (!settings)
+                settings = [appMenu insertItemWithTitle:@"Longshot Settings…" action:nil keyEquivalent:@"," atIndex:MIN((NSInteger)2,appMenu.numberOfItems)];
+            settings.action = @selector(openSettings:);
             settings.target = target;
             NSMenuItem *autoItem = [menu addItemWithTitle:@"Adaptive 144 FPS" action:@selector(toggleAdaptive:) keyEquivalent:@""];
             autoItem.target = target;
