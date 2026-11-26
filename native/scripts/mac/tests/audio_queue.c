@@ -30,35 +30,39 @@ static void run(int channels) {
     WAVEFORMATEX format = { .nChannels = channels, .nSamplesPerSec = 48000, .wBitsPerSample = 16 };
     const int size = 480 * channels * 2;
     HWAVEOUT wave;
-    uint8_t samples[6][5760];
-    WAVEHDR h[6] = {0};
+    uint8_t samples[8][5760];
+    WAVEHDR h[8] = {0};
     assert(!waveOutOpen(&wave, WAVE_MAPPER, &format, 0, 0, 0));
-    for (int i = 0; i < 6; i++) {
+    for (int i = 0; i < 8; i++) {
         memset(samples[i], i+1, size);
         h[i].lpData = (LPSTR)samples[i];
         h[i].dwBufferLength = size;
         assert(!waveOutPrepareHeader(wave, h+i, sizeof *h));
     }
-    take(size, 0);
-    assert(!waveOutWrite(wave, h, sizeof *h));
+    /* Prime without releasing a header, then tolerate three consecutive
+       10 ms callbacks while the producer is late. */
+    for (int i = 0; i < 4; i++) {
+        take(size, 0);
+        assert(!waveOutWrite(wave, h+i, sizeof *h));
+    }
     take(size / 2, 1);
     assert(h[0].dwFlags & WHDR_INQUEUE);
-    assert(!waveOutWrite(wave, h+1, sizeof *h));
-    assert(!waveOutWrite(wave, h+2, sizeof *h));
     take(size / 2, 1);
     assert(h[0].dwFlags & WHDR_DONE);
-    /* Two more callback bursts before the producer runs. */
     take(size, 2);
     take(size, 3);
-    take(size, 0);
-    assert(!waveOutWrite(wave, h+3, sizeof *h));
-    take(size, 0);
-    assert(!waveOutWrite(wave, h+4, sizeof *h));
-    assert(!waveOutWrite(wave, h+5, sizeof *h));
     take(size, 4);
+    take(size, 0);   /* force an underrun */
+    for (int i = 4; i < 8; i++) {
+        take(size, 0);
+        assert(!waveOutWrite(wave, h+i, sizeof *h));
+    }
+    take(size, 5);
     assert(!waveOutReset(wave));
-    assert((h[4].dwFlags & WHDR_DONE) && (h[5].dwFlags & WHDR_DONE));
+    for (int i = 5; i < 8; i++) assert(h[i].dwFlags & WHDR_DONE);
+    assert(!waveOutWrite(wave, h, sizeof *h));
     take(size, 0);
+    assert(h[0].dwFlags & WHDR_INQUEUE);
     assert(!waveOutClose(wave));
 }
 int main(void) {

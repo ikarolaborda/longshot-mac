@@ -14,6 +14,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdbool.h>
+#ifdef __APPLE__
+#include <pthread/qos.h>
+#endif
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
 #ifdef TRACY_ENABLE
@@ -151,6 +154,9 @@ void hos_thread_boost(int level) {
     static int off = -1;
     if (off < 0) off = env_on("HOS_NO_PRIORITIES");
     if (!off) SetThreadPriority(GetCurrentThread(), level >= 2 ? THREAD_PRIORITY_HIGHEST : THREAD_PRIORITY_ABOVE_NORMAL);
+#elif defined(__APPLE__)
+    if (!env_on("HOS_NO_PRIORITIES"))
+        pthread_set_qos_class_self_np(level >= 2 ? QOS_CLASS_USER_INTERACTIVE : QOS_CLASS_USER_INITIATED, 0);
 #else
     (void)level;
 #endif

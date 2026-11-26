@@ -6,6 +6,8 @@ The installer builds in a temporary directory and installs **Longshot Experiment
 
 This release includes the native Metal renderer, low-latency and adaptive graphics modes, keyboard and mouse controls, cheats and story-reward fixes from the Metal preview branch. It adds shader warm-up for running and fighting in Hyrule Field, bounded reuse of gate textures and background preparation on return visits. Choose **Graphics → Adaptive 144 FPS** for adaptive frame pacing.
 
-Experimental build 2 prepares the mesh pipelines seen in Gerudo Fortress and Gerudo Training Ground during shader warm-up. The first launch can take longer while Metal prepares these pipelines. Audio starts with the first block and buffers 30 ms when the output queue runs dry.
+Experimental build 2 prepares the mesh pipelines seen in Gerudo Fortress and Gerudo Training Ground during shader warm-up. The first launch can take longer while Metal prepares these pipelines.
+
+Experimental build 3 keeps the Adaptive 144 FPS target after a slow scene. The Mac gives the audio mixer higher scheduling priority. Playback starts with four 10 ms blocks queued. This adds 30 ms of audio delay to absorb short stalls.
 
 In three 1080p runs per build on an M5 Max with a 240 Hz LG display, the median worst freeze on repeat Hyrule Field arrival fell from 187 to 92 ms. Field performance rose from 88 to 94 displayed FPS, including generated frames. The slowest second delivered 63 frames. Median repeat time to confirmed movement increased from 4.30 to 4.51 seconds. Sustained 120 FPS remains a target.

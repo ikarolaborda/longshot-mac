@@ -1597,6 +1597,11 @@ void *hos_sdl_audio_open(unsigned device, int freq, int channels, int s16, int f
     __attribute__((weak));
 void hos_sdl_audio_close(void *audio) __attribute__((weak));
 int hos_sdl_audio_alive(void *audio) __attribute__((weak));
+#ifdef __APPLE__
+/* The mixer submits 10 ms blocks. Four queued blocks leave 30 ms in reserve
+   after the first callback, including after a device reset or underrun. */
+enum { WAVE_PRIME_BLOCKS = 4 };
+#endif
 typedef struct {
     pthread_mutex_t mu;
     WAVEHDR *q[64];
@@ -1612,8 +1617,6 @@ static void wave_pull(void *user, uint8_t *out, int len) {
     WaveOut *w = (WaveOut *)user;
     pthread_mutex_lock(&w->mu);
 #ifdef __APPLE__
-    /* Start with the first 10 ms block. After an underrun, build a small lead so
-       callback jitter does not turn one short read into repeated gaps. */
     if ((unsigned)w->count < w->resume_blocks) {
         pthread_mutex_unlock(&w->mu);
         memset(out, 0, (size_t)len);
@@ -1634,7 +1637,7 @@ static void wave_pull(void *user, uint8_t *out, int len) {
     }
 #ifdef __APPLE__
     if (len > 0) {
-        w->resume_blocks = 3;
+        w->resume_blocks = WAVE_PRIME_BLOCKS;
         w->underruns++;
     }
 #endif
@@ -1649,7 +1652,7 @@ MMRESULT waveOutOpen(HWAVEOUT *out, UINT device, const WAVEFORMATEX *f, DWORD_PT
     if (!w) return MMSYSERR_ERROR;
     if (pthread_mutex_init(&w->mu, NULL)) { free(w); return MMSYSERR_ERROR; }
 #ifdef __APPLE__
-    w->resume_blocks = 1;
+    w->resume_blocks = WAVE_PRIME_BLOCKS;
 #endif
     w->audio = hos_sdl_audio_open(device, (int)f->nSamplesPerSec, (int)f->nChannels, f->wBitsPerSample == 16, 0, wave_pull, w);
     if (!w->audio) {
@@ -1697,7 +1700,7 @@ MMRESULT waveOutReset(HWAVEOUT hw) {
     }
     w->pos = 0;
 #ifdef __APPLE__
-    w->resume_blocks = 1;
+    w->resume_blocks = WAVE_PRIME_BLOCKS;
 #endif
     pthread_mutex_unlock(&w->mu);
     return 0;

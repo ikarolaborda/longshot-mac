@@ -155,7 +155,7 @@ int hos_metal_frame_info(int64_t *p, int64_t *d, int *w, int *h) {
    only read the last published rate, including when the window changes screens. */
 static _Atomic int displayHz;
 static _Atomic int selectedHz = -1, adaptive, supported, manualInterpolation, adaptiveInterpolation;
-static _Atomic int scalePercent, gameActive, cadenceDisplay;
+static _Atomic int scalePercent, gameActive;
 int hos_mac_stream_policy(void) {
     static dispatch_once_t once;
     static int enabled;
@@ -164,7 +164,7 @@ int hos_mac_stream_policy(void) {
 }
 static int adaptiveTarget(int display) {
     if (hos_mac_response_active()) return hos_mac_response_target(display);
-    return display > 144 && display % 120 == 0 && atomic_load(&cadenceDisplay) == display ? 120 : MIN(144, display);
+    return MIN(144, display);
 }
 static pthread_mutex_t graphicsLock = PTHREAD_MUTEX_INITIALIZER;
 static unsigned graphicsRevision;
@@ -194,7 +194,6 @@ void hos_mac_graphics_set(int setting, int value) {
     [prefs setBool:automatic == 1 forKey:@"MetalAdaptive144"];
     [prefs setBool:automatic == 2 forKey:@"MetalPreferResponsiveness"];
     atomic_store(&scalePercent,0);
-    atomic_store(&cadenceDisplay,0);
     atomic_store(&adaptiveInterpolation,0);
     if (atomic_load(&supported)) mfx_set(!automatic && atomic_load(&manualInterpolation) ? MFX_MAX : MFX_OFF);
     pthread_mutex_unlock(&graphicsLock);
@@ -204,9 +203,8 @@ int hos_mac_resolution_option(int id) {
     return id == 2 ? scale == 0 : scale * 100;
 }
 // Only the renderer samples frames and owns these consecutive-window counts.
-static int slow, heavy, spare, cadenceWindows;
-static void updateAdaptiveMode(double fps, double gpu, int hz, int display, double now) {
-    static double retryAfter;
+static int slow, heavy, spare;
+static void updateAdaptiveMode(double fps, double gpu, int hz) {
     const int interp = atomic_load(&adaptiveInterpolation);
     slow = fps < hz*.90 ? slow+1 : 0;
     const int responsive = hos_mac_response_active();
@@ -214,32 +212,12 @@ static void updateAdaptiveMode(double fps, double gpu, int hz, int display, doub
     if (!interp && hz >= 100 && wantFill && atomic_load(&supported)) {
         mfx_set(MFX_MAX); atomic_store(&adaptiveInterpolation,1);
         hos_log("Metal adaptive: %.1f base FPS, enabling interpolation for %d Hz",fps,hz);
-        slow=heavy=spare=cadenceWindows=0;
+        slow=heavy=spare=0;
         return;
     } else if (interp && (hz < 100 || (responsive && !wantFill))) {
         mfx_set(MFX_OFF); atomic_store(&adaptiveInterpolation,0);
-        slow=heavy=spare=cadenceWindows=0;
+        slow=heavy=spare=0;
         return;
-    }
-    /* When 72 real frames are out of reach, 60 real plus 60 generated
-       can land on evenly spaced refreshes on a 240 Hz panel. Recheck
-       headroom occasionally as the player moves between areas. */
-    if (interp && !responsive && display > 144 && display % 120 == 0) {
-        int near60 = fps >= 59 && fps < 68;
-        cadenceWindows = (hz == 144 ? near60 : fps < 55) ? cadenceWindows+1 : 0;
-        if (hz == 144 && cadenceWindows >= 2 && now >= retryAfter) {
-            atomic_store(&cadenceDisplay,display);
-            retryAfter = now + 30.;
-            hos_log("Metal adaptive: %.1f base FPS, testing even 120 Hz cadence",fps);
-            slow=heavy=spare=cadenceWindows=0;
-            return;
-        }
-        if (hz == 120 && (cadenceWindows >= 2 || (now >= retryAfter && fps >= 59 && gpu > 0 && gpu < 10))) {
-            retryAfter = now + 8.;
-            atomic_store(&cadenceDisplay,0);
-            slow=heavy=spare=cadenceWindows=0;
-            return;
-        }
     }
     double target = interp ? hz/2.0 : hz, budget = 1000/target;
     heavy = fps < target*.96 && gpu > budget*.85 ? heavy+1 : 0;
@@ -274,7 +252,7 @@ void hos_mac_adapt_frame(double now, double gpuMS) {
     if (!atomic_load(&adaptive) || hz < 30 || delta <= 0 || delta > .10 || hz != lastHz) {
         if (delta > .10 && hos_mac_response_active()) hos_mac_response_discard_window();
         frames = gpuSamples = 0;
-        slow = heavy = spare = cadenceWindows = 0;
+        slow = heavy = spare = 0;
         elapsed = gpuSum = 0;
         lastHz = hz;
         return;
@@ -289,16 +267,16 @@ void hos_mac_adapt_frame(double now, double gpuMS) {
     int gameplay = hos_oot_state(&event,&loading,&child) && !event && !loading && atomic_load(&gameActive);
     hos_mac_response_evaluate(now, display, gameplay, atomic_load(&supported));
     if (!gameplay) {
-        slow=heavy=spare=cadenceWindows=0;
+        slow=heavy=spare=0;
         return;
     }
     static unsigned sampledRevision;
     pthread_mutex_lock(&graphicsLock);
     if (!atomic_load(&adaptive) || sampledRevision != graphicsRevision) {
         sampledRevision = graphicsRevision;
-        slow = heavy = spare = cadenceWindows = 0;
+        slow = heavy = spare = 0;
     } else {
-        updateAdaptiveMode(fps, gpu, hz, display, now);
+        updateAdaptiveMode(fps, gpu, hz);
     }
     pthread_mutex_unlock(&graphicsLock);
 }
