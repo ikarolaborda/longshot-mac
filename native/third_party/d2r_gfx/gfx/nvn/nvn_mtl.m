@@ -12842,6 +12842,10 @@ static void warm_start(void) {
         // seed's own; the Mac's export is build/pso_manifest.tsv. Before 2026-10-22 the phone warmed none of them.
         NSString *gate = [dir stringByAppendingPathComponent:@"kakariko-mesh.tsv"];
         if ([fm fileExistsAtPath:gate]) [all addObject:gate];
+#ifdef LONGSHOT_MTL
+        NSString *gerudo = [dir stringByAppendingPathComponent:@"gerudo-mesh.tsv"];
+        if ([fm fileExistsAtPath:gerudo]) [all addObject:gerudo];
+#endif
         NSString *list = [dir stringByAppendingPathComponent:@"pso_list.tsv"];
         if ([fm fileExistsAtPath:list]) [all addObject:list];
         if ([fm fileExistsAtPath:seed]) [all addObject:seed];

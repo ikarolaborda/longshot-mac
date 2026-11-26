@@ -1602,11 +1602,25 @@ typedef struct {
     WAVEHDR *q[64];
     int head, count;
     DWORD pos;
+#ifdef __APPLE__
+    unsigned resume_blocks;
+    unsigned underruns, reported_underruns;
+#endif
     void *audio;
 } WaveOut;
 static void wave_pull(void *user, uint8_t *out, int len) {
     WaveOut *w = (WaveOut *)user;
     pthread_mutex_lock(&w->mu);
+#ifdef __APPLE__
+    /* Start with the first 10 ms block. After an underrun, build a small lead so
+       callback jitter does not turn one short read into repeated gaps. */
+    if ((unsigned)w->count < w->resume_blocks) {
+        pthread_mutex_unlock(&w->mu);
+        memset(out, 0, (size_t)len);
+        return;
+    }
+    w->resume_blocks = 0;
+#endif
     while (len > 0 && w->count) {
         WAVEHDR *h = w->q[w->head];
         DWORD k = h->dwBufferLength - w->pos;
@@ -1618,6 +1632,12 @@ static void wave_pull(void *user, uint8_t *out, int len) {
             w->head = (w->head + 1) % 64, w->count--, w->pos = 0;
         }
     }
+#ifdef __APPLE__
+    if (len > 0) {
+        w->resume_blocks = 3;
+        w->underruns++;
+    }
+#endif
     pthread_mutex_unlock(&w->mu);
     if (len > 0) memset(out, 0, (size_t)len);   /* (behind: silence) */
 }
@@ -1628,6 +1648,9 @@ MMRESULT waveOutOpen(HWAVEOUT *out, UINT device, const WAVEFORMATEX *f, DWORD_PT
     WaveOut *w = (WaveOut *)calloc(1, sizeof *w);
     if (!w) return MMSYSERR_ERROR;
     if (pthread_mutex_init(&w->mu, NULL)) { free(w); return MMSYSERR_ERROR; }
+#ifdef __APPLE__
+    w->resume_blocks = 1;
+#endif
     w->audio = hos_sdl_audio_open(device, (int)f->nSamplesPerSec, (int)f->nChannels, f->wBitsPerSample == 16, 0, wave_pull, w);
     if (!w->audio) {
         pthread_mutex_destroy(&w->mu);
@@ -1654,7 +1677,15 @@ MMRESULT waveOutWrite(HWAVEOUT hw, WAVEHDR *h, UINT size) {
     h->dwFlags = (h->dwFlags & ~(DWORD)WHDR_DONE) | WHDR_INQUEUE;
     w->q[(w->head + w->count) % 64] = h;
     w->count++;
+#ifdef __APPLE__
+    unsigned gaps = w->underruns;
+    int report = gaps != w->reported_underruns && !(gaps & (gaps - 1));
+    w->reported_underruns = gaps;
+#endif
     pthread_mutex_unlock(&w->mu);
+#ifdef __APPLE__
+    if (report) fprintf(stderr, "[audio] Output queue ran dry %u time(s) since opening the device.\n", gaps);
+#endif
     return MMSYSERR_NOERROR;
 }
 MMRESULT waveOutReset(HWAVEOUT hw) {
@@ -1665,6 +1696,9 @@ MMRESULT waveOutReset(HWAVEOUT hw) {
         w->head = (w->head + 1) % 64, w->count--;
     }
     w->pos = 0;
+#ifdef __APPLE__
+    w->resume_blocks = 1;
+#endif
     pthread_mutex_unlock(&w->mu);
     return 0;
 }

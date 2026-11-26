@@ -180,7 +180,7 @@ def main():
                 clone(game / name, assets / name)
         metal = assets / "metal/build"
         metal.mkdir(parents=True)
-        for name in ("kakariko-mesh.tsv", "field-entry-shaders.tsv"):
+        for name in ("kakariko-mesh.tsv", "gerudo-mesh.tsv", "field-entry-shaders.tsv"):
             clone(Path(__file__).with_name("resources") / name, metal / name)
         for name in METAL_FILES:
             source = game / "metal/build" / name
