@@ -2,8 +2,8 @@
 #import <mach-o/getsect.h>
 #import <mach-o/ldsyms.h>
 
-#ifndef LONGSHOT_EXPERIMENTAL_TAG
-#define LONGSHOT_EXPERIMENTAL_TAG ""
+#ifndef LONGSHOT_RELEASE_TAG
+#define LONGSHOT_RELEASE_TAG ""
 #endif
 
 static int execute(NSString *program, NSArray *args, NSURL *directory) {
@@ -22,12 +22,12 @@ static int execute(NSString *program, NSArray *args, NSURL *directory) {
 
 int main(int argc, const char **argv) {
     @autoreleasepool {
-        NSString *tag = @LONGSHOT_EXPERIMENTAL_TAG;
-        BOOL experimental = tag.length > 0;
+        NSString *tag = @LONGSHOT_RELEASE_TAG;
+        BOOL experimental = [tag containsString:@"-metal-experimental."];
         if (argc > 2 || (argc == 2 && !strcmp(argv[1], "--help"))) {
             if (experimental)
                 printf("Usage: Longshot-Experimental-Installer [previously-built-game-folder]\nInstall Longshot Experimental %s alongside Longshot, with a separate copy of your saves.\n", tag.UTF8String);
-            else puts("Usage: Longshot-Mac-Installer [previously-built-game-folder]\nBuild and install /Applications/Longshot.app using your own local game files.");
+            else printf("Usage: Longshot-Mac-Installer [previously-built-game-folder]\nBuild and install Longshot %s using your own local game files.\n", tag.UTF8String);
             return argc > 2;
         }
         NSString *game;
@@ -74,18 +74,13 @@ int main(int argc, const char **argv) {
             /* Finder launches with a system-only PATH, while the builder and its tools use Homebrew. */
             NSString *path = [NSString stringWithFormat:@"/opt/homebrew/bin:/usr/local/bin:%s", getenv("PATH") ?: "/usr/bin:/bin"];
             setenv("PATH", path.UTF8String, 1);
-            if (experimental) {
-                if (!rc) rc = execute(@"/usr/bin/env", @[@"python3", @"scripts/mac/experimental_install.py", game, tag], dir);
-            } else {
-                if (!rc) rc = execute(@"/usr/bin/env", @[@"python3", @"-I", @"nx2/make_game.py", @"--update", game, @"--no-prepare-shaders"], dir);
-                if (!rc) rc = execute(@"/usr/bin/env", @[@"python3", @"scripts/mac/package_app.py", game], dir);
-            }
+            if (!rc) rc = execute(@"/usr/bin/env", @[@"python3", @"scripts/mac/install_game.py", game, tag], dir);
         }
         [fm removeItemAtPath:work error:nil];
         if (argc == 1) {
             NSAlert *notice = [[NSAlert alloc] init];
             notice.messageText = rc ? @"Longshot installation did not finish" : experimental ? @"Longshot Experimental is installed" : @"Longshot is installed in Applications";
-            notice.informativeText = rc ? @"Run the installer from Terminal with the game folder to see the build diagnostics." : experimental ? @"Open Longshot Experimental from Applications." : @"/Applications/Longshot.app";
+            notice.informativeText = rc ? @"Run the installer from Terminal with the game folder to see the build diagnostics." : experimental ? @"Open Longshot Experimental from Applications." : @"Open Longshot from Applications.";
             [notice runModal];
         }
         return rc;

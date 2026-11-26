@@ -1,3 +1,11 @@
+## New in v3.2.0-mac.10
+
+The standard Longshot app now includes the native Metal renderer and the startup improvements from experimental build 4. The installer prepares the graphics shaders for your Mac once. Adaptive mode restores your selected gameplay frame rate when Link enters the world. This release also improves audio buffering and prepares more graphics resources before you enter Hyrule Field and Gerudo areas.
+
+Download `Longshot-Mac-Installer.zip`, unzip it, and open `Longshot-Mac-Installer`. Select your existing prepared game folder. The installer uses a temporary copy and updates Longshot in Applications. Existing stable installations keep their configured save location.
+
+For automatic resume, open Longshot Settings with Command-comma and enable Gameplay → Skip title screen. On an M5 Max, the experimental release reached controllable gameplay in 14.0–16.6 seconds across three locations with this option enabled. Each test started with an empty Longshot shader cache and retained the macOS caches.
+
 ## New in v3.2.0-mac.9
 
 Fixed a Metal rendering fault seen on the moving boat in the Shadow Temple. When the internal resolution changes and MetalFX needs a frame to catch up, the game now draws that frame using the current scene. The fix applies with the Lens of Truth on or off and takes effect the next time Longshot opens.

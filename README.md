@@ -5,7 +5,7 @@ The original launcher and its build tools are also available.
 
 ## Native game
 
-Download the Mac installer and checksum from [Releases](../../releases), unzip the installer, and open it. Choose your existing macOS Longshot game build when prompted. The installer rebuilds the game from your files and installs `/Applications/Longshot.app`. Keep the original build folder for future updates.
+Download the Mac installer and checksum from the [latest stable release](https://github.com/ikarolaborda/longshot-mac/releases/latest), unzip the installer, and open it. Choose your existing macOS Longshot game build when prompted. The installer builds from a private copy of your files, prepares Metal shaders for your GPU, and installs `Longshot.app` in Applications. Keep the original build folder for future updates.
 
 The build needs Xcode command-line tools, a Python environment that can run the original builder, and the libraries used by your macOS build, including SDL and the audio/video libraries. The native game renders and draws its settings menu with Metal. It uses the Ocarina of Time shader service and shader data from your prepared game folder. You can build and run the native game without a Vulkan SDK, loader, or driver.
 

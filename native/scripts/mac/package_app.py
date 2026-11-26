@@ -227,6 +227,7 @@ def main():
     parser.add_argument("--output", type=Path)
     parser.add_argument("--data-home", type=Path, help="existing XDG data folder containing longshot/save")
     channel = parser.add_mutually_exclusive_group()
+    channel.add_argument("--stable-release", metavar="TAG", help="set the stable Mac release version")
     channel.add_argument("--experimental-release", metavar="TAG", help="install the side-by-side experimental release")
     channel.add_argument("--preview", action="store_true", help="use a separate application identity and player profile")
     args = parser.parse_args()
@@ -239,19 +240,18 @@ def main():
             parser.error("Experimental installs require a release tag and a separate default player profile.")
         app_id = APP_ID + ".experimental"
         support_name = "Longshot Experimental"
+    release = experimental
+    if args.stable_release:
+        release = re.fullmatch(r"v(\d+\.\d+\.\d+)-mac\.([1-9]\d*)", args.stable_release)
+        if not release:
+            parser.error("Invalid stable Mac release tag.")
     support = Path.home() / "Library/Application Support" / support_name
     if args.output is None:
-        if experimental:
-            app_dir = Path("/Applications")
-            if not os.access(app_dir, os.W_OK):
-                app_dir = Path.home() / "Applications"
-                app_dir.mkdir(exist_ok=True)
-            args.output = app_dir / "Longshot Experimental.app"
-        elif args.preview:
-            args.output = Path.home() / "Applications/Longshot Metal Preview.app"
-            args.output.parent.mkdir(exist_ok=True)
-        else:
-            args.output = Path("/Applications/Longshot.app")
+        app_dir = Path("/Applications")
+        if args.preview or not os.access(app_dir, os.W_OK):
+            app_dir = Path.home() / "Applications"
+            app_dir.mkdir(exist_ok=True)
+        args.output = app_dir / (support_name + ".app")
     game, output = args.game.resolve(), args.output.absolute()
     if output.exists():
         if output.is_symlink() or not (output / "Contents/Info.plist").is_file():
@@ -299,7 +299,7 @@ def main():
         for name in ("kakariko-mesh.tsv", "gerudo-mesh.tsv", "field-entry-shaders.tsv"):
             clone(Path(__file__).with_name("resources") / name, metal / name)
         sealed = contents / "Resources/Metal"
-        if experimental:
+        if not args.preview:
             shorten_title_load_fade(assets)
             pack = assets / "Longshot Shaders.bundle"
             sealed = pack / "Contents/Resources"
@@ -318,7 +318,7 @@ def main():
                 real = source.resolve()
                 for part in sorted(real.parent.glob(real.name + ".img.[0-9][0-9][0-9]")):
                     clone(part, target / part.name)
-        if experimental:
+        if not args.preview:
             for item in sealed.iterdir():
                 (metal / item.name).symlink_to(os.path.relpath(item, metal))
             run("codesign", "--force", "--sign", "-", pack)
@@ -329,13 +329,13 @@ def main():
                     CFBundleShortVersionString=version, NSHighResolutionCapable=True, LongshotDataDirectory=data_name,
                     LSApplicationCategoryType="public.app-category.adventure-games",
                     NSMicrophoneUsageDescription="Use the microphone during game actions that require it.")
-        if experimental:
-            info.update(CFBundleName=support_name, CFBundleShortVersionString=experimental[1],
-                        CFBundleVersion=experimental[2], LongshotReleaseTag=args.experimental_release)
+        if release:
+            info.update(CFBundleName=support_name, CFBundleShortVersionString=release[1],
+                        CFBundleVersion=release[2], LongshotReleaseTag=release[0])
         (contents / "Info.plist").write_bytes(plistlib.dumps(info))
         run("codesign", "--force", "--sign", "-", app)
         run("codesign", "--verify", "--strict", app)
-        if experimental:
+        if not args.preview:
             prepare_launch_pipelines(exe, assets, pack, Path(data_stage) / "prepare")
             run("codesign", "--verify", "--strict", pack)
         installed_assets = data_root / data_name

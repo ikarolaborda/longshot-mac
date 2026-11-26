@@ -1,4 +1,4 @@
-"""Build the experimental app from private copies and seed its profile on first install."""
+"""Build from private copies of the game inputs and install the selected Mac release."""
 import hashlib
 from pathlib import Path
 import plistlib
@@ -85,12 +85,17 @@ def import_saves(support):
 def main():
     source = Path(sys.argv[1]).resolve(strict=True)
     tag = sys.argv[2]
-    with tempfile.TemporaryDirectory(prefix="longshot-experimental-build-") as folder:
+    with tempfile.TemporaryDirectory(prefix="longshot-install-build-") as folder:
         game = Path(folder) / "game"
         copy_build_inputs(source, game)
         subprocess.run([sys.executable, "-I", "nx2/make_game.py", "--update", game, "--no-prepare-shaders"], check=True)
-        import_saves(Path.home() / "Library/Application Support")
-        subprocess.run([sys.executable, "scripts/mac/package_app.py", game, "--experimental-release", tag], check=True)
+        package = [sys.executable, "scripts/mac/package_app.py", game]
+        if "-metal-experimental." in tag:
+            import_saves(Path.home() / "Library/Application Support")
+            package.extend(["--experimental-release", tag])
+        elif tag:
+            package.extend(["--stable-release", tag])
+        subprocess.run(package, check=True)
 
 
 if __name__ == "__main__":

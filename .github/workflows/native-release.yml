@@ -13,19 +13,17 @@ jobs:
         run: |
           installer=Longshot-Mac-Installer
           notes=native/docs/mac-release.md
-          tag=
           case "$GITHUB_REF_NAME" in
             *-metal-experimental.*)
               installer=Longshot-Experimental-Installer
               notes=native/docs/mac-experimental.md
-              tag="$GITHUB_REF_NAME"
               ;;
           esac
-          native/scripts/mac/build_release_installer.sh HEAD:native "$installer" "$tag"
+          native/scripts/mac/build_release_installer.sh HEAD:native "$installer" "$GITHUB_REF_NAME"
           lipo "$installer" -verify_arch arm64
           codesign --verify --strict "$installer"
           if [ "$(uname -m)" = arm64 ]; then "./$installer" --help; fi
-          ditto -c -k --keepParent "$installer" "$installer.zip"
+          zip -j "$installer.zip" "$installer"
           shasum -a 256 "$installer.zip" > SHA256SUMS
           echo "INSTALLER=$installer" >> "$GITHUB_ENV"
           echo "RELEASE_NOTES=$notes" >> "$GITHUB_ENV"
@@ -33,5 +31,9 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
+          case "$GITHUB_REF_NAME" in
+            *-metal-experimental.*) channel=--prerelease ;;
+            *) channel=--latest ;;
+          esac
           gh release create "$GITHUB_REF_NAME" "$INSTALLER.zip" SHA256SUMS \
-            --prerelease --verify-tag --title "Longshot for macOS $GITHUB_REF_NAME" --notes-file "$RELEASE_NOTES"
+            "$channel" --verify-tag --title "Longshot for macOS $GITHUB_REF_NAME" --notes-file "$RELEASE_NOTES"
