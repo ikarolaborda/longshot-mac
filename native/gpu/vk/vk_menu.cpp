@@ -41,28 +41,32 @@
 #include "../../host/hos_atomic_file.h"
 #include "vk_menu_hit.h"
 #include "vk_fps.h"    // (the FPS counter's levels and numbers)
+#ifdef LONGSHOT_METAL_MENU
+#include "menu_metal_services.h"
+#else
 #include "vk_draw.h"   // (pipeline_cache_save: Restart now keeps what was built)
 #include "vk_texture.h"   // (the FPS counter's Dev level: texture_count, texture_bytes, texture_stats)
-#include "oot_cheat_items.h"
-#include "vk_progress.h"   // (StartupView, version_text: the start-up screen)
 #include "vk_imgui.h"   // (the renderer's side of the overlay: begin, fonts, logo, record)
-#include "vk_ui.h"
-#include "vk_menu_keys.h"   // (which gamepad buttons confirm and go back: those A and B are bound to)         // (how it looks: Dear ImGui, vk_imgui.h)
 #include "vk_dlss.h"
 #include "vk_framegen.h"   // (Frame generation by: who makes the frames now, framegen_maker)
+#include "vk_fsr3.h"      // (the Upscaler row: whether AMD FSR 3.1 runs on this GPU)
+#include "vk_fsr3fi.h"    // (the Frame generation row: whether FSR 3.1 makes the frame)
+#include "vk_xess.h"
+#include "vk_temporal.h"
+#include "vk_reflex.h"
+#include "vk_antilag.h"
+#endif
+#include "oot_cheat_items.h"
+#include "vk_progress.h"   // (StartupView, version_text: the start-up screen)
+#include "vk_ui.h"
+#include "vk_menu_keys.h"   // (which gamepad buttons confirm and go back: those A and B are bound to)         // (how it looks: Dear ImGui, vk_imgui.h)
 #include "vk_bug_report.h"   // (the Gameplay tab's Bug report: what it writes, and how)
 #include "../../host/hos_wide_size.h"   // (the widescreen picture's size, as host/hos_main.c works it out)
 #include "../../host/audio_output_devices.h"
 #include "monitor_choice.h"
 #include "menu/controller.h"   // (the host's report of what plays the controller, which Test vibration shows: #1633)
-#include "vk_fsr3.h"      // (the Upscaler row: whether AMD FSR 3.1 runs on this GPU)
-#include "vk_fsr3fi.h"    // (the Frame generation row: whether FSR 3.1 makes the frame)
 #include "vk_fsr4.h"
-#include "vk_xess.h"
-#include "vk_temporal.h"
 #include "upscale_route.h"   // (the FPS counter footer's record of the gameplay upscale as drawn)
-#include "vk_reflex.h"
-#include "vk_antilag.h"
 #include "upscaler_rows.h"
 #include "menu_module.h"   // (#1633: the model, the rows modules describe and the order of every row)
 #include "menu/audio.h"   // (the Audio module's, still used here: the options file's lines, set_row, the test's meter)
@@ -98,7 +102,9 @@
 #include <unistd.h>
 extern char** environ;
 #endif
+#ifndef LONGSHOT_METAL_MENU
 #include "vk_work.h"   // (after the others: counts the commands that do GPU work, for full_barrier)
+#endif
 const char* mkwvk_version();   // (vk_version.cpp: the one renderer file nx2/build.py gives the version to)
 #ifndef LONGSHOT_VERSION   // (a test or a screenshot fixture that compiles this file may give its own)
 #define LONGSHOT_VERSION mkwvk_version()
@@ -160,10 +166,14 @@ const char* hn_hdr(int v, int variant) {
         ("The picture stays SDR: Windows has HDR on, but the graphics driver offers the game no HDR output. Reinstall the "
          "driver with a clean install, then restart the PC (longshot.magicbean.dev/help)."),
         "The picture stays SDR: the display offers no HDR output. Is HDR on in the display settings?"};
+#ifdef LONGSHOT_METAL_MENU
+    return nullptr;
+#else
     const int reasons = hdr_sdr_count - 1;   // (every HdrSdrWhy but hdr_sdr_none)
     static_assert(sizeof t / sizeof *t == hdr_sdr_count - 1, "hn_hdr: a line for each HdrSdrWhy but hdr_sdr_none");
     if (variant >= 0) return variant < reasons ? t[variant] : nullptr;
     return v && dev.hdr_sdr_why != hdr_sdr_none ? t[std::clamp((int)dev.hdr_sdr_why, 1, reasons) - 1] : nullptr;
+#endif
 }
 // (longshot) Motion controls: the choice, and whether a connected controller has a gyroscope (host/pad_sdl.c). Either can be
 // chosen whatever is connected: a pad plugged in later is read when it comes
@@ -4239,6 +4249,7 @@ void startup_fade_to(float f) { startup_fade.store(f, std::memory_order_relaxed)
 // them; each is locked and asked once (ngx_init, fsr4's load, fsr3::supported's static), so the menu's own calls at its
 // open return at once, or wait for the rest of the one under way.
 static void probe_upscalers_soon() {
+#ifndef LONGSHOT_METAL_MENU
     static std::once_flag once;
     std::call_once(once, [] {
         if (!dev.device) return;
@@ -4253,6 +4264,7 @@ static void probe_upscalers_soon() {
                  std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - t0).count());
         }).detach();
     });
+#endif
 }
 
 void upscalers_probe_start() { probe_upscalers_soon(); }
@@ -4415,7 +4427,9 @@ void menu_init() {
     if (opts.preset > 0 && !has_memory_budget) opts.budget = opts.preset;   // (a file from before memory_budget: its preset's)
     if (opts.preset == kAutoPreset && !has_memory_budget) opts.budget = 0;   // (Auto: its tier's, menu_auto_for_gpu)
     menu_debug_rows(opts.descriptor_reuse, opts.sampler_cache);   // (the Debug rows that apply in play: what was loaded)
+#ifndef LONGSHOT_METAL_MENU
     fps_level_now.store(fps_stats::level_of(opts.show_fps), std::memory_order_relaxed);
+#endif
     output_field_show();   // (longshot: Custom output size, the size of the player's own, as the file has it)
     // (the environment over the saved rows, for this run only: env_override, save)
     if (const char* e = getenv("RX_VK_FRAMEGEN_MULT")) env_override(&opts.framegen, std::min(std::max(atoi(e), 2), 8));
@@ -4454,6 +4468,7 @@ void menu_init() {
 /// smaller card does not start with the full-size budget, which can lose the device at the first scene.
 /// RX_VK_AUTO_PRESET=0: a first start keeps the defaults.
 /// RX_VK_AUTO_PRESET_VRAM_MB=<n>: the card's memory taken as n MB, to try the choice for a smaller or larger card
+#ifndef LONGSHOT_METAL_MENU
 void menu_auto_for_gpu(const VkPhysicalDeviceProperties& props, ::auto_settings::Hardware hw) {
     const bool first = first_start;
     first_start = false;
@@ -4490,6 +4505,7 @@ void menu_auto_for_gpu(const VkPhysicalDeviceProperties& props, ::auto_settings:
     save();   // (for the next start: host/nn_applet.c read handheld_profile and output_res once, at boot in host/hos_main.c, before this)
     logf("vk: Auto (this PC): %s: %s (%s)", first ? "first start" : "the hardware changed", auto_choice.why, hw_line);
 }
+#endif
 
 // (the switches read once, at the first present: they are for the whole run, and each present asked twice)
 int menu_vsync() { static const int run = env_on("RX_VK_FIFO") ? 1 : env_on("RX_VK_IMMEDIATE") ? 2 : 0; return run ? run : opts.vsync; }
@@ -4640,6 +4656,7 @@ void fullscreen_tick() {
 /// The FPS counter's lines past the number, four times a second: the game's frame time over the last half second and
 /// the 1% low over 10 s; the Breakdown's parts and the GPU's time over the half second, the shaders built and the draws left
 /// out over the graph's 4 s
+#ifndef LONGSHOT_METAL_MENU
 void fps_texts(int64_t now) {
     namespace fs = fps_stats;
     const int level = fs::level_of(opts.show_fps);
@@ -4695,6 +4712,7 @@ void fps_texts(int64_t now) {
     at = now;
     std::memcpy(last, counts, sizeof last);
 }
+#endif
 
 /// A rate over the half-second that just ended. The first call only starts that interval: the frames since launch,
 /// divided by one second, were shown as the rate the moment the counter was turned on.
@@ -5795,6 +5813,7 @@ void menu_tick() {
             PostMessageA(app_window(), WM_APP + 8, (WPARAM)now_open, (LPARAM)(now_open && esc_opens));
         }
     }
+#ifndef LONGSHOT_METAL_MENU
     fps_level_now.store(fps_stats::level_of(opts.show_fps), std::memory_order_relaxed);   // (what vk_fps.cpp measures)
     if (opts.show_fps) {
         static int64_t next = 0, last_game = 0, last_shown = 0;
@@ -5814,9 +5833,65 @@ void menu_tick() {
         static int64_t texts_next = 0;   // (the lines past the number: four times a second, each over the last half second)
         if (now >= texts_next) texts_next = now + fps_stats::kSecond / 4, fps_texts(now);
     }
+#endif
 }
 
 /// (longshot) Once a present: the Vibration strength row changed with the menu open, and the new strength is felt at once,
+int shared_host_option(int id, int fallback) {
+    if (id == 11) return opts.stick_dead_zone;
+    if (id == HOS_OPT_WALK_MODE) return opts.walk_mode;
+    if (id == HOS_OPT_WALK_SPEED) return opts.walk_speed;
+    if (id == HOS_OPT_CHEAT_HEARTS) return menu_heart_protection();
+    if (id == HOS_OPT_CHEAT_FLIGHT) return menu_player_flight();
+    if (id == HOS_OPT_CHEAT_ACTION) return menu_take_cheat_action();
+    if (id == HOS_OPT_CHEAT_CAMERA) return menu_free_camera();
+    if (id == HOS_OPT_CHEAT_SPEED) return menu_link_speed();
+    if (id == HOS_OPT_HDR_NATIVE) return dev.hdr && opts.hdr == 2;
+    if (id == HOS_OPT_HDR_TONEMAP) return scene_tonemap_on();
+    if (id == HOS_OPT_HDR_PEAK) return std::clamp(opts.hdr_peak, 400, 10000);
+    if (id == HOS_OPT_HDR_WHITE) return std::clamp(opts.hdr_white, 80, 500);
+    if (id == HOS_OPT_DISCORD) return opts.discord != 0;
+    if (id == HOS_OPT_VOLUME) return opts.volume;
+    if (id == HOS_OPT_AUDIO_OUTPUT) return opts.audio_output;
+    if (id == HOS_OPT_MUTE_BACKGROUND) return opts.mute_background;
+    if (id == HOS_OPT_DISABLE_CAMERA_CENTERING) return opts.disable_camera_centering;
+    if (id == HOS_OPT_SPRINT) return opts.sprint;
+    if (id == HOS_OPT_SPRINT_TOGGLE)
+        return host && host->version >= 40 && host->binding ? host->binding(HOS_BIND_SPRINT_TOGGLE, 0, 0) : 0;
+    if (id == HOS_OPT_OCARINA_STAFF_SIZE) return opts.ocarina_staff_size;
+    if (id == HOS_OPT_TEXT_SIZE) return opts.text_size;
+    if (id == HOS_OPT_DIALOGUE_BACKDROP) return opts.dialogue_backdrop;
+    if (id == HOS_OPT_CAMERA_SPEED) return opts.camera_speed;
+    if (id == HOS_OPT_PROMPTS) return opts.prompts;
+    if (id == HOS_OPT_FOV) return opts.fov;
+    if (id == HOS_OPT_TRANSITION_AUTOSAVE) return menu_transition_autosave();
+    if (id == HOS_OPT_SHADOW_RES) return menu_shadow_res();
+    if (id == HOS_OPT_DAMAGE_TAKEN) return menu_damage_taken();
+    if (id >= HOS_OPT_TRAINER_HEALTH && id <= HOS_OPT_TRAINER_AMMO) return menu_trainer(id);
+    if (id == HOS_OPT_SKIP_OPENING) return opts.skip_opening;
+    if (id == HOS_OPT_FPS_CAP) return opts.fps_cap;
+    if (id == HOS_OPT_HOLD_TOGGLE) return opts.hold_toggle;
+    if (id == HOS_OPT_MOUSE_INVERT_X) return opts.mouse_invert_x;
+    if (id >= HOS_OPT_HUD_LAYOUT && id <= HOS_OPT_HUD_MINIMAP) return menu_hud_option(id);
+    if (id == HOS_OPT_WIDE_MENUS) return opts.wide_menus;
+    if (id == HOS_OPT_SKIP_TITLE) return opts.skip_title != 0;
+    if (id == HOS_OPT_PAD_SPEAKER_VOLUME) return opts.pad_speaker_volume;
+    if (id == HOS_OPT_PAD_SPEAKER_SYNC) return opts.pad_speaker_sync;
+    if (id == HOS_OPT_PAD_SPEAKER_HEADPHONES) return opts.pad_speaker_headphones;
+    if (id == HOS_OPT_PAD_SPEAKER_HEADPHONE_VOLUME) return opts.pad_speaker_headphone_volume;
+    if (id >= HOS_OPT_PAD_SPEAKER_CLASS && id < HOS_OPT_PAD_SPEAKER_CLASS + 9)   // (HOS_OPT_PAD_SPEAKER_OF: 141 to 149, then 150 to 152)
+        return opts.pad_speaker[id - HOS_OPT_PAD_SPEAKER_CLASS];
+    if (id >= HOS_OPT_PAD_SPEAKER_CLASS2 && id < HOS_OPT_PAD_SPEAKER_CLASS2 + HOS_PAD_SPEAKER_CLASS_OPTIONS - 9)
+        return opts.pad_speaker[9 + id - HOS_OPT_PAD_SPEAKER_CLASS2];
+    /* (longshot) Vibration (host/vibration.h), and what plays the controller used last as the host wrote it back */
+    if (id == HOS_OPT_VIBRATION) return opts.vibration;
+    if (id == HOS_OPT_DS_HD_HAPTICS) return opts.ds_hd_haptics;
+    if (id == HOS_OPT_VIBRATION_STATUS) return menu_vibration_status_option();
+    return id == 0 ? opts.realtime : id == 1 ? menu_is_open() : id == 4 ? opts.pad_background : id == 5 ? opts.text_speed : id == 6 ? opts.mouse_native :
+           id == 7 ? opts.mouse_sens : id == 8 ? opts.mouse_invert : id == 9 ? opts.rumble : id == 16 ? opts.invert_cam_x : id == 17 ? opts.invert_cam_y : id == HOS_OPT_GYRO ? opts.gyro : id == HOS_OPT_GYRO_SENS_X ? opts.gyro_sens_x : id == HOS_OPT_GYRO_SENS_Y ? opts.gyro_sens_y : id == HOS_OPT_GYRO_INV_X ? opts.gyro_inv_x : id == HOS_OPT_GYRO_INV_Y ? opts.gyro_inv_y : id == HOS_OPT_GYRO_DEADZONE ? opts.gyro_deadzone :
+           fallback;
+}
+
 /// a short buzz, which also shows that the controller vibrates. Whatever changed it: the keys, the mouse
 void menu_rumble_tick() {
     static int was = -1;
@@ -5841,6 +5916,7 @@ void mac_draw_menu(uint32_t w, uint32_t h, float dt) {
     draw_menu(c);
 }
 #endif
+#ifndef LONGSHOT_METAL_MENU
 void menu_record(VkCommandBuffer cmd, uint32_t index, uint32_t w, uint32_t h, int colour_vision) {
     const bool start = startup_on.load(std::memory_order_acquire);
     const bool fps = opts.show_fps && !start;   // (no game frames yet: not "0 FPS" over the start-up screen)
@@ -5873,7 +5949,9 @@ void menu_record(VkCommandBuffer cmd, uint32_t index, uint32_t w, uint32_t h, in
     ::mkwvk::rec::boundary(::mkwvk::rec::B_DIRECT);   // (Dear ImGui records into cmd directly, its backend through its own pointers: what this thread recorded through vk_work.h reaches cmd first)
     ui::record(cmd, index, w, h, colour_vision);
 }
+#endif
 
+#ifndef LONGSHOT_METAL_MENU
 void menu_record_image(VkCommandBuffer cmd, VkImage image, VkImageView view, uint32_t w, uint32_t h) {
     const bool open = open_now.load(std::memory_order_relaxed);
     const bool fps = opts.show_fps && !startup_on.load(std::memory_order_acquire);
@@ -5885,5 +5963,6 @@ void menu_record_image(VkCommandBuffer cmd, VkImage image, VkImageView view, uin
     ::mkwvk::rec::boundary(::mkwvk::rec::B_DIRECT);   // (Dear ImGui records into cmd directly, its backend through its own pointers: what this thread recorded through vk_work.h reaches cmd first)
     ui::record_to(cmd, image, view, w, h);
 }
+#endif
 
 } // namespace mkwvk

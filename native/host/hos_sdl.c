@@ -68,8 +68,12 @@ static int get_all(HMODULE m, int three) {
     GET(SetWindowFullscreen, "SDL_SetWindowFullscreen");
     GET2(SetRelativeMouseMode, "SDL_SetWindowRelativeMouseMode", "SDL_SetRelativeMouseMode");
     GET(GetDesktopDisplayMode, "SDL_GetDesktopDisplayMode");
+#ifdef __APPLE__
+    GET2(PixelSize, "SDL_GetWindowSizeInPixels", "SDL_Metal_GetDrawableSize");
+#else
     GET(Vulkan_CreateSurface, "SDL_Vulkan_CreateSurface");
     GET2(PixelSize, "SDL_GetWindowSizeInPixels", "SDL_Vulkan_GetDrawableSize");
+#endif
     GET(GetKeyboardState, "SDL_GetKeyboardState");
     GET(GetKeyboardFocus, "SDL_GetKeyboardFocus");
     GET(GetMouseState, "SDL_GetMouseState");
@@ -205,12 +209,9 @@ const char *hos_sdl_error(void) { return version ? CALL(const char *(*)(void), G
 /* ---- the window ---- */
 enum { WIN_SHOWN2 = 0x4, WIN_RESIZABLE = 0x20, WIN_HIGH_DENSITY = 0x2000, WIN_VULKAN = 0x10000000, WIN_METAL = 0x20000000,
        CENTRED = 0x2FFF0000 };
-/* (mac) RX_RENDERER=metal: the native Metal back end (gpu/mtl), opt-in while it is incomplete. Its window is a Metal one:
-   SDL_WINDOW_VULKAN makes SDL_CreateWindow fail where no Vulkan driver loads, and the two flags are not combined */
 int hos_renderer_metal(void) {
 #ifdef __APPLE__
-    const char *r = getenv("RX_RENDERER");
-    return r && !strcmp(r, "metal");
+    return 1;
 #else
     return 0;
 #endif
@@ -373,8 +374,12 @@ void *hos_sdl_metal_layer(void *window) {
     return view ? CALL(void *(*)(void *), Metal_GetLayer)(view) : NULL;
 }
 int hos_sdl_vulkan_surface(void *window, void *instance, void *surface_out) {
+#ifdef __APPLE__
+    return 0;
+#else
     return version == 3 ? CALL(_Bool (*)(void *, void *, const void *, void *), Vulkan_CreateSurface)(window, instance, NULL, surface_out)
                         : CALL(int (*)(void *, void *, void *), Vulkan_CreateSurface)(window, instance, surface_out) != 0;
+#endif
 }
 void hos_sdl_pixel_size(void *window, int *width, int *height) {
     if (version == 3) CALL(_Bool (*)(void *, int *, int *), PixelSize)(window, width, height);

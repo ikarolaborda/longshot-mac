@@ -2,7 +2,6 @@
 """Make a signed native macOS game app from the player's own compiled Longshot folder."""
 import argparse
 import ctypes
-import json
 import os
 from pathlib import Path
 import plistlib
@@ -11,8 +10,8 @@ import subprocess
 import tempfile
 
 APP_ID = "dev.longshot.game"
-BACKENDS = ("longshot_vk.dylib", "longshot_mtl.dylib", "renhdrum.dylib", "libSDL3.0.dylib", "libSDL2-2.0.0.dylib")
-GAME_FILES = ("romfs", "image.bin", "texts", "longshot_shaders.bin", "longshot_pipeline_states_shipped.bin",
+BACKENDS = ("longshot_mtl.dylib", "renhdrum.dylib", "libSDL3.0.dylib", "libSDL2-2.0.0.dylib")
+GAME_FILES = ("romfs", "image.bin", "texts",
               "longshot_version.txt", "longshot_options.ini", "language.txt")
 METAL_FILES = ("c1_bounded.tsv", "compute-manifest.json", "pipelines", "pool_sources.tsv", "pso_manifest.tsv",
                "pso_title.tsv", "shader-libs", "shader-map.tsv", "shader-seed", "shader-service")
@@ -50,16 +49,12 @@ def dependencies(path):
 def libraries(exe, game, contents):
     frameworks = contents / "Frameworks"
     frameworks.mkdir()
-    loader = Path(run("brew", "--prefix", "vulkan-loader").strip()) / "lib/libvulkan.dylib"
-    mesa = Path(run("brew", "--prefix", "mesa").strip())
-    icd = json.loads(next((mesa / "share/vulkan/icd.d").glob("kosmickrisp*json")).read_text())
-    driver = Path(icd["ICD"]["library_path"])
-    if not driver.is_absolute():
-        driver = mesa / "lib" / driver.name
     names = {}
     pending = []
     def add(source):
         real = source.resolve(strict=True)
+        if real.name.lower().startswith(("libvulkan", "libmoltenvk", "longshot_vk")):
+            raise ValueError(f"Vulkan dependency in Metal app: {real.name}")
         if real not in names:
             name = source.name
             if name in names.values():
@@ -70,9 +65,6 @@ def libraries(exe, game, contents):
     for name in BACKENDS:
         add(game / name)
         (exe.parent / name).symlink_to(Path("../Frameworks") / name)
-    add(loader)
-    icd["ICD"]["library_path"] = "../Frameworks/" + add(driver)
-    (contents / "Resources/kosmickrisp.json").write_text(json.dumps(icd, indent=2) + "\n")
     pending.append((game / "longshot").resolve())
     while pending:
         original = pending.pop()
@@ -115,26 +107,43 @@ def install_app(staged, output):
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("game", type=Path, help="updated macOS game build")
-    parser.add_argument("--output", type=Path, default=Path("/Applications/Longshot.app"))
+    parser.add_argument("--output", type=Path)
     parser.add_argument("--data-home", type=Path, help="existing XDG data folder containing longshot/save")
+    parser.add_argument("--preview", action="store_true", help="use a separate application identity and player profile")
     args = parser.parse_args()
+    app_id = APP_ID + ".preview" if args.preview else APP_ID
+    support_name = "Longshot Metal Preview" if args.preview else "Longshot"
+    support = Path.home() / "Library/Application Support" / support_name
+    if args.output is None:
+        if args.preview:
+            args.output = Path.home() / "Applications/Longshot Metal Preview.app"
+            args.output.parent.mkdir(exist_ok=True)
+        else:
+            args.output = Path("/Applications/Longshot.app")
     game, output = args.game.resolve(), args.output.absolute()
     if output.exists():
         if output.is_symlink() or not (output / "Contents/Info.plist").is_file():
             parser.error(f"{output} is not an installed Longshot game")
         info = plistlib.loads((output / "Contents/Info.plist").read_bytes())
-        if info.get("CFBundleIdentifier") != APP_ID:
+        if info.get("CFBundleIdentifier") != app_id:
             parser.error(f"{output} belongs to another application")
     if args.data_home and not (args.data_home / "longshot/save").is_dir():
         parser.error("--data-home must contain the existing longshot/save folder")
-    if "hos_mac_bundle_setup" not in run("nm", "-gU", game / "longshot"):
-        parser.error("Rebuild the game using this release before packaging it.")
+    host_exports = {line.split()[-1] for line in run("nm", "-gU", game / "longshot").splitlines() if line.split()}
+    renderer = game / "longshot_mtl.dylib"
+    if "_mtl_prepare_game_shaders" not in host_exports or "_longshot_mac_menu_start" not in run("nm", "-gU", renderer):
+        parser.error("Rebuild the game and Metal settings menu using this branch before packaging.")
+    for line in run("nm", "-mu", renderer).splitlines():
+        if "(dynamically looked up)" in line:
+            symbol = line.split(" (dynamically looked up)")[0].split()[-1]
+            if symbol not in host_exports:
+                parser.error(f"Metal library requires a missing host symbol: {symbol}")
     versionfile = game / "longshot_version.txt"
     version = next((line.split("=", 1)[1] for line in versionfile.read_text().splitlines()
                     if line.startswith("version=")), "3.0.0").lstrip("v").split("-")[0]
     # The sealed application contains executable code. Locally built game assets live
     # in Application Support, away from Gatekeeper's per-file application inspection.
-    data_root = Path.home() / "Library/Application Support/Longshot/GameData"
+    data_root = support / "GameData"
     data_root.mkdir(parents=True, exist_ok=True)
     data_name = str(uuid.uuid4())
     with tempfile.TemporaryDirectory(dir=data_root, prefix=".install-") as data_stage, \
@@ -169,9 +178,9 @@ def main():
                 for part in sorted(real.parent.glob(real.name + ".img.[0-9][0-9][0-9]")):
                     clone(part, target / part.name)
         libraries(exe, game, contents)
-        info = dict(CFBundleIdentifier=APP_ID, CFBundleExecutable=exe.name, CFBundleName="Longshot",
+        info = dict(CFBundleIdentifier=app_id, CFBundleExecutable=exe.name, CFBundleName="Longshot",
                     CFBundleIconFile=icon_name,
-                    CFBundleDisplayName="Longshot", CFBundlePackageType="APPL", CFBundleVersion=version,
+                    CFBundleDisplayName=support_name, CFBundlePackageType="APPL", CFBundleVersion=version,
                     CFBundleShortVersionString=version, NSHighResolutionCapable=True, LongshotDataDirectory=data_name,
                     LSApplicationCategoryType="public.app-category.adventure-games",
                     NSMicrophoneUsageDescription="Use the microphone during game actions that require it.")
@@ -186,7 +195,7 @@ def main():
             installed_assets.rename(assets)
             raise
     if args.data_home:
-        prefs = Path.home() / "Library/Application Support/Longshot/installation.plist"
+        prefs = support / "installation.plist"
         prefs.parent.mkdir(parents=True, exist_ok=True)
         with tempfile.NamedTemporaryFile(dir=prefs.parent, delete=False) as f:
             plistlib.dump(dict(DataHome=str(args.data_home.resolve())), f)

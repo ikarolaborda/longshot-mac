@@ -9,7 +9,6 @@
 
 #ifndef MENU_LAYOUT_ONLY
 #include "menu/audio.h"     // (output_name_key: a monitor's name on one line, as a device's)
-#include "vk_internal.h"    // (host: the host's monitors)
 #include "vk_menu_i18n.h"   // (i18n::tr: the unplugged monitor's line)
 #endif
 

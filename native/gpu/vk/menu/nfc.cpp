@@ -7,9 +7,6 @@
 
 #include "menu/nfc.h"
 
-#ifndef MENU_LAYOUT_ONLY
-#include "vk_internal.h"   // (host: the tags, the reader, the scan)
-#endif
 
 #include <algorithm>
 #include <cstdio>

@@ -2679,7 +2679,11 @@ static int game_main(int argc, char **argv) {
                 printf("@@done shaders\n");
                 return 0;
             }
+#ifdef __APPLE__
+            printf("@@error Metal shader preparation could not start\n");
+#else
             printf("@@error no usable Vulkan here: the game prepares its shaders at its first start\n");
+#endif
             return 3;
         }
         else if (!image) image = argv[i];

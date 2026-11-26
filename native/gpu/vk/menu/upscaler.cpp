@@ -12,10 +12,14 @@
 #ifndef MENU_LAYOUT_ONLY
 #include "menu/output.h"     // (game_size: the 3D's size at a share of the output)
 #include "menu/upscaler.h"
+#ifdef LONGSHOT_METAL_MENU
+#include "menu_metal_services.h"
+#else
 #include "vk_dlss.h"       // (dlss_why, dlss_built)
-#include "vk_fsr4.h"       // (fsr4_why, fsr4_built)
 #include "vk_internal.h"   // (device_vram_bytes)
 #include "vk_xess.h"       // (xess_why, xess_built)
+#endif
+#include "vk_fsr4.h"       // (fsr4_why, fsr4_built)
 #endif
 
 #include <algorithm>

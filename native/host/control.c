@@ -1194,7 +1194,7 @@ static void cmd_option_get(int ci, const JDoc *d, int req, const char *id) {
     Conn *c = &G.conns[ci];
     const char *name = str_arg(d, req, "name");
     HosControlSetting s;
-    if (!G.game->setting || !G.game->setting(0, &s)) return reply_error(c, id, "unavailable", "no Insert menu (the Vulkan renderer has not started)");
+    if (!G.game->setting || !G.game->setting(0, &s)) return reply_error(c, id, "unavailable", "the game settings menu has not started");
     Buf b = {0};
     if (name) {
         if (!setting_find(name, &s)) return reply_error(c, id, "not_found", "no setting %.100s", name);
@@ -1220,7 +1220,7 @@ static void cmd_option_set(int ci, const JDoc *d, int req, const char *id) {
         return reply_error(c, id, "bad_request", "option_set: name, and value (a number, or true or false)");
     if (v->type == J_NUM && (v->num < -1e9 || v->num > 1e9)) return reply_error(c, id, "bad_request", "value: out of range");
     HosControlSetting s, now;
-    if (!G.game->setting || !G.game->setting(0, &s)) return reply_error(c, id, "unavailable", "no Insert menu (the Vulkan renderer has not started)");
+    if (!G.game->setting || !G.game->setting(0, &s)) return reply_error(c, id, "unavailable", "the game settings menu has not started");
     if (!setting_find(name, &s)) return reply_error(c, id, "not_found", "no setting %.100s", name);
     const int value = v->type == J_NUM ? (int)lround(v->num) : v->type == J_TRUE;
     memset(&now, 0, sizeof now);

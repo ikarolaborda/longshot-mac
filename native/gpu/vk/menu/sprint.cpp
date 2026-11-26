@@ -9,7 +9,6 @@
 
 #ifndef MENU_LAYOUT_ONLY
 #include "menu/bindings.h"   // (can_bind)
-#include "vk_internal.h"     // (host: the bindings, hos_bind)
 #endif
 
 #include <string>

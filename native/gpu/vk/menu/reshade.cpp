@@ -3,7 +3,11 @@
 
 #ifndef MENU_LAYOUT_ONLY
 #include "menu/reshade.h"
+#ifdef LONGSHOT_METAL_MENU
+#include "menu_metal_services.h"
+#else
 #include "reshade/fx_runtime.h"
+#endif
 #include "vk_menu_hit.h"
 #include "vk_ui.h"
 #endif

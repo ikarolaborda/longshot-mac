@@ -10,7 +10,6 @@
 
 #ifndef MENU_LAYOUT_ONLY
 #include "../../host/hos_wide_size.h"   // (the widescreen picture's size, as host/hos_main.c works it out)
-#include "vk_internal.h"   // (host: its screen)
 #ifdef _WIN32
 #include <windows.h>
 #endif

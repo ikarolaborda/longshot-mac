@@ -12433,6 +12433,18 @@ void mtl_pipeline_archive_quit(void) {
                         (unsigned long long)atomic_load(&g_fn4_gave_up));
 #endif
 }
+#ifdef LONGSHOT_MTL
+int mtl_prepare_game_shaders(void) {
+    @autoreleasepool {
+        mtl_init();
+        if (!g_dev) return 0;
+        shmap_load();
+        mtl_warm_wait(-1);
+        mtl_pipeline_archive_quit();
+        return 1;
+    }
+}
+#endif
 int mtl_pipeline_archive_tool(int argc, char **argv) {
     g_compute_archive_tool=1;
     if (argc < 1 || !getenv("TOTK_SHADER_CACHE") || !getenv("TOTK_SHADER_SEED_DIR"))

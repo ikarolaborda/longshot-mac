@@ -4,7 +4,11 @@
 #include "menu_module.h"
 
 #ifndef MENU_LAYOUT_ONLY
+#ifdef LONGSHOT_METAL_MENU
+#include "menu_metal_services.h"
+#else
 #include "vk_draw.h"   // (menu_debug_rows)
+#endif
 #endif
 
 #include <string>

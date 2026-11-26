@@ -78,7 +78,7 @@ PGO = os.environ.get("RX_PGO", "")
 # end is compiled by every build, the AppImage's player builds too, from the sources the AppImage carries (no prebuilt one since
 # 2026-11-14: one way to build it, with this PC's CPU and the committed play profile)
 LINUX = not toolchain.windows() and sys.platform != "darwin"   # (longshot: RX_TARGET=windows on Linux builds the Windows game, with llvm-mingw)
-MAC = sys.platform == "darwin"   # (longshot-mac) the native macOS target: Mach-O exe + longshot_vk.dylib, SDL2 on POSIX
+MAC = sys.platform == "darwin"   # (longshot-mac) the native macOS target: Mach-O exe + longshot_mtl.dylib, SDL2 on POSIX
 UNIX = LINUX or MAC   # (longshot-mac) the POSIX family: host/posix, SDL2, no Media Foundation
 POSIX = os.path.join(kit.HERE, "..", "host", "posix")
 SYSROOT = os.environ.get("LONGSHOT_SYSROOT", "")
@@ -1792,7 +1792,7 @@ def main():
     rt64 = rtgen.write(os.path.join(out, "rt64"))
     cc = toolchain.need(toolchain.find("clang"))
     # (the third-party objects' keys hold the compiler and the headers outside the tree as well: nx2/third_party_objects.py stamp)
-    tp_stamp = third_party_objects.stamp(cc, toolchain.find("clang++"), target(), THIRD_PARTY_CPU, vulkan_headers())
+    tp_stamp = third_party_objects.stamp(cc, toolchain.find("clang++"), target(), THIRD_PARTY_CPU, () if MAC else vulkan_headers())
     tp_deps = b"third-party " + tp_stamp.encode()
     fl = flags(gen, rt64, OPT, True) + (["-DA64_POLL_CTX"] if a.dll else [])   # (the shim's poll takes the context: rtgen.py)
     # (which Longshot this is, for the log's first line and the Insert menu: given to host/version.c and gpu/vk/vk_version.cpp
@@ -2036,7 +2036,7 @@ def main():
                                  renderer_deps(d2r_headers, (d2r,), obj) + tp_deps))
     # the Vulkan back end, a DLL of its own (the only renderer): CPM cache, LONGSHOT_*_HEADERS, or system includes
     vk_jobs = []
-    vk_headers, spirv_headers, vma_headers = vulkan_headers()
+    vk_headers, spirv_headers, vma_headers = (None, None, None) if MAC else vulkan_headers()
     # (RX_GAME_ONLY=1, a development pack whose change the renderer is not built from (scripts/devtools/packs.py
     # renderer_untouched): the game alone, the renderer neither compiled nor linked. Never in a player's build)
     game_only = kit.env_on("RX_GAME_ONLY")
@@ -2044,7 +2044,7 @@ def main():
         print("RX_GAME_ONLY and RX_VK_ONLY both set: nothing would be built", flush=True)
         return 1
     build_vk = a.standalone and not game_only and vk_headers and spirv_headers and vma_headers
-    if a.standalone and not game_only and not build_vk:
+    if not MAC and a.standalone and not game_only and not build_vk:
         # (was silent: the exe linked, the renderer then fell through to a stub, black window)
         missing = [n for n, p in (("Vulkan", vk_headers), ("SPIR-V", spirv_headers), ("VMA", vma_headers)) if not p]
         print("no headers for %s (missing %s). Set RX_CPM to a CPM cache, or LONGSHOT_VULKAN_HEADERS / "
@@ -2054,6 +2054,12 @@ def main():
         return 1
     elif build_vk:
         print("the Vulkan back end: Vulkan %s, SPIR-V %s, VMA %s" % (vk_headers, spirv_headers, vma_headers), flush=True)
+    metal_jobs = []
+    if MAC and host_srcs:
+        import metal_menu_build
+        metal_jobs = metal_menu_build.jobs(kit.ROOT, obj_dir, gen_dir, target(), cc,
+                                          toolchain.need(toolchain.find("clang++")), stamp_def, tree_headers, tp_deps)
+        jobs.extend(metal_jobs)
     if build_vk:
         cxx = toolchain.need(toolchain.find("clang++"))
         vk = os.path.join(GPU, "vk")
@@ -2121,12 +2127,6 @@ def main():
         imgui_deps = b"".join(open(os.path.join(d, f), "rb").read() for d in (imgui, os.path.join(imgui, "backends"), zbic)
                               for f in sorted(os.listdir(d)) if f.endswith(".h"))
         imgui_users = ("vk_imgui.cpp", "vk_menu.cpp", "vk_crash_window.cpp", "reshade.cpp")
-        if MAC:
-            with open(os.path.join(GPU, "mtl", "metal_menu.h"), "rb") as header:
-                metal_menu_deps = vdeps + imgui_deps + header.read()
-            for src in (os.path.join(imgui, "backends", "imgui_impl_metal.mm"), os.path.join(GPU, "mtl", "metal_menu.mm")):
-                metal_menu_flags = vflags + imgui_flags + ["-fobjc-arc", "-I" + vk]
-                vk_jobs.append((cxx, src, os.path.join(obj_dir, os.path.basename(src) + ".o"), metal_menu_flags, metal_menu_deps))
         for f in ("imgui.cpp", "imgui_draw.cpp", "imgui_tables.cpp", "imgui_widgets.cpp", "backends/imgui_impl_vulkan.cpp"):
             vk_jobs.append((cxx, os.path.join(imgui, *f.split("/")),
                             os.path.join(obj_dir, "vk_imgui_" + os.path.basename(f)[:-4] + ".o"), tp_vflags + imgui_flags,
@@ -2268,7 +2268,7 @@ def main():
         shown = shown.replace("-O1", "-" + chunk_level())
     print("%d files, %d jobs, %s" % (len(jobs), a.jobs, shown), flush=True)
     t0, failed = time.time(), []
-    vk_job_objects = {j[2] for j in vk_jobs}
+    vk_job_objects = {j[2] for j in vk_jobs + metal_jobs}
     compile_seconds = {"host and game": 0.0, "renderer": 0.0}
     with concurrent.futures.ThreadPoolExecutor(a.jobs) as ex:
         # (as each ends, not in order: the builder app shows progress from these lines, and the biggest file comes first)
@@ -2329,7 +2329,7 @@ def main():
         print("object store: %d new objects to it" % object_store.share(OBJ_CACHE, OBJ_STORE), flush=True)
     if a.standalone and not vk_only and not cut:   # (a cut chunk's objects are not the whole chunk's: no kept list)
         write_kept(gen, jobs)
-    vk_objs = {j[2] for j in vk_jobs}
+    vk_objs = {j[2] for j in vk_jobs + metal_jobs}
     objs = [j[2] for j in jobs if j[2] not in vk_objs]
     if tracy_patch and not vk_only:   # (LONGSHOT_TRACY: the listed functions' chunks, as copies whose symbols name the wrappers)
         renamed = {}
@@ -2424,18 +2424,18 @@ def main():
             import shutil
             shutil.copyfile(sdl3, sdl3_dst)
         copy_renhdrum(out, "renhdrum.dll")
-    if MAC and not a.dry_run:   # (longshot-mac) longshot_mtl.dylib, the native Metal back end (gpu/mtl, RX_RENDERER=metal)
-        mtl_src = os.path.join(kit.ROOT, "gpu", "mtl", "mtl_main.m")
+    if metal_jobs and not a.dry_run:
         mtl_lib = os.path.join(out, "longshot_mtl.dylib")
-        if os.path.isfile(mtl_src):
-            r = subprocess.run([toolchain.need(toolchain.find("clang"))] + target() +
-                               ["-fobjc-arc", "-O2", "-w", "-dynamiclib", "-install_name", "@loader_path/longshot_mtl.dylib",
-                                "-framework", "Metal", "-framework", "QuartzCore", "-framework", "Foundation", mtl_src, "-o", mtl_lib],
-                               capture_output=True, text=True)
-            if r.returncode:
-                print("longshot_mtl.dylib FAILED\n" + (r.stdout + r.stderr)[-3000:])
-                return 1
-            print("built %s" % mtl_lib)
+        metal_objects = [job[2] for job in metal_jobs]
+        link = [toolchain.need(toolchain.find("clang++"))] + target() + [
+            "-dynamiclib", "-Wl,-dead_strip", "-Wl,-exported_symbol,_mkwvk_init",
+            "-Wl,-exported_symbol,_longshot_mac_menu_start", "-undefined", "dynamic_lookup",
+            "-install_name", "@loader_path/longshot_mtl.dylib", "-framework", "MetalKit",
+            "-framework", "Metal", "-framework", "QuartzCore", "-framework", "AppKit", "-o", mtl_lib]
+        result = run_link(link + metal_objects, mtl_lib)
+        if result.returncode:
+            print("Metal link failed:\n" + result.stderr[-4000:])
+            return 1
     if vk_jobs:   # (longshot_vk.dll beside the exe: loaded by host/rx_backend.c)
         vdll = os.path.join(out, VK_LIB)
         vrsp = os.path.join(out, "vk_objs.rsp")

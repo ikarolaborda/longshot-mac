@@ -6,7 +6,6 @@
 #include "menu/sim_turf.h"
 
 #ifndef MENU_LAYOUT_ONLY
-#include "vk_internal.h"
 #include "vk_paths.h"
 #include "menu/sim_turf_settings.h"
 #endif

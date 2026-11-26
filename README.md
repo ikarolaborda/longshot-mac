@@ -7,7 +7,11 @@ The original launcher and its build tools are also available.
 
 Download the Mac installer and checksum from [Releases](../../releases), unzip the installer, and open it. Choose your existing macOS Longshot game build when prompted. The installer rebuilds the game from your files and installs `/Applications/Longshot.app`. Keep the original build folder for future updates.
 
-The build needs Xcode command-line tools, a Python environment that can run the original builder, and the libraries used by your macOS build, including Homebrew Mesa and vulkan-loader. Native Metal uses the Ocarina of Time shader service and shader data from your prepared game folder.
+The build needs Xcode command-line tools, a Python environment that can run the original builder, and the libraries used by your macOS build, including SDL and the audio/video libraries. The native game renders and draws its settings menu with Metal. It uses the Ocarina of Time shader service and shader data from your prepared game folder.
+
+### Side-by-side Metal preview
+
+From the native source directory on this branch, rebuild a copy of your prepared game folder with `python3 -I nx2/make_game.py --update "/path/to/game-copy" --no-prepare-shaders`. Then run `python3 scripts/mac/package_app.py "/path/to/game-copy" --preview`. The preview installs in `~/Applications/Longshot Metal Preview.app` and keeps its saves, settings and caches under `~/Library/Application Support/Longshot Metal Preview`.
 
 ## Original launcher
 
@@ -30,7 +34,7 @@ title ID `04004860224DEC000`) and build/run the game normally.
 - Native arm64 single-file executable; universal-ready native libraries
   (arm64 + x86_64).
 
-## Vulkan support (game renderer)
+## Vulkan support in the original launcher
 
 The launcher checks for Vulkan 1.3 (the game's renderer). On macOS this is
 provided by [MoltenVK](https://github.com/KhronosGroup/MoltenVK):

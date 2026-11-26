@@ -27,9 +27,10 @@ static BOOL linkResource(NSString *source, NSString *target) {
 int hos_mac_bundle_setup(void) {
     @autoreleasepool {
         NSBundle *app = NSBundle.mainBundle;
-        if (![app.bundleIdentifier isEqual:@"dev.longshot.game"]) return 1;
+        BOOL preview = [app.bundleIdentifier isEqual:@"dev.longshot.game.preview"];
+        if (!preview && ![app.bundleIdentifier isEqual:@"dev.longshot.game"]) return 1;
         NSFileManager *fm = NSFileManager.defaultManager;
-        NSString *support = [NSHomeDirectory() stringByAppendingPathComponent:@"Library/Application Support/Longshot"];
+        NSString *support = [[NSHomeDirectory() stringByAppendingPathComponent:@"Library/Application Support"] stringByAppendingPathComponent:preview ? @"Longshot Metal Preview" : @"Longshot"];
         NSString *runtime = [support stringByAppendingPathComponent:@"Runtime"];
         NSString *dataName = [app objectForInfoDictionaryKey:@"LongshotDataDirectory"];
         NSString *assets = dataName ? [[support stringByAppendingPathComponent:@"GameData"] stringByAppendingPathComponent:dataName]
@@ -63,8 +64,7 @@ int hos_mac_bundle_setup(void) {
         setenv("LONGSHOT_BUNDLE_RUNTIME", runtime.fileSystemRepresentation, 1);
         setenv("TOTK_NATIVE_DIR", metalDir.fileSystemRepresentation, 0);
         setenv("TOTK_UNCAPPED_HZ", "display", 0);
-        if ([fm fileExistsAtPath:[metalDir stringByAppendingPathComponent:@"shader-service"]])
-            setenv("RX_RENDERER", "metal", 0);
+        setenv("RX_RENDERER", "metal", 1);
         return chdir(runtime.fileSystemRepresentation) == 0;
     }
 }
