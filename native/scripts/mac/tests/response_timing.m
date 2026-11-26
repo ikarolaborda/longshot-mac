@@ -10,6 +10,10 @@ static double testClock(void) { return sampleTime; }
 #import "../../../host/posix/mac_response.m"
 #undef CACurrentMediaTime
 
+// Scene tracing has its own clock and game-state tests.
+void hos_scene_submit(uint64_t id) { (void)id; }
+void hos_scene_display(uint64_t id, double when) { (void)id; (void)when; }
+
 static unsigned reports;
 void hos_log(const char *format, ...) {
     if (strstr(format, "response sample")) reports++;

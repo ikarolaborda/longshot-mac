@@ -9,6 +9,7 @@
    Environment: HOS_TRACE=1 (log HLE calls), HOS_MEMORY_MB (memory the game is told it has),
                 HOS_NVN_CONTINUE=1 (go on past nvnBootstrapLoader). */
 #include "hos.h"
+#include "scene_trace.h"
 #ifdef TRACY_ENABLE
 #include "hos_tracy.h"
 #endif
@@ -1381,14 +1382,21 @@ int hos_oot_stick_y_reversed(void) {
 static float oot_load_float(Ctx *c, uint64_t addr);
 /* The renderer reads only this deadline, never the live actor. */
 static int64_t oot_field_entry_until;
+static int oot_gate_zone;
+int hos_oot_gate_zone(void) {
+    return __atomic_load_n(&oot_gate_zone, __ATOMIC_RELAXED);
+}
 int hos_oot_field_entry_near(void) {
     int64_t until = __atomic_load_n(&oot_field_entry_until, __ATOMIC_RELAXED);
     return until && hos_now_ns() < until;
 }
 static void oot_field_entry_refresh(Ctx *c, uint64_t actor, const char *map, int64_t now) {
-    static int enabled = -1;   /* read only on Link's update thread */
-    if (enabled < 0) enabled = env_on("LONGSHOT_FIELD_PREWARM");
-    if (!enabled) return;
+    static int enabled = -1, visited_field, cold;
+    /* Only Link's update thread owns the visit history. */
+    if (enabled < 0) {
+        enabled = env_on_or("LONGSHOT_FIELD_PREWARM", 1);
+        cold = env_on("LONGSHOT_FIELD_PREWARM");
+    }
     /* Stream only while approaching the adult village exit or crossing its fade.
        Link can stop updating during a load, so each observation expires. */
     static float previous_distance = -1.f;
@@ -1398,6 +1406,14 @@ static void oot_field_entry_refresh(Ctx *c, uint64_t actor, const char *map, int
         float dz = oot_load_float(c, actor + 804) - 44.f;
         distance = hypotf(dx, dz);
     }
+    int zone = distance >= 0.f && distance < 55.f ? 1 : 0;
+    if (!strcmp(map, "HyruleField_Adult")) {
+        float dx = oot_load_float(c, actor + 796) - 200.f;
+        float dz = oot_load_float(c, actor + 804) - 19.f;
+        if (dx*dx + dz*dz < 55.f*55.f) { zone = 2; visited_field = 1; }
+    }
+    __atomic_store_n(&oot_gate_zone, zone, __ATOMIC_RELAXED);
+    if (!enabled || (!visited_field && !cold)) return;
     if (!(distance >= 0.f && distance < 40.f))
         __atomic_store_n(&oot_field_entry_until, 0, __ATOMIC_RELAXED);
     else if (previous_distance >= 0.f && distance < previous_distance - .25f)
@@ -1440,6 +1456,9 @@ static void oot_map_refresh(Ctx *c, uint64_t actor, int64_t now) {
         pieces = heart_pieces_total(stats[1], hos_oot_heart_containers_taken(), oot_pouch_count(c, "Obj_Heart_Piece"));
     }
     stats[3] = tokens, stats[4] = pieces;
+#ifdef __APPLE__
+    hos_scene_state(map, flags);
+#endif
     AcquireSRWLockExclusive(&oot_map_lock);
     memcpy(oot_map, map, sizeof oot_map);
     oot_flags = flags;

@@ -1,3 +1,4 @@
+#include "../scene_trace.h"
 #import <QuartzCore/QuartzCore.h>
 #include <pthread.h>
 #include <stdatomic.h>
@@ -118,6 +119,7 @@ void hos_mac_response_input(uint64_t buttons, const int32_t axes[4]) {
 }
 
 void hos_mac_response_submit(uint64_t frame) {
+    hos_scene_submit(frame);
     if (!atomic_load(&active) && !atomic_load(&trace)) return;
     pthread_mutex_lock(&lock);
     submitted[frame % 256] = (InputFrame){frame, latest};
@@ -125,6 +127,7 @@ void hos_mac_response_submit(uint64_t frame) {
 }
 
 void hos_mac_response_present(uint64_t frame, double shown, int generated) {
+    if (shown > 0 && !generated) hos_scene_display(frame, shown);
     if (shown <= 0 || (!atomic_load(&active) && !atomic_load(&trace))) return;
     double matched[256];
     unsigned matches = 0;

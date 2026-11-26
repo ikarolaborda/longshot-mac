@@ -24,7 +24,8 @@ LEGS = [
     ("Cross the field", 3.2, {"lx": -.25, "ly": .92}),
     ("Look toward the road", .85, {"lx": 0, "ly": .88, "rx": -.7}),
     ("Run down the road", 2.8, {"lx": .2, "ly": .93}),
-    ("Strike while moving", .14, {"buttons": ["Y"], "lx": .15, "ly": .9}),
+    ("Hold ZL and strafe", .65, {"buttons": ["ZL"], "lx": .8}),
+    ("Strike while holding ZL", .20, {"buttons": ["ZL", "Y"], "lx": .15, "ly": .9}),
     ("Continue uphill", 2.7, {"lx": .48, "ly": .8}),
 ]
 
@@ -49,7 +50,7 @@ def traverse(bridge):
             check(bridge.request("release"))
         after = field_state(bridge)
         legs.append(dict(label=label, t=press, end=time.monotonic(), pos=before["pos"],
-                         endpos=after["pos"], map=after["map"]))
+                         endpos=after["pos"], camera=before["camera"], end_camera=after["camera"], map=after["map"]))
     end = time.monotonic()
     travel = sum(math.dist(leg["pos"], leg["endpos"]) for leg in legs)
     if travel < 1:

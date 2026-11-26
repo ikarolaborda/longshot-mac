@@ -1804,7 +1804,18 @@ static uint64_t g_sub_serial;   // 第几次提交（并行预编「每次提交
 static void pt_apply_request(void);
 static int g_sub_chunks; static uint64_t g_chunk_mark, g_stat_draw; static void chunk_cfg(void);   // mid-submission commits, defined before mtl_sub_commit
 static int g_nupd, g_nshadow; static inline int upd_guard(uint64_t lo, uint64_t hi);   // renamed uniform updates, defined with mtl_sub_update
+#ifdef LONGSHOT_MTL
+static double stream_submit_start;
+extern int hos_oot_gate_zone(void);
+static int stream_zone;
+extern int hos_mac_stream_policy(void);
+extern int hos_oot_field_entry_near(void);
+#endif
 void mtl_sub_begin(void) {
+#ifdef LONGSHOT_MTL
+    stream_zone = hos_oot_gate_zone();
+    stream_submit_start = hos_oot_field_entry_near() ? CACurrentMediaTime() : 0;
+#endif
     g_fc_begin0 = clock_gettime_nsec_np(CLOCK_UPTIME_RAW);
     /* The submission's autorelease pool, drained in mtl_sub_commit, opens before anything else: the guest's submit
        thread has no pool of its own that drains (frontend.m's lasts the whole game), so what defer_drain, defer_reset,
@@ -4040,7 +4051,14 @@ static int pkg_final_cache_on(void) {
     if (v < 0) { const char *e = getenv("TOTK_PKG_FINAL_CACHE"); v = !(e && !atoi(e)); atomic_store(&g_pkg_final_cache, v); }
     return v;
 }
-@interface NvPkg : NSObject { @public id<MTLTexture> tex; NSMutableDictionary *views; __unsafe_unretained id<MTLTexture> view_base; uint64_t stamp, seen, hash, owned_gen; int tracked, owned, hashed, vol, lost, keep_full; reup_key key; uint64_t chash, csub, used; uintptr_t lo, hi; uint8_t *edge; uint32_t eh, et; int edge_want; BOTW_PKG_FIELDS UI_PACK_PKG_FIELDS } @end   // lo / hi (TOTK): the texture's memory (pkg_orphan_report)   // tracked (TOTK): result of the last nvn_dirty_tracked   // hash：DM_NVN_DIRTYCHECK 时上传内容的全量哈希 | hash: full hash of the uploaded content under DM_NVN_DIRTYCHECK
+@interface NvPkg : NSObject { @public id<MTLTexture> tex; NSMutableDictionary *views; __unsafe_unretained id<MTLTexture> view_base; uint64_t stamp, seen, hash, owned_gen; int tracked, owned, hashed, vol, lost, keep_full; reup_key key; uint64_t chash, csub, used; uintptr_t lo, hi; uint8_t *edge; uint32_t eh, et; int edge_want; BOTW_PKG_FIELDS UI_PACK_PKG_FIELDS
+#ifdef LONGSHOT_MTL
+    unsigned char field_digest[CC_SHA256_DIGEST_LENGTH];
+    BOOL field_digest_valid, field_priority;
+    uint64_t gate_use;
+    unsigned gate_zones;
+#endif
+} @end   // lo / hi (TOTK): the texture's memory (pkg_orphan_report)   // tracked (TOTK): result of the last nvn_dirty_tracked   // hash：DM_NVN_DIRTYCHECK 时上传内容的全量哈希 | hash: full hash of the uploaded content under DM_NVN_DIRTYCHECK
 static void pkg_views_drop(NvPkg *pkg) {
     if (pkg->views) defer_obj_unref(pkg->views);
     pkg->views = nil; pkg->view_base = nil;
@@ -5640,6 +5658,49 @@ static void upt_pages(const void *mem, uint64_t size) {
 }
 static int upt_on(void) { static int on = -1; if (on < 0) on = getenv("DM_NVN_UPTIME") != NULL; return on; }
 static inline void upt_mark(int i) { if (upt_on()) g_upt[i] = clock_gettime_nsec_np(CLOCK_MONOTONIC); }
+#ifdef LONGSHOT_MTL
+static int field_arrival_texture(const tex_t *t);
+static int stream_tex_trace(void) {
+    static dispatch_once_t once;
+    static int enabled;
+    dispatch_once(&once, ^{ const char *v = getenv("HOS_SCENE_TRACE"); enabled = v && atoi(v); });
+    return enabled;
+}
+enum { UP_FIRST, UP_EVICTED, UP_FORMAT, UP_DIRTY, UP_UNTRACKED, UP_IDENTICAL, UP_REASONS };
+static _Thread_local unsigned stream_reasons[UP_REASONS];
+static _Thread_local uint64_t stream_first_bytes, stream_repeat_bytes;
+
+/* A sampled signature only gives this resource priority. Reuse requires the
+   complete guest bytes, the same live package and no intervening page write. */
+static int field_digest(const tex_t *t, unsigned char out[CC_SHA256_DIGEST_LENGTH]) {
+    sigjmp_buf jb, *prev = runtime_fault_guard;
+    if (sigsetjmp(jb, 1)) { runtime_fault_guard = prev; return 0; }
+    runtime_fault_guard = &jb;
+    CC_SHA256(t->mem, (CC_LONG)t->L.size, out);
+    runtime_fault_guard = prev;
+    return 1;
+}
+static void field_remember_upload(const tex_t *t, NvPkg *pk, uint64_t stamp) {
+    pk->field_digest_valid = pk->field_priority = NO;
+    if (!hos_mac_stream_policy() || t->L.size < 262144 || t->L.size > 5242880 || pk->owned ||
+        (t->d.flags & ~NVN_TEXTURE_FLAGS_IMAGE) || t->d.samples > 1) return;
+    int bw,bh;
+    nvn_fmt_bpb(t->d.format,&bw,&bh);
+    if (bw == 1 || bh == 1 || !nvn_dirty_tracked(t->mem,t->L.size) || !field_arrival_texture(t)) return;
+    pk->field_priority = YES;
+    pk->field_digest_valid = field_digest(t,pk->field_digest) && !nvn_dirty_since(t->mem,t->L.size,stamp);
+}
+static int field_bytes_unchanged(const tex_t *t, NvPkg *pk) {
+    if (!pk->field_digest_valid || pk->owned || !pk->tex) return 0;
+    uint64_t check = nvn_dirty_now();
+    nvn_dirty_protect(t->mem,t->L.size);
+    unsigned char candidate[CC_SHA256_DIGEST_LENGTH];
+    if (!field_digest(t,candidate) || memcmp(candidate,pk->field_digest,sizeof candidate) ||
+        nvn_dirty_since(t->mem,t->L.size,check)) return 0;
+    pk->stamp = check;
+    return 1;
+}
+#endif
 static id<MTLTexture> pkg_upload(const tex_t *t, uint64_t *stamp, reup_key *key, NvPkg *pk) {
     struct timespec a, b; clock_gettime(CLOCK_MONOTONIC, &a);
     struct rusage ru0; if (upt_on()) { upt_pages(t->mem, t->L.size); getrusage(RUSAGE_SELF, &ru0); memset(g_upt, 0, sizeof g_upt); g_upt_path = 0; upt_mark(0); }
@@ -5654,6 +5715,15 @@ static id<MTLTexture> pkg_upload(const tex_t *t, uint64_t *stamp, reup_key *key,
         uint64_t k = ++g_pkg_upload_unreadable;
         if (k <= 4 || k % 1000 == 0) MLOG("【红】贴图的内存已不可读，不上传（ser=%llu %ux%u 格式 %#x 存储 %p+%llu，第 %llu 次）", (unsigned long long)t->serial, t->d.width, t->d.height, t->d.format, (const void *)t->mem, (unsigned long long)t->L.size, (unsigned long long)k);
     } else { upt_mark(1); r = pkg_upload_(t, stamp, key, pk); }
+#ifdef LONGSHOT_MTL
+    if (r && pk) {
+        if (stream_tex_trace()) {
+            if (stamp != &pk->stamp) stream_repeat_bytes += t->L.size;
+            else stream_first_bytes += t->L.size;
+        }
+        field_remember_upload(t, pk, *stamp);
+    }
+#endif
     clock_gettime(CLOCK_MONOTONIC, &b); uint64_t d_ = (uint64_t)((b.tv_sec - a.tv_sec) * 1000000000ll + b.tv_nsec - a.tv_nsec);
     if (upt_on()) { static double min_ms = -1; if (min_ms < 0) min_ms = atof(getenv("DM_NVN_UPTIME"));
         if (d_ / 1e6 >= min_ms) { struct rusage ru1; getrusage(RUSAGE_SELF, &ru1); uint64_t e = clock_gettime_nsec_np(CLOCK_MONOTONIC);
@@ -6083,6 +6153,9 @@ static void *tex_mtl_p(const tex_t *ct) {
     if (packaged) {
         __unsafe_unretained NvPkg *pk = have;
         if (pk) pk->used = g_sub_serial;
+#ifdef LONGSHOT_MTL
+        if (pk && stream_zone) { pk->gate_use = g_sub_serial; pk->gate_zones |= stream_zone; }
+#endif
         if (pk && (pk->vol || pk->lost)) pkg_unpurge(pk);   // TOTK (iPhone): a copy marked purgeable while idle (pkg_purge_idle)
         /* TOTK: rendered into by the GPU since the upload: the pool memory is stale, never re-upload. The set only grows, so
            the answer is kept in the NvPkg and asked again only after it gained members (a locked lookup on every use before). */
@@ -6093,11 +6166,17 @@ static void *tex_mtl_p(const tex_t *ct) {
             const int lv_reduced = pk->tex && pk->tex.mipmapLevelCount < (t->d.levels ? t->d.levels : 1u);
             if (!pk->tex || (pk->owned && reduced) || (pk->keep_full && lv_reduced)) {   // keep_full: read by integer texel coordinates (tex_keep_full)   // TOTK: the copy was evicted, or the GPU renders into a reduced copy (needs full size); the copy was evicted under memory pressure (pkg_evict_sweep): upload it again from the pool bytes
                 clean = 0; g_pkg_restored++;
+#ifdef LONGSHOT_MTL
+                stream_reasons[pk->tex ? UP_FORMAT : UP_EVICTED]++;
+#endif
                 if (pk->hashed) { pk->csub = g_sub_serial; if (!pkg_hash_guarded(t, &h)) h = 0; }   // a fault: the upload below refuses too
             } else
             if (pk->hashed) {   // TOTK: small texture, content hash once per submission (see pkg_hashed)
                 if (pk->csub == g_sub_serial) return (__bridge void *)pk->tex;
                 pk->csub = g_sub_serial; clean = !pkg_hash_guarded(t, &h) || h == pk->chash;   // memory gone: keep the texture it has
+#ifdef LONGSHOT_MTL
+                if (!clean) stream_reasons[UP_DIRTY]++;
+#endif
             } else {
             /* TOTK: once per submission, as for the small hashed ones: the contents are those of the submit call (the rule
                of the uniform snapshot). Re-checking on every use, whenever any game thread had written any page since,
@@ -6109,6 +6188,12 @@ static void *tex_mtl_p(const tex_t *ct) {
             int tracked = now == pk->seen && pk->tracked ? 1 : nvn_dirty_tracked(t->mem, t->L.size);
             clean = tracked && (now == pk->seen || !nvn_dirty_since(t->mem, t->L.size, pk->stamp));
             if (!clean && tracked && pkg_edge_clean(t, pk)) clean = 1; BOTW_PKG_WB_STALE(pk, t, clean)   // TOTK (#90): only a shared first / last page was written
+#ifdef LONGSHOT_MTL
+            if (!clean && tracked && field_bytes_unchanged(t,pk)) {
+                clean = 1; stream_reasons[UP_IDENTICAL]++;
+            }
+            if (!clean) stream_reasons[tracked ? UP_DIRTY : UP_UNTRACKED]++;
+#endif
             pk->seen = now; pk->tracked = tracked;
             }
             if (clean && atomic_load_explicit(&g_up_lost_n, memory_order_relaxed) && up_lost_take(pk->tex)) { clean = 0; uint64_t k = atomic_load(&g_up_lost_redo); if (k <= 3 || !atomic_load(&g_up_lost_n)) MLOG("上传被丢的贴图 ser=%llu 重传（累计 %llu 张，记录里还剩 %d 张）", (unsigned long long)t->serial, (unsigned long long)k, atomic_load(&g_up_lost_n)); }
@@ -6133,6 +6218,9 @@ static void *tex_mtl_p(const tex_t *ct) {
             else { free(pk->edge); pk->edge = NULL; }   // TOTK (#90): the bytes kept belong to the upload that failed
             return (__bridge void *)pk->tex;
         }
+#ifdef LONGSHOT_MTL
+        stream_reasons[UP_FIRST]++;
+#endif
         TILELOG(t, "first upload from the pool bytes");
         NvPkg *npk = [NvPkg new]; pk = npk;
 #ifdef LONGSHOT_MTL
@@ -6145,6 +6233,10 @@ static void *tex_mtl_p(const tex_t *ct) {
         if (!pk->tex) return NULL;
         /* TOTK (#90): seen = the upload's stamp, not "now": a write that faulted during the copy moved "now" on, and the
            now == seen shortcut above then called the texture clean without looking at its pages. */
+#ifdef LONGSHOT_MTL
+        if (stream_zone) { pk->gate_use = g_sub_serial; pk->gate_zones |= stream_zone; }
+        pk->used = g_sub_serial;
+#endif
         pk->seen = pk->stamp; g_pkg_uploads++; if (dirtycheck()) pk->hash = full_hash(t->mem, t->L.size); UI_PACK_UPLOADED(pk, t)
         serial_put(t->serial, pk);
         pk->owned = gpu_owned(t->serial);   // after it is in the table: a later mark finds it there (pkg_owned_locked)
@@ -8788,21 +8880,42 @@ static int field_arrival_texture(const tex_t *t) {
 static void field_entry_prepare(void) {
     static int cursor, active;
     static uint64_t total, count, last_frame;
-    static double rescan_at;
+    static double rescan_at, replay_ms, previous_replay_ms;
+    static uint64_t measured_frame;
     if (!on_sub_thread()) return;
+    uint64_t frame = atomic_load(&g_cur_frame);
+    if (measured_frame != frame) {
+        if (stream_tex_trace()) {
+            unsigned *a = stream_reasons;
+            if (a[0] || a[1] || a[2] || a[3] || a[4] || a[5])
+                MLOG("Scene textures: at=%.9f until_frame=%llu first=%u evicted=%u format=%u dirty=%u untracked=%u identical=%u first_bytes=%llu repeat_bytes=%llu",
+                    CACurrentMediaTime(), frame,a[0],a[1],a[2],a[3],a[4],a[5],stream_first_bytes,stream_repeat_bytes);
+        }
+        stream_first_bytes = stream_repeat_bytes = 0;
+        memset(stream_reasons,0,sizeof stream_reasons);
+        previous_replay_ms = replay_ms; replay_ms = 0; measured_frame = frame;
+    }
+    if (stream_submit_start) replay_ms += 1000. * (CACurrentMediaTime() - stream_submit_start);
     if (!hos_oot_field_entry_near()) {
         if (active && count) MLOG("Field arrival prewarm: %llu textures, %.1f MiB", count, total / 1048576.);
         active = cursor = 0; count = total = 0; rescan_at = 0;
         return;
     }
-    uint64_t frame = atomic_load(&g_cur_frame);
     if (total >= (192u << 20) || (active && frame == last_frame)) return;
     active = 1; last_frame = frame;
     double start = CACurrentMediaTime();
     if (start < rescan_at) return;
+    extern int hos_mac_frame_cap(int configured);
+    int hz = hos_mac_frame_cap(0);
+    double frame_ms = 1000. / (hz > 0 ? hz : 120);
+    double gpu_ms = frame >= 8 ? mtl_gpu_ms(frame-8) : 0;
+    double spare_ms = frame_ms - MAX(MAX(previous_replay_ms,replay_ms),gpu_ms);
+    if (spare_ms <= 1.) return;
+    double work_seconds = MIN(.001, (spare_ms - 1.) * .00020);
+    unsigned limit = spare_ms < 4. ? 2u << 20 : 6u << 20;
     unsigned bytes = 0;
-    for (unsigned checked = 0; checked < 4096 && bytes < (8u << 20); ++checked) {
-        if ((checked % 32 == 0 || bytes) && CACurrentMediaTime() - start >= .001) break;
+    for (unsigned checked = 0; checked < 4096 && bytes < limit; ++checked) {
+        if ((checked % 32 == 0 || bytes) && CACurrentMediaTime() - start >= work_seconds) break;
         registry_lock();
         if (cursor >= g_ntreg) {
             registry_unlock();
@@ -8825,9 +8938,9 @@ static void field_entry_prepare(void) {
                 id obj = (__bridge id)serial_ptr(live.serial);
                 NvPkg *pkg = [obj isKindOfClass:[NvPkg class]] ? obj : nil;
                 int needs_upload = !obj || (pkg && !pkg->owned && !pkg->hashed &&
-                    (!pkg->tex || (pkg->seen != nvn_dirty_now() && nvn_dirty_since(live.mem, live.L.size, pkg->stamp))));
+                    (!pkg->tex || pkg->vol || (pkg->seen != nvn_dirty_now() && nvn_dirty_since(live.mem, live.L.size, pkg->stamp))));
                 if (needs_upload && live.L.size <= (192u << 20) - total &&
-                    live.L.size <= (8u << 20) - bytes && field_arrival_texture(&live)) {
+                    live.L.size <= limit - bytes && field_arrival_texture(&live)) {
                     uint64_t before = g_pkg_uploads + g_pkg_reuploads;
                     if (pkg) pkg->edge_want = 1;
                     field_entry_upload = 1;
@@ -9000,6 +9113,20 @@ static void treg_sweep_replaced(void) {
 #define EVICT_IDLE_CRIT 8
 typedef struct { void *pk; uint64_t used, bytes, serial; } evict_cand;
 static uint64_t g_pkg_evicted, g_pkg_evicted_mb_x, g_evict_sweeps;
+#ifdef LONGSHOT_MTL
+static int gate_cache_headroom(void) {
+    static double next;
+    static int normal;
+    double now = CACurrentMediaTime();
+    if (now >= next) {
+        int level = 0;
+        size_t size = sizeof level;
+        normal = !sysctlbyname("kern.memorystatus_vm_pressure_level", &level, &size, NULL, 0) && level == 1;
+        next = now + .5;
+    }
+    return normal && g_dev.currentAllocatedSize < .75 * g_dev.recommendedMaxWorkingSetSize;
+}
+#endif
 static int evict_cmp(const void *a, const void *b) { uint64_t x = ((const evict_cand *)a)->used, y = ((const evict_cand *)b)->used; return x < y ? -1 : x > y; }
 static uint64_t env_mb(const char *name, uint64_t dflt) { const char *e = getenv(name); return (e && *e ? strtoull(e, NULL, 10) : dflt) << 20; }
 static uint64_t evict_available(void) {
@@ -9118,7 +9245,16 @@ static void treg_merge_used_locked(void) {   // texture-pool ids resolved on the
     for (int i = 0; i < g_ntreg; i++) {
         treg_t *r = &g_treg[i]; if (!r->ok || r->view_pkg != 1 || !r->used) continue;
         __unsafe_unretained id o = hm_get_id(&g_by_serial, &r->t.serial);
-        if ([o isKindOfClass:[NvPkg class]] && r->used > ((NvPkg *)o)->used) ((NvPkg *)o)->used = r->used;
+        if ([o isKindOfClass:[NvPkg class]] && r->used > ((NvPkg *)o)->used) {
+            NvPkg *pk = (NvPkg *)o;
+            pk->used = r->used;
+#ifdef LONGSHOT_MTL
+            if (stream_zone && g_sub_serial - r->used < 64) {
+                pk->gate_use = r->used;
+                pk->gate_zones |= stream_zone;
+            }
+#endif
+        }
     }
 }
 static void treg_clear_pkg_views_locked(int (*gone)(NvPkg *)) {   // texture-pool slot views on copies that may no longer be used directly
@@ -9177,6 +9313,11 @@ static void pkg_evict_sweep(void) {
         if (mode == 3) MLOG("贴图副本淘汰：开（闲置 ≥%llu 次提交的副本都淘汰，不设上限）", (unsigned long long)idle_age);
     }
     if (!mode || (g_sub_serial & 3)) return;
+#ifdef LONGSHOT_MTL
+    /* Idle-only eviction can inspect once per 64 submissions. Explicit byte
+       budgets and memory-pressure sweeps retain their original frequency. */
+    if (mode == 3 && hos_mac_stream_policy() && (g_sub_serial & 63)) return;
+#endif
     uint64_t avail = 0, want = 0;
     if (mode == 1) {
         avail = evict_available();
@@ -9207,6 +9348,42 @@ static void pkg_evict_sweep(void) {
     uint64_t freed = 0, k = 0;
     if (want && n) {
         qsort(c, n, sizeof *c, evict_cmp);
+#ifdef LONGSHOT_MTL
+        /* Guest position can jump during the fade. Keep the previous scene
+           eligible across that gap, with independent allowances for both banks.
+           Volatile Metal storage lets macOS reclaim the bytes at any time. */
+        static double gate_until;
+        double now = CACurrentMediaTime();
+        if (stream_zone) gate_until = now + 18.;
+        if (mode == 3 && now < gate_until && hos_mac_stream_policy() && gate_cache_headroom()) {
+            uint64_t active_bytes = total;
+            for (size_t i = 0; i < n; ++i) active_bytes -= c[i].bytes;
+            const uint64_t ceiling = 1664ull << 20;
+            uint64_t room = active_bytes < ceiling ? MIN(384ull << 20, ceiling-active_bytes) : 0;
+            uint64_t field_room = MIN(room, 256ull << 20);
+            uint64_t village_room = room - field_room;
+            size_t dropped = 0;
+            unsigned marked = 0;
+            for (size_t i = n; i-- > 0;) {
+                NvPkg *pk = (__bridge NvPkg *)c[i].pk;
+                uint64_t *allowance = (pk->gate_zones & 2) || pk->field_priority ? &field_room : &village_room;
+                if ((!pk->gate_use && !pk->field_priority) || g_sub_serial-pk->used > 20*idle ||
+                    c[i].bytes > *allowance || pk->tex.heap || pk->tex.buffer || pk->tex.parentTexture) continue;
+                *allowance -= c[i].bytes;
+                if (!pk->vol) {
+                    MTLPurgeableState prior = [pk->tex setPurgeableState:MTLPurgeableStateVolatile];
+                    pk->lost = prior == MTLPurgeableStateEmpty;
+                    pk->vol = 1;
+                    ser_bump_locked(c[i].serial);
+                    ++marked;
+                }
+                c[i].pk = NULL;
+            }
+            if (marked) treg_clear_pkg_views_locked(pkg_purgeable);
+            for (size_t i = 0; i < n; ++i) if (c[i].pk) c[dropped++] = c[i];
+            n = dropped;
+        }
+#endif
         for (; k < n && freed < want; k++) {
             NvPkg *pk = (__bridge NvPkg *)c[k].pk;
             id<MTLTexture> t = pk->tex; pkg_views_drop(pk); pk->tex = nil;
