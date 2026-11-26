@@ -12467,8 +12467,7 @@ static void warm_worker(NSArray<NSString *> *paths, NSArray<NSString *> *files,
         par_miss_summary("预热结束");
     }
     par_flush_thread(); g_variant_bg = 0; par_write_in_place = 0;   // a queue thread: other work may run on it next
-    atomic_store(&g_warm_running, 0);
-    if (runtime_warm_done) runtime_warm_done();
+    if (atomic_fetch_sub(&g_warm_running, 1) == 1 && runtime_warm_done) runtime_warm_done();
 }
 // 等后台预热跑完（最多 timeout_ms；负数表示一直等）：返回实际等了多少毫秒，没在跑返回 0。首装时系统着色器缓存全冷，预热慢于玩家进局的话，
 // 没预热到的管线会在提交线程现编 = 局内卡顿；进局读取画面本来就挡着玩家，让它多读一会儿（hle_nvn.c 出图处调）。
@@ -12727,6 +12726,10 @@ int mtl_prepare_game_shaders(void) {
         shmap_load();
         mtl_warm_wait(-1);
         mtl_pipeline_archive_quit();
+        NSDictionary *receipt = @{@"arch": g_dev.architecture.name ?: @"", @"schema": @PAR_SCHEMA,
+                                  @"chain": @DMSH_CHAIN, @"pipelines": @(g_warm_rps + g_warm_cps)};
+        NSData *json = [NSJSONSerialization dataWithJSONObject:receipt options:0 error:nil];
+        if (json) printf("@@metal %.*s\n", (int)json.length, (const char *)json.bytes);
         return 1;
     }
 }
@@ -12856,14 +12859,10 @@ static void warm_start(void) {
         NSString *prepared = [dir stringByAppendingPathComponent:@"shader-seed/pso_manifest.tsv"];
         if (!(seedMode && !strcmp(seedMode, "off")) && [fm fileExistsAtPath:prepared]) [all addObject:prepared];
         paths = all;
-        NSMutableString *desc = [NSMutableString string];
-        for (NSString *p in paths) { NSString *t = [NSString stringWithContentsOfFile:p encoding:NSUTF8StringEncoding error:nil];
-            [desc appendFormat:@"%@%@ %lu 行", desc.length ? @"，" : @"", p.lastPathComponent, (unsigned long)[t componentsSeparatedByString:@"\n"].count - 1]; }
-        MLOG("预热清单（自动着色器收集）：%s；另加翻译缓存里本版本游戏的着色器", desc.UTF8String);
+        MLOG("Pipeline warm-up lists: %s", [[paths valueForKey:@"lastPathComponent"] componentsJoinedByString:@", "].UTF8String);
     }
     if (!g_warm_items) g_warm_items = [NSMutableArray array];
     g_warm_scope = totk_rt_shader_scope();
-    NSArray<NSString *> *cached = totk_rt_list();
     par_open_dir(g_dev);   // the pipeline archive: with files, the pipeline lists are made from them and the rest when drawn
     /* With a valid pipeline archive the resident lists are still warmed (title and local user on low-memory devices;
        all lists with warm_shared). The rest are checked / filled without keeping their pipelines in memory. Skipped:
@@ -12872,7 +12871,9 @@ static void warm_start(void) {
        not by file: 8b6d26b kept the iPhone seed's list by its path, and a second start loaded all 20,368 libraries
        again (12,266 after 7 minutes; the warm-up never ended).
        Only the title list first (2026-10-20: 866 ms frames on entering the world when the lists were skipped too). */
-    if (g_par_valid || (g_par_on && par_fill_light())) {
+    const BOOL pipelines_only = g_par_valid || (g_par_on && par_fill_light());
+    NSArray<NSString *> *cached = pipelines_only ? @[] : totk_rt_list();
+    if (pipelines_only) {
         NSArray<NSString *> *archive = nil;
         const int mode = warm_resident_mode(), kinds = mode == WARM_RESIDENT_TITLE_KINDS;
         paths = warm_resident_lists(paths, title, kinds ? nil : user, g_par_valid, warm_shared(), &archive);
@@ -12900,7 +12901,6 @@ static void warm_start(void) {
                  (unsigned long)rows.count, (unsigned long)archive.count, WARM_RESIDENT_NAME[mode]);
         }
         g_warm_pipelines_only = 1;
-        cached = @[];
         if (g_par_valid) {
             g_shared_fill = archive;
             if (archive && !kinds) MLOG("预热：标题和本机清单驻留，其余 %lu 份只填存档（TOTK_WARM_RESIDENT=all 全部驻留）", (unsigned long)archive.count);
@@ -12930,7 +12930,7 @@ static void warm_start(void) {
     g_warm_t0 = bp_now();
     dispatch_queue_attr_t attr = dispatch_queue_attr_make_with_qos_class(DISPATCH_QUEUE_SERIAL, QOS_CLASS_USER_INITIATED, 0);   // 不是可有可无的后台活：它决定玩家进局前管线是否就绪 | Not optional background work: it decides whether the pipelines are ready before the player enters a run
     dispatch_queue_t q = dispatch_queue_create("dm.nvn.pso-warm", attr);
-    atomic_store(&g_warm_running, 1);
+    atomic_fetch_add(&g_warm_running, 1);
     dispatch_async(q, ^{ warm_worker(paths,files,eligible,planned_keys,total,shader_total,pipeline_total); });
     // The title's list must be ready before its first frame. The other lists,
     // the prepared shaders and the remaining translated variants finish behind
@@ -12948,6 +12948,14 @@ static void warm_start(void) {
        own list, the rest behind it (before 2026-10-23). */
     const char *bt = getenv("TOTK_WARM_BEFORE_TITLE");
     int before = !(bt && !atoi(bt));
+#ifdef LONGSHOT_MTL
+    // The installer materializes the archive for this GPU. Keep the title list
+    // on the critical path and load the world pipelines while the menu is up.
+    if (!bt && g_par_valid && [NSFileManager.defaultManager fileExistsAtPath:
+            [[dir stringByAppendingPathComponent:@"pipelines"] stringByAppendingPathComponent:
+                [NSString stringWithFormat:@"installed-%@-%s.ready", g_dev.architecture.name, DMSH_CHAIN]]])
+        before = 0;
+#endif
     /* Every game waits before the title on the Mac too, archive complete or not (user 2026-11-11: "所有塞尔达 都是 预热玩 进标题！",
        then "大金刚和 Pokopia 也是 所有游戏都是"). From 2026-10-29 ("桌面 王国 每次打开 都预热") a complete archive let the title
        come at once and the warm-up go on behind the menu; Ocarina of Time (games/oot) dropped it the same day. */
@@ -12963,7 +12971,7 @@ static void warm_start(void) {
         NSArray<NSString *> *after = @[g_warm_after_title]; g_warm_after_title = nil;
         NSMutableSet<NSString *> *akeys = [NSMutableSet set], *aok = [NSMutableSet set]; uint64_t at = 0, as = 0, ap = 0;
         warm_plan(after, @[], akeys, aok, &at, &as, &ap);
-        atomic_store(&g_warm_running, 1);   // the first world frame waits for it (hle_nvn.c mtl_warm_wait)
+        atomic_fetch_add(&g_warm_running, 1);   // the first world frame waits for it (hle_nvn.c mtl_warm_wait)
         dispatch_async(q, ^{ warm_worker(after, @[], aok, akeys, at, as, ap); });
         MLOG("预热：本机玩过的管线 %llu 条在标题之后在后台建（进世界前读档时等它做完）", (unsigned long long)ap);
     }

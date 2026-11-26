@@ -7,7 +7,7 @@
    game can start) and is logged.
 
    The presses are the host's, in host/nn_hid.c's input script syntax (hos_hid_tap), added to whatever the player and a
-   test's script do. They begin 20 s after the game's first controller read (the intro and title), every 2 s, and stop as
+   test's script do. They start after the first controller read and stop as
    soon as the player is running (host/hos_main.c: the lifted player's movement) or after 120 s. */
 #include "oot_autoload.h"
 #include "../gpu/vk/vk_api.h"   /* (HOS_OPT_SKIP_TITLE) */
@@ -33,7 +33,12 @@ extern void hos_hid_tap(const char *presses);   /* (host/nn_hid.c) */
 
 /* (the wait before the first press, the gap between presses, and when to give up: the intro and title take about 23 s on
    the supported build, and preparing the shaders comes before it) */
+#ifdef __APPLE__
+// A prepared Metal installation can already be at the title before the old 20 s delay.
+enum { kFirstMs = 400, kEveryMs = 450, kGiveUpMs = 120000 };
+#else
 enum { kFirstMs = 20000, kEveryMs = 2000, kGiveUpMs = 120000 };
+#endif
 
 static uint64_t file_time(const char *path) {
     struct stat st;
@@ -188,7 +193,7 @@ void hos_oot_autoload_input(void) {
             return;
         }
         active = 1;
-        hos_log("skip title: %s is the most recent save: pressing A from %.0f s", save_path, kFirstMs / 1000.0);
+        hos_log("skip title: %s is the most recent save: pressing A from %.1f s", save_path, kFirstMs / 1000.0);
     }
     if (!active) return;
     if (!rx_option(HOS_OPT_SKIP_TITLE, 0)) {

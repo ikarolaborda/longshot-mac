@@ -3032,7 +3032,9 @@ static void driver_env_choose(void) {
 int main(int argc, char **argv) {
 #ifdef __APPLE__
     extern int hos_mac_bundle_setup(void);
-    if (!hos_mac_bundle_setup()) {
+    /* The installer runs the signed app against its private staging directories before publishing them. */
+    int staging_shaders = argc == 2 && !strcmp(argv[1], "--prepare-shaders") && getenv("LONGSHOT_PACKAGE_SHADERS");
+    if (!staging_shaders && !hos_mac_bundle_setup()) {
         fprintf(stderr, "Longshot could not initialize its game resources in Application Support.\n");
         return 1;
     }
@@ -3064,7 +3066,13 @@ int main(int argc, char **argv) {
         if (!strcmp(argv[i], "--prepare-shaders")) prepare_shaders = 1;
         else if (!strcmp(argv[i], "--romfs") || !strcmp(argv[i], "--user") || !strcmp(argv[i], "--compile-shaders")) i++;
     }
-    /* The builder's preparation worker needs Vulkan, but no SDL display. */
+#ifdef __APPLE__
+    if (!prepare_shaders && getenv("TOTK_NATIVE_DIR")) {
+        extern void hos_metal_start_cache_read(void);
+        hos_metal_start_cache_read();
+    }
+#endif
+    /* Shader preparation runs without a display. */
     const int window = prepare_shaders ? 0 : hos_display_init();
     if (window < 0) {
         hos_log_flush();

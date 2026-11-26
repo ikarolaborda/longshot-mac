@@ -2,6 +2,8 @@
 """Make a signed native macOS game app from the player's own compiled Longshot folder."""
 import argparse
 import ctypes
+import hashlib
+import json
 import os
 from pathlib import Path
 import plistlib
@@ -9,6 +11,7 @@ import re
 import uuid
 import subprocess
 import tempfile
+from concurrent.futures import ThreadPoolExecutor
 
 APP_ID = "dev.longshot.game"
 BACKENDS = ("longshot_mtl.dylib", "renhdrum.dylib", "libSDL3.0.dylib", "libSDL2-2.0.0.dylib")
@@ -88,6 +91,119 @@ def libraries(exe, game, contents):
         if edits:
             run("install_name_tool", *edits, dest)
         run("codesign", "--force", "--sign", "-", dest)
+
+
+def merge_pipeline_archives(cache, target, receipt):
+    arch = receipt["arch"]
+    if not re.fullmatch(r"[A-Za-z0-9_-]+", arch):
+        raise ValueError(f"Invalid Metal GPU architecture {arch!r}")
+    target.mkdir(exist_ok=True)
+    prefix = "pipelines-" + arch
+    stamp = target / (prefix + ".json")
+    index = target / (prefix + ".tsv")
+    metadata = {key: receipt[key] for key in ("arch", "schema", "chain")}
+    existing = json.loads(stamp.read_text()) if stamp.is_file() else {}
+    compatible = all(existing.get(key) == value for key, value in metadata.items())
+    rows = {}
+    if compatible and index.is_file():
+        for line in index.read_text().splitlines():
+            if line:
+                key, name = line.split("\t")
+                rows[key] = name
+    # Prefer newly prepared functions, then Metal 4 and the newest batch within each format.
+    for folder, ext, kind in (("pipelines", ".metalarchive", "host-"), ("pipelines-mtl4", ".mtl4a", "m4-host-")):
+        for keys in sorted((cache / folder).glob("*.keys"), key=lambda p: (p.stat().st_mtime_ns, p.name)):
+            archive = keys.with_suffix(ext)
+            # Batches on two installs can start with the same key and contain different functions.
+            digest = hashlib.sha256()
+            with archive.open("rb") as stream:
+                for chunk in iter(lambda: stream.read(1024 * 1024), b""):
+                    digest.update(chunk)
+            name = kind + digest.hexdigest()
+            dest = target / (prefix + "-" + name + ext)
+            if not dest.exists():
+                clone(archive, dest)
+            for key in keys.read_text().splitlines():
+                if key:
+                    rows[key] = name
+
+    lowered = cache / "pipelines/float-rmw-lowered.txt"
+    if lowered.is_file():
+        dest = target / (prefix + "-lowered.txt")
+        known = set(dest.read_text().splitlines()) if compatible and dest.exists() else set()
+        for line in lowered.read_text().splitlines():
+            gpu, key = line.split("\t")
+            if gpu == arch:
+                known.add(key)
+        dest.write_text("".join(k + "\n" for k in sorted(known)))
+    index.write_text("".join(f"{key}\t{name}\n" for key, name in sorted(rows.items())))
+    stamp.write_text(json.dumps(dict(metadata, pipelines=len(rows))) + "\n")
+
+
+def shorten_title_load_fade(assets):
+    # Only this title-to-save sequence uses these two animation defaults. Keep the
+    # original selection, confirmation, resource waits and world transition.
+    path = assets / "romfs/Sequence/TitleToMainWithLoadSave.module.ainb"
+    if path.is_file():
+        data = bytearray(path.read_bytes())
+        if hashlib.sha256(data).hexdigest() == "c3ff36cb18735787171d6dafc76387fa4d0882b727c3aeb4dccb2f71b0b887ed":
+            data[5480] = 0  # IsLongFade
+            data[5512] = 0  # IsPlayLoadingFade
+            replacement = path.with_suffix(".tmp")
+            replacement.write_bytes(data)
+            os.replace(replacement, path)
+
+
+def prepare_launch_pipelines(exe, assets, pack, work):
+    sealed = pack / "Contents/Resources"
+    if not (sealed / "shader-seed/seed-manifest.json").is_file():
+        return
+    work.mkdir()
+    metal = assets / "metal/build"
+    env = dict(os.environ, LONGSHOT_PACKAGE_SHADERS="1", TOTK_NATIVE_DIR=str(metal),
+               TOTK_SHADER_SEED_DIR=str(sealed / "shader-seed"), TOTK_SHADER_LIBS_DIR=str(sealed / "shader-libs"),
+               XDG_DATA_HOME=str(work / "profile"), LONGSHOT_BUNDLE_RUNTIME=str(work),
+               HOS_OPTIONS_FILE=str(work / "longshot_options.ini"), TOTK_WARM_BEFORE_TITLE="1", HOS_HEADLESS="1")
+
+    def prepare(cache):
+        result = subprocess.run([exe, "--prepare-shaders"], cwd=work, env=dict(env, TOTK_SHADER_CACHE=str(cache)),
+                                check=True, stdout=subprocess.PIPE, text=True)
+        receipt = next((json.loads(line[7:]) for line in result.stdout.splitlines() if line.startswith("@@metal ")), None)
+        if not receipt or not receipt["pipelines"]:
+            raise RuntimeError("The shader preparation did not produce Metal pipelines.")
+        return receipt
+
+    print("Preparing Metal pipelines for the installation Mac…", flush=True)
+    cache = work / "discovery"
+    receipt = prepare(cache)
+    variants = sorted((cache / "variants").glob("*.metal"))
+    if variants and (sealed / "shader-libs").is_dir():
+        compiler = subprocess.run(["xcrun", "--sdk", "macosx", "--find", "metal"], capture_output=True, text=True)
+        tool = compiler.stdout.strip()
+        if compiler.returncode == 0 and subprocess.run([tool, "--version"], capture_output=True).returncode == 0:
+            outputs = work / "libraries"
+            outputs.mkdir()
+            def compile_variant(source):
+                output = outputs / source.with_suffix(".metallib").name
+                run(tool, "-std=metal4.0", "-fmetal-math-mode=safe", "-fpreserve-invariance",
+                    "-fwrapv", source, "-o", output)
+            try:
+                with ThreadPoolExecutor(max_workers=min(os.cpu_count() or 1, 8)) as pool:
+                    list(pool.map(compile_variant, variants))
+            except subprocess.CalledProcessError:
+                print("The offline compiler could not build these variants. Keeping the driver-built pipelines.", flush=True)
+            else:
+                for library in outputs.iterdir():
+                    library.replace(sealed / "shader-libs" / library.name)
+                run("codesign", "--force", "--sign", "-", pack)
+                # A pipeline must reference the exact offline functions the game will load.
+                cache = work / "final"
+                receipt = prepare(cache)
+        else:
+            print("Metal command-line compiler unavailable. Keeping pipelines built by the driver.", flush=True)
+    archive_dir = metal / "pipelines"
+    merge_pipeline_archives(cache, archive_dir, receipt)
+    (archive_dir / f"installed-{receipt['arch']}-{receipt['chain']}.ready").touch()
 
 
 def install_app(staged, output):
@@ -182,18 +298,30 @@ def main():
         metal.mkdir(parents=True)
         for name in ("kakariko-mesh.tsv", "gerudo-mesh.tsv", "field-entry-shaders.tsv"):
             clone(Path(__file__).with_name("resources") / name, metal / name)
+        sealed = contents / "Resources/Metal"
+        if experimental:
+            shorten_title_load_fade(assets)
+            pack = assets / "Longshot Shaders.bundle"
+            sealed = pack / "Contents/Resources"
+            sealed.mkdir(parents=True)
+            (pack / "Contents/Info.plist").write_bytes(plistlib.dumps(dict(
+                CFBundleIdentifier=APP_ID + ".shader-assets", CFBundlePackageType="BNDL", CFBundleVersion="1")))
         for name in METAL_FILES:
             source = game / "metal/build" / name
             if source.exists():
                 target = metal
                 if name in ("shader-seed", "shader-libs"):
-                    target = contents / "Resources/Metal"
+                    target = sealed
                     target.mkdir(exist_ok=True)
                 clone(source, target / name)
                 # Packed shader images are siblings of the resolved seed directory.
                 real = source.resolve()
                 for part in sorted(real.parent.glob(real.name + ".img.[0-9][0-9][0-9]")):
                     clone(part, target / part.name)
+        if experimental:
+            for item in sealed.iterdir():
+                (metal / item.name).symlink_to(os.path.relpath(item, metal))
+            run("codesign", "--force", "--sign", "-", pack)
         libraries(exe, game, contents)
         info = dict(CFBundleIdentifier=app_id, CFBundleExecutable=exe.name, CFBundleName="Longshot",
                     CFBundleIconFile=icon_name,
@@ -207,6 +335,9 @@ def main():
         (contents / "Info.plist").write_bytes(plistlib.dumps(info))
         run("codesign", "--force", "--sign", "-", app)
         run("codesign", "--verify", "--strict", app)
+        if experimental:
+            prepare_launch_pipelines(exe, assets, pack, Path(data_stage) / "prepare")
+            run("codesign", "--verify", "--strict", pack)
         installed_assets = data_root / data_name
         assets.rename(installed_assets)
         try:

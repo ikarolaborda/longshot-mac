@@ -290,6 +290,8 @@ double hos_mac_pair_period(double gamePeriod) {
     return gamePeriod;
 }
 
+int hos_mac_adaptive_enabled(void) { return atomic_load(&adaptive) != 0; }
+
 int hos_mac_frame_cap(int configured) {
     int display = front_display_hz();
     if (display < 30) display = 60;
