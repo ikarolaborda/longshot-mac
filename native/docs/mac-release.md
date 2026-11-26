@@ -45,7 +45,7 @@ With **All Equipment** enabled, the pause inventory identifies loaned gear as **
 
 This Mac release uses the stable Longshot v3.2.0 game code, including the controller trigger, save-loading, first adult night, and high-frame-rate movie fixes. Movies keep their sound timing and 16:9 shape. The upstream release also lists driver fixes specific to Windows and Vulkan. [Upstream release notes](https://git.magicbean.dev/MagicBeanDev/Longshot/releases/tag/v3.2.0)
 
-Press F1 or Insert in the game window to open Longshot Settings. On a Mac keyboard, use Fn+F1 if F1 changes the screen brightness. You can also choose Longshot Settings… from the Longshot menu or press Command+comma. Use Tab to change pages and the arrow keys to select a setting. The keypad 5 shortcut still opens the cheat menu.
+Press F1 or Insert in the game window to open Longshot Settings. On a Mac keyboard, use Fn+F1 if F1 changes the screen brightness. You can also open settings from the Longshot application menu or press Command+comma. Use Tab to change pages and the arrow keys to select a setting. The keypad 5 shortcut still opens the cheat menu.
 
 In Graphics, turn on Adaptive 144 FPS to target up to 144 displayed frames per second. The target follows the screen when its refresh rate is lower. When game frames fall behind on a high-refresh screen, supported Macs can use MetalFX to draw a frame between two game frames. If the GPU is the limit, the game can lower its 3D resolution and raise it again when the GPU has time. Movement and animation use elapsed time.
 

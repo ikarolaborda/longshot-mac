@@ -359,7 +359,17 @@ void hos_mac_refresh_screen(void *metalLayer, int sdlMillihertz) {
             if (![choices containsObject:@(choice)]) choice = 0;
             atomic_store(&selectedHz, choice);
             NSMenu *appMenu = NSApp.mainMenu.itemArray.firstObject.submenu;
-            NSMenuItem *settings = [appMenu insertItemWithTitle:@"Longshot Settings…" action:@selector(openSettings:) keyEquivalent:@"," atIndex:MIN((NSInteger)2,appMenu.numberOfItems)];
+            // SDL can install a placeholder Settings item which already owns Command-comma.
+            NSMenuItem *settings = nil;
+            for (NSMenuItem *item in appMenu.itemArray) {
+                if ([item.keyEquivalent isEqualToString:@","] && item.keyEquivalentModifierMask == NSEventModifierFlagCommand) {
+                    settings = item;
+                    break;
+                }
+            }
+            if (!settings)
+                settings = [appMenu insertItemWithTitle:@"Longshot Settings…" action:nil keyEquivalent:@"," atIndex:MIN((NSInteger)2,appMenu.numberOfItems)];
+            settings.action = @selector(openSettings:);
             settings.target = target;
             NSMenuItem *autoItem = [menu addItemWithTitle:@"Adaptive 144 FPS" action:@selector(toggleAdaptive:) keyEquivalent:@""];
             autoItem.target = target;
